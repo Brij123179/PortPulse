@@ -59,8 +59,8 @@ export type TabType =
 export const roleAllowedTabs: Record<string, TabType[]> = {
   shift_supervisor: ['plan', 'recommendations', 'live', 'map'],
   vessel_planner: ['optimiser', 'plan', 'live', 'map'],
-  terminal_manager: ['plan', 'heatmap', 'recommendations', 'optimiser', 'live', 'audit'],
-  admin: ['plan', 'live', 'heatmap', 'recommendations', 'optimiser', 'audit'],
+  terminal_manager: ['plan', 'heatmap', 'recommendations', 'optimiser', 'live', 'audit', 'ml_metrics'],
+  admin: ['plan', 'live', 'heatmap', 'recommendations', 'optimiser', 'audit', 'ml_metrics'],
 };
 
 export const App: React.FC = () => {

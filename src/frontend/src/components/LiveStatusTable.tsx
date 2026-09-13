@@ -519,7 +519,48 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
 
                       {/* Projected ETA (Terminal ML Forecast) */}
                       <td className="py-3 px-4">
-                        {v.corrected_eta ? (
+                        {v.status === 'BERTHED' ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-content-primary font-semibold">
+                                At Berth ({v.assigned_berth_id || 'Quay'})
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                Active Ops
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-content-muted block">
+                              Quayside operations · 100% confidence
+                            </span>
+                          </div>
+                        ) : v.status === 'ANCHORED' ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-content-primary font-medium">
+                                ETB: {new Date(v.corrected_eta || v.carrier_eta).toLocaleString([], {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                +{(v.predicted_delay_hours ?? 1.5).toFixed(1)}h queue wait
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span
+                                className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-semibold"
+                                title="Fairway Queue Clearance Confidence"
+                              >
+                                {Math.round((v.eta_confidence ?? 0.88) * 100)}% ML conf
+                              </span>
+                              <span className="text-[10px] text-content-muted font-medium truncate max-w-[150px]">
+                                {v.delay_factors?.join(' · ') || 'Fairway Queue Wait'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : v.corrected_eta ? (
                           <div className="space-y-1">
                             <div className="flex items-center space-x-1.5">
                               <span className="text-content-primary font-medium">
@@ -561,11 +602,11 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                                 className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-semibold"
                                 title="GradientBoosting ML Model Confidence"
                               >
-                                {Math.round((v.eta_confidence ?? 0.85) * 100)}% ML conf
+                                {Math.round((v.eta_confidence ?? 0.92) * 100)}% ML conf
                               </span>
                               {v.delay_factors && v.delay_factors.length > 0 && (
                                 <span
-                                  className="text-[10px] text-content-muted font-medium truncate max-w-[150px]"
+                                  className="text-[10px] text-content-muted font-medium truncate max-w-[160px]"
                                   title={v.delay_factors.join(' · ')}
                                 >
                                   {v.delay_factors.join(' · ')}

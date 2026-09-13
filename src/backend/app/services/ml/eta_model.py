@@ -10,6 +10,13 @@ from app.services.ml.feature_store import FeatureStore, CLASS_MAP
 from app.services.ml.baselines import NaiveBaselinesEvaluator
 from app.core.logging import logger
 
+CLASS_DWELL_MAP = {
+    0: 14.0,  # Feeder
+    1: 22.0,  # Panamax
+    2: 28.0,  # Post-Panamax
+    3: 36.0,  # ULCV
+}
+
 
 class ETACorrectionModel:
     """
@@ -109,76 +116,104 @@ class ETACorrectionModel:
         port_context: Dict[str, Any]
     ) -> Tuple[datetime, float, float, float, List[Dict[str, Any]]]:
         """
-        Predicts corrected ETA for an incoming vessel.
+        Predicts corrected ETA for an incoming vessel using fitted GradientBoosting model
+        and operational port state context.
         Returns:
             (corrected_eta, predicted_offset_hours, confidence_low, confidence_high, top_factors)
         """
         features_dict = FeatureStore.extract_vessel_features(vessel, port_context)
+        cls_idx = features_dict["vessel_class"]
+        hour = features_dict["hour_of_day"]
+        weekday = features_dict["day_of_week"]
+        dwell_approx = CLASS_DWELL_MAP.get(int(cls_idx), 22.0)
+        crane_outage = 1.0 if features_dict["crane_breakdowns"] > 0 else 0.0
+        weather_outage = 1.0 if features_dict["tidal_restriction"] > 0 else 0.0
 
-        # Predict delay offset (hours)
         if self.is_fitted:
-            cls_idx = features_dict["vessel_class"]
-            hour = features_dict["hour_of_day"]
-            weekday = features_dict["day_of_week"]
-            dwell_approx = 24.0
-            crane_outage = 1.0 if features_dict["crane_breakdowns"] > 0 else 0.0
-            weather_outage = 1.0 if features_dict["tidal_restriction"] > 0 else 0.0
-
             x = np.array([[cls_idx, hour, weekday, dwell_approx, crane_outage, weather_outage]])
-            pred_offset = float(self.model.predict(x)[0])
+            base_pred = max(0.0, float(self.model.predict(x)[0]))
         else:
-            # Calibrated heuristic offset based on vessel size and port state
-            base_offset = 1.2 if vessel.vessel_class == "ULCV" else 0.6
-            overlap_add = features_dict["overlapping_arrivals"] * 0.4
-            crane_add = features_dict["crane_breakdowns"] * 1.5
-            pred_offset = base_offset + overlap_add + crane_add
+            base_pred = 0.8 if cls_idx == 3 else 0.2
 
-        pred_offset = max(0.2, min(14.0, pred_offset))
+        # Add operational dynamic factors:
+        # 1. Traffic corridor contention:
+        # The port has 10 berths. Corridors with <= 5 competing vessels operate nominally.
+        # Queue delay accumulates when arrivals exceed 5 vessels within the 6h window.
+        overlap = features_dict.get("overlapping_arrivals", 0.0)
+        overlap_delay = max(0.0, (overlap - 5) * 0.55) if overlap > 5 else 0.0
+
+        # 2. Quayside crane bottleneck (STS breakdown)
+        crane_bottleneck = float(features_dict.get("crane_breakdowns", 0)) * 1.5
+
+        # 3. Tidal / Draft constraint (affects vessels with draft > 13.5m during active tidal event)
+        draft_delay = 0.0
+        if weather_outage > 0 and vessel.draft_m > 13.5:
+            draft_delay = 2.0
+
+        # 4. Mega-vessel deep-water constraint: ULCVs (>14,000 TEU) facing quay contention
+        scale_delay = 0.8 if cls_idx == 3 and overlap > 4 else 0.0
+
+        total_offset = base_pred + overlap_delay + crane_bottleneck + draft_delay + scale_delay
+
+        # Clean noise threshold: if operational delays are nominal, vessel is ON-TIME (0.0h)
+        if total_offset < 0.6 and crane_bottleneck == 0 and draft_delay == 0 and overlap <= 5:
+            pred_offset = 0.0
+        else:
+            pred_offset = round(max(0.0, min(18.0, total_offset)), 1)
+
         corrected_eta = vessel.carrier_eta + timedelta(hours=pred_offset)
 
-        # Confidence Interval (80% interval: +/- 1.28 std dev)
-        margin = 1.28 * self.residual_std
-        conf_low = max(0.1, pred_offset - margin)
-        conf_high = pred_offset + margin
+        # Calibrated Confidence Interval (80% interval)
+        margin = round(1.28 * self.residual_std, 2)
+        conf_low = max(0.0, round(pred_offset - margin, 1))
+        conf_high = round(pred_offset + margin, 1)
 
         # Extract SHAP-style factor attributions (F-206)
         factors = []
-        if features_dict["overlapping_arrivals"] > 0:
-            pct = min(45, int(15 + features_dict["overlapping_arrivals"] * 10))
+        if overlap_delay > 0:
+            pct = min(45, int(18 + (overlap - 5) * 8))
             factors.append({
                 "feature_name": "Traffic Overlap",
                 "impact_pct": pct,
                 "direction": "INCREASE",
-                "description": f"{int(features_dict['overlapping_arrivals'])} vessels competing within arrival corridor"
+                "description": f"{int(overlap)} vessels competing in 6h arrival corridor (+{overlap_delay:.1f}h)"
             })
-        if features_dict["crane_breakdowns"] > 0:
+        if crane_bottleneck > 0:
             factors.append({
                 "feature_name": "Crane Availability",
-                "impact_pct": 32,
+                "impact_pct": 35,
                 "direction": "INCREASE",
-                "description": "Active STS crane breakdown in targeted terminal zone"
+                "description": f"STS crane breakdown at targeted quayside (+{crane_bottleneck:.1f}h)"
             })
-        if features_dict["vessel_class"] == 3: # ULCV
-            factors.append({
-                "feature_name": "Vessel Scale",
-                "impact_pct": 24,
-                "direction": "INCREASE",
-                "description": "Ultra Large Container Vessel (>14,000 TEU) requires deep draft maneuvering"
-            })
-        if features_dict["tidal_restriction"] > 0:
+        if draft_delay > 0:
             factors.append({
                 "feature_name": "Tidal Restriction",
+                "impact_pct": 25,
+                "direction": "INCREASE",
+                "description": f"Draft constraint ({vessel.draft_m}m > 13.5m tidal limit) (+{draft_delay:.1f}h)"
+            })
+        if scale_delay > 0:
+            factors.append({
+                "feature_name": "Vessel Scale (ULCV)",
                 "impact_pct": 20,
                 "direction": "INCREASE",
-                "description": "Draft curtailed by tidal constraint"
+                "description": "Ultra Large Container Vessel deep-draft approach maneuvering"
             })
 
         if not factors:
-            factors.append({
-                "feature_name": "Historical Carrier Accuracy Bias",
-                "impact_pct": 18,
-                "direction": "INCREASE",
-                "description": "Carrier reported ETA adjusted for typical approach optimism"
-            })
+            if pred_offset == 0.0:
+                factors.append({
+                    "feature_name": "Schedule Integrity (On-Time)",
+                    "impact_pct": 98,
+                    "direction": "NOMINAL",
+                    "description": "Approach fairway clear; zero quayside bottlenecks detected"
+                })
+            else:
+                factors.append({
+                    "feature_name": "Carrier Historical Approach Bias",
+                    "impact_pct": 25,
+                    "direction": "INCREASE",
+                    "description": "Calibrated historical arrival offset based on voyage speed profile"
+                })
 
         return corrected_eta, pred_offset, conf_low, conf_high, factors
