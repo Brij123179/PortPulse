@@ -1,0 +1,25 @@
+name: Validate Submission Template
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate submission structure
+        run: |
+          test -f submission.yaml || (echo "Missing submission.yaml" && exit 1)
+          test -f README.md || (echo "Missing README.md" && exit 1)
+          test -d src || (echo "Missing src directory" && exit 1)
+          test -f src/.env.example || (echo "Missing src/.env.example" && exit 1)
+          test -d docs || (echo "Missing docs directory" && exit 1)
+          test -f docs/problem-statement.md || (echo "Missing docs/problem-statement.md" && exit 1)
+          test -f docs/architecture.md || (echo "Missing docs/architecture.md" && exit 1)
+          test -f docs/setup-guide.md || (echo "Missing docs/setup-guide.md" && exit 1)
+          test -d demo || (echo "Missing demo directory" && exit 1)
+          echo "Repository layout validated successfully."

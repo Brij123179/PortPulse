@@ -1,0 +1,58 @@
+/* IBM Carbon Design System inspired tokens (04_frontend.md §2) */
+:root {
+  --color-bg: #f4f4f4;                 /* Carbon Gray 10 */
+  --color-card: #ffffff;               /* Carbon White */
+  --color-hover: #e8e8e8;              /* Carbon Gray 20 */
+  --color-border: #d1d5db;             /* Light Gray Border */
+  --color-border-subtle: #e5e7eb;
+  
+  --color-text-primary: #161616;       /* Carbon Gray 100 */
+  --color-text-secondary: #525252;     /* Carbon Gray 70 */
+  --color-text-muted: #8d8d8d;         /* Carbon Gray 50 */
+  
+  /* Operational Status Tokens (Accessible Light) */
+  --color-status-success-bg: #defbe6;
+  --color-status-success-text: #0e6027;
+  --color-status-success-border: #a7f0ba;
+
+  --color-status-warning-bg: #fdf3d8;
+  --color-status-warning-text: #8a6100;
+  --color-status-warning-border: #f1c21b;
+
+  --color-status-danger-bg: #ffebee;
+  --color-status-danger-text: #b81414;
+  --color-status-danger-border: #ff8389;
+
+  --color-status-info-bg: #edf5ff;
+  --color-status-info-text: #0043ce;
+  --color-status-info-border: #a6c8ff;
+}
+
+[data-theme="dark"] {
+  --color-bg: #121619;                 /* Carbon Gray 100 deep */
+  --color-card: #1f2429;               /* Carbon Gray 90 */
+  --color-hover: #2d333b;              /* Carbon Gray 80 */
+  --color-border: #374151;             /* Dark Border */
+  --color-border-subtle: #2b313a;
+
+  --color-text-primary: #f4f4f4;       /* Carbon Gray 10 */
+  --color-text-secondary: #c6c6c6;     /* Carbon Gray 30 */
+  --color-text-muted: #8d8d8d;         /* Carbon Gray 50 */
+
+  /* Operational Status Tokens (Accessible Dark) */
+  --color-status-success-bg: #0e3818;
+  --color-status-success-text: #42be65;
+  --color-status-success-border: #198038;
+
+  --color-status-warning-bg: #3e3000;
+  --color-status-warning-text: #f1c21b;
+  --color-status-warning-border: #8a6100;
+
+  --color-status-danger-bg: #4a1013;
+  --color-status-danger-text: #ff8389;
+  --color-status-danger-border: #da1e28;
+
+  --color-status-info-bg: #001d6c;
+  --color-status-info-text: #78a9ff;
+  --color-status-info-border: #0f62fe;
+}

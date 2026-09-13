@@ -1,0 +1,27 @@
+project_name: "PortPulse"
+problem_statement: "L1: Container Congestion Predictor & Port Operations Optimiser"
+hackathon: "IBM BoB AI Hackathon 2026"
+track: "Industry Problem Statement L1"
+
+team_name: "TODO: Team Name"
+team_members:
+  - name: "TODO: Member Name"
+    email: "TODO: Member Email"
+    role: "TODO: Member Role"
+
+links:
+  repository: "TODO: Repository URL"
+  demo_video: "TODO: Demo Video Link"
+  live_demo: "NOT DEPLOYED"
+
+summary: >
+  PortPulse is a predictive twin of the container port that forecasts congestion hotspots
+  72 hours ahead and provides shift supervisors with constraint-valid, cost-estimated recommendations
+  in one click, grounded in operational SOPs with IBM Bob.
+
+increment_status:
+  I1_data_foundation: "Completed"
+  I2_prediction_core: "Pending"
+  I3_recommend_optimise: "Pending"
+  I4_generative_cockpit: "Pending"
+  I5_platform_trust: "Pending"

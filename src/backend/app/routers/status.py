@@ -1,0 +1,169 @@
+from datetime import datetime, timezone
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.core.auth import CurrentUser, get_current_user
+from app.models.entities import Vessel, Berth, Crane, YardCapacity
+from app.schemas.status import (
+    VesselStatusItem, BerthStatusItem, LiveStatusSummary, LiveStatusTableResponse
+)
+from app.core.logging import correlation_id_ctx
+
+router = APIRouter(prefix="/api/v1/status", tags=["Live Status (Read-Only)"])
+
+
+@router.get("/vessels", response_model=List[VesselStatusItem])
+def get_vessels_status(
+    status: Optional[str] = Query(None, description="SCHEDULED, ANCHORED, BERTHED, DEPARTED"),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user)
+):
+    """
+    F-105: Returns live vessel positions, carrier ETAs, corrected ETAs, and assigned berths.
+    Matches 05_backend.md §3 contract.
+    """
+    query = db.query(Vessel)
+    if status:
+        query = query.filter(Vessel.status == status.upper())
+    
+    vessels = query.order_by(Vessel.carrier_eta.asc()).limit(limit).all()
+
+    # Pre-fetch berths for name mapping and fit verification
+    berths_dict = {b.id: b for b in db.query(Berth).all()}
+
+    items = []
+    for v in vessels:
+        berth_obj = berths_dict.get(v.assigned_berth_id)
+        quay_fit = True
+        draft_fit = True
+        if berth_obj:
+            quay_fit = v.length_m <= berth_obj.length_m
+            draft_fit = v.draft_m <= berth_obj.draft_limit_m
+
+        items.append(
+            VesselStatusItem(
+                id=v.id,
+                name=v.name,
+                vessel_class=v.vessel_class,
+                cargo_volume=v.cargo_volume,
+                carrier_eta=v.carrier_eta,
+                corrected_eta=v.corrected_eta,
+                eta_confidence=v.eta_confidence or 0.90,
+                priority_flag=v.priority_flag,
+                length_m=v.length_m,
+                draft_m=v.draft_m,
+                status=v.status,
+                assigned_berth_id=v.assigned_berth_id,
+                assigned_berth_name=berth_obj.name if berth_obj else None,
+                quay_fit=quay_fit,
+                draft_fit=draft_fit
+            )
+        )
+    return items
+
+
+@router.get("/berths", response_model=List[BerthStatusItem])
+def get_berths_status(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user)
+):
+    """
+    F-105: Returns current berth occupancy, dimensions, and crane availability.
+    Matches 05_backend.md §3 contract.
+    """
+    berths = db.query(Berth).all()
+    # Map currently berthed vessels
+    berthed_vessels = {
+        v.assigned_berth_id: v
+        for v in db.query(Vessel).filter(Vessel.status == "BERTHED").all()
+        if v.assigned_berth_id
+    }
+
+    items = []
+    for b in berths:
+        operational_cranes = sum(1 for c in b.cranes if c.status == "OPERATIONAL")
+        v = berthed_vessels.get(b.id)
+        
+        utilization = 0.0
+        if v and b.length_m > 0:
+            utilization = round((v.length_m / b.length_m) * 100, 1)
+
+        items.append(
+            BerthStatusItem(
+                id=b.id,
+                name=b.name,
+                length_m=b.length_m,
+                draft_limit_m=b.draft_limit_m,
+                crane_slots=b.crane_slots,
+                operational_cranes=operational_cranes,
+                status=b.status,
+                current_vessel_id=v.id if v else None,
+                current_vessel_name=v.name if v else None,
+                utilization_pct=utilization
+            )
+        )
+    return items
+
+
+@router.get("/summary", response_model=LiveStatusSummary)
+def get_status_summary(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user)
+):
+    """
+    Returns aggregated port operations status for dashboard counters.
+    """
+    total_vessels = db.query(Vessel).count()
+    scheduled = db.query(Vessel).filter(Vessel.status == "SCHEDULED").count()
+    anchored = db.query(Vessel).filter(Vessel.status == "ANCHORED").count()
+    berthed = db.query(Vessel).filter(Vessel.status == "BERTHED").count()
+
+    berths = db.query(Berth).all()
+    total_berths = len(berths)
+    available = sum(1 for b in berths if b.status == "AVAILABLE")
+    occupied = sum(1 for b in berths if b.status == "OCCUPIED")
+    maintenance = sum(1 for b in berths if b.status == "MAINTENANCE")
+    total_quay = sum(b.length_m for b in berths)
+
+    yard = db.query(YardCapacity).first()
+    teu_cap = yard.teu_capacity if yard else 60000
+    teu_used = yard.teu_used if yard else 38000
+    yard_util = round((teu_used / teu_cap) * 100, 1) if teu_cap > 0 else 0.0
+
+    return LiveStatusSummary(
+        total_vessels=total_vessels,
+        scheduled_vessels=scheduled,
+        anchored_vessels=anchored,
+        berthed_vessels=berthed,
+        total_berths=total_berths,
+        available_berths=available,
+        occupied_berths=occupied,
+        maintenance_berths=maintenance,
+        total_quay_length_m=total_quay,
+        yard_teu_capacity=teu_cap,
+        yard_teu_used=teu_used,
+        yard_utilization_pct=yard_util,
+        last_updated=datetime.now(timezone.utc)
+    )
+
+
+@router.get("/table", response_model=LiveStatusTableResponse)
+def get_live_status_table(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user)
+):
+    """
+    F-105: Unified endpoint serving all data needed by the Live Status Table screen.
+    """
+    summary = get_status_summary(db, user)
+    vessels = get_vessels_status(None, 100, db, user)
+    berths = get_berths_status(db, user)
+
+    return LiveStatusTableResponse(
+        correlation_id=correlation_id_ctx.get() or "live-query",
+        summary=summary,
+        vessels=vessels,
+        berths=berths
+    )
