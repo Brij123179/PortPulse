@@ -28,6 +28,7 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
 }) => {
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('ALL');
   const [actingId, setActingId] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const canAct = ['admin', 'terminal_manager', 'shift_supervisor'].includes(userRole);
 
@@ -36,6 +37,10 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
       setActingId(recId);
       const notes = `Action ${action} initiated by ${userRole}`;
       await api.actOnRecommendation(recId, action, notes);
+      const targetTab = action === 'REJECT' ? 'REJECTED' : action === 'ACCEPT' ? 'ACCEPTED' : 'ALL';
+      setFilter(targetTab);
+      setActionNotice(`Action logged: Recommendation moved to ${targetTab} list.`);
+      setTimeout(() => setActionNotice(null), 5000);
       onRefresh();
     } catch (err: any) {
       alert(`Failed to record action: ${err.message || err.detail || 'Server error'}`);
@@ -49,7 +54,7 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
       <div className="bg-surface-card border border-surface-border rounded-xl p-12 text-center shadow-sm">
         <RefreshCw className="w-8 h-8 text-brand-500 animate-spin mx-auto mb-3" />
         <p className="text-xs text-content-secondary font-medium">
-          Generating prescriptive routing recommendations, slow-steam advisories, and cost models...
+          Calculating prescriptive routing recommendations, slow-steam advisories, and financial impact...
         </p>
       </div>
     );
@@ -58,11 +63,15 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
   const recs = recommendationsData?.recommendations || [];
   const filteredRecs = recs.filter((r) => {
     if (filter === 'ALL') return true;
+    const s = r.status as string;
+    if (filter === 'REJECTED') return s === 'REJECTED' || s === 'REJECT';
+    if (filter === 'ACCEPTED') return s === 'ACCEPTED' || s === 'ACCEPT';
     return r.status === filter;
   });
 
   const pendingCount = recs.filter((r) => r.status === 'PENDING').length;
-  const acceptedCount = recs.filter((r) => r.status === 'ACCEPTED').length;
+  const acceptedCount = recs.filter((r) => (r.status as string) === 'ACCEPTED' || (r.status as string) === 'ACCEPT').length;
+  const rejectedCount = recs.filter((r) => (r.status as string) === 'REJECTED' || (r.status as string) === 'REJECT').length;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -77,7 +86,7 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
               </h2>
             </div>
             <p className="text-xs text-content-secondary mt-1">
-              AI-generated operational interventions to clear forecasted congestion bottlenecks, quantified by demurrage ($) and carbon (CO2) impact.
+              Automated operational interventions to clear forecasted congestion bottlenecks, quantified by demurrage ($) and carbon (CO2) impact.
             </p>
           </div>
 
@@ -101,22 +110,49 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
           </div>
         </div>
 
+        {/* Action Notice Alert */}
+        {actionNotice && (
+          <div className="mt-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center space-x-2 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>{actionNotice}</span>
+          </div>
+        )}
+
         {/* Filter Controls */}
-        <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-surface-border text-xs">
+        <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-surface-border text-xs flex-wrap gap-y-2">
           <span className="text-content-muted font-medium mr-2">Filter status:</span>
-          {(['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                filter === status
-                  ? 'bg-brand-500 text-white shadow-sm'
-                  : 'bg-surface-bg border border-surface-border text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+          {(['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'] as const).map((status) => {
+            const count =
+              status === 'ALL'
+                ? recs.length
+                : status === 'PENDING'
+                ? pendingCount
+                : status === 'ACCEPTED'
+                ? acceptedCount
+                : rejectedCount;
+            return (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center space-x-1.5 ${
+                  filter === status
+                    ? 'bg-brand-500 text-white shadow-sm'
+                    : 'bg-surface-bg border border-surface-border text-content-secondary hover:text-content-primary'
+                }`}
+              >
+                <span>{status}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    filter === status
+                      ? 'bg-white/20 text-white'
+                      : 'bg-surface-card text-content-muted border border-surface-border'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
           {!canAct && (
             <span className="ml-auto text-[11px] text-amber-600 dark:text-amber-400 font-medium">
               * Read-only mode for {userRole}. Supervisor/Manager authorization required to execute actions.

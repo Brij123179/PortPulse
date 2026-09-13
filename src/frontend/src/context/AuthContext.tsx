@@ -25,7 +25,7 @@ export const ROLE_PROFILES: Record<UserRole, UserProfile> = {
       'Execute MILP Optimisation Solver',
       'Approve / Modify / Reject Prescriptive Recommendations',
       'Supervisor Reassignments & Manual Overrides',
-      'Synthetic Data Regeneration & Shock Injections',
+      'Fleet Traffic Simulation & Disruptive Shock Injections',
     ],
   },
   terminal_manager: {
@@ -62,7 +62,7 @@ export const ROLE_PROFILES: Record<UserRole, UserProfile> = {
     role: 'vessel_planner',
     displayName: 'Vessel Stowage & Line Planner',
     defaultPassword: 'plan123',
-    description: 'Port call scheduling, incoming vessel provisions, and sandbox scenario modeling.',
+    description: 'Port call scheduling, incoming vessel provisions, and sandbox scenario planning.',
     allowedActions: [
       'Provision Scheduled Vessels (IMO, TEU, Draft, Length)',
       'Update Scheduled Calls & Carrier ETAs',
@@ -99,6 +99,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('portpulse-role', role);
   }, [role]);
+
+  // Auto-authenticate default session if no token present
+  useEffect(() => {
+    if (!token) {
+      const profile = ROLE_PROFILES[role] || ROLE_PROFILES.shift_supervisor;
+      if (profile && profile.defaultPassword) {
+        api.login({ username: profile.username, password: profile.defaultPassword })
+          .then((res) => {
+            if (res.access_token) {
+              localStorage.setItem('portpulse-token', res.access_token);
+              setToken(res.access_token);
+            }
+          })
+          .catch((err) => console.warn('Auto initial login:', err));
+      }
+    }
+  }, []);
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {

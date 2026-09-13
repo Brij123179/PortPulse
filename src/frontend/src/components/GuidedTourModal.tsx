@@ -38,7 +38,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Comprehensive guide to the 4-step AI workflow, role permissions, and prescriptive interventions
+                Comprehensive guide to the 4-step operations workflow, role permissions, and prescriptive interventions
               </p>
             </div>
           </div>
@@ -123,7 +123,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({
                     72-Hour Predictive Forecaster
                   </div>
                   <p className="text-slate-400 leading-relaxed">
-                    LightGBM & XGBoost models predict berth-by-berth occupancy probabilities and categorize risk into Green (&lt;60%), Amber (60-80%), and Red (&gt;80% congestion bottlenecks) up to 72 hours in advance.
+                    Statistical forecasting engines predict berth-by-berth occupancy probabilities and categorize risk into Green (&lt;60%), Amber (60-80%), and Red (&gt;80% congestion bottlenecks) up to 72 hours in advance.
                   </p>
                 </div>
 
@@ -167,7 +167,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({
                   <button
                     onClick={() => {
                       onClose();
-                      onNavigateTab?.('prescriptive');
+                      onNavigateTab?.('recommendations');
                     }}
                     className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition text-xs flex items-center gap-1"
                   >

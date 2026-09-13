@@ -11,7 +11,9 @@ import {
   TrendingDown,
   TrendingUp,
   Clock,
-  FlaskConical
+  FlaskConical,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface WhatIfSimulatorProps {
@@ -20,6 +22,7 @@ interface WhatIfSimulatorProps {
 }
 
 export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berths }) => {
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [scenarioName, setScenarioName] = useState<string>('Peak Congestion Clearance Sandbox');
   const [targetVesselId, setTargetVesselId] = useState<string>(
     vessels.length > 0 ? vessels[0].id : ''
@@ -30,6 +33,23 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
   const [speedReduction, setSpeedReduction] = useState<number>(3.5);
   const [simulating, setSimulating] = useState<boolean>(false);
   const [simulationResult, setSimulationResult] = useState<WhatIfResponse | null>(null);
+
+  const formatMetricVal = (val: number, unit: string) => {
+    if (unit.toUpperCase() === 'USD' || unit === '$') {
+      return `$${Math.round(val).toLocaleString()}`;
+    }
+    if (Number.isInteger(val)) return `${val.toLocaleString()} ${unit}`;
+    return `${Number(val.toFixed(1)).toLocaleString()} ${unit}`;
+  };
+
+  const formatDelta = (delta: number, unit: string) => {
+    const sign = delta > 0 ? '+' : '';
+    if (unit.toUpperCase() === 'USD' || unit === '$') {
+      return `${sign}$${Math.round(delta).toLocaleString()}`;
+    }
+    const formatted = Number.isInteger(delta) ? delta.toLocaleString() : Number(delta.toFixed(1)).toLocaleString();
+    return `${sign}${formatted} ${unit}`;
+  };
 
   const handleRunSimulation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,28 +81,50 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
   };
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-6 shadow-sm space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-border pb-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <FlaskConical className="w-5 h-5 text-brand-500" />
-            <h3 className="text-sm font-bold text-content-primary">
-              What-If Operational Sandbox
-            </h3>
+    <div className="bg-surface-card border border-surface-border rounded-xl p-5 shadow-sm space-y-5 animate-in fade-in duration-200">
+      {/* Header with Expand / Collapse */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-surface-border pb-4">
+        <div 
+          onClick={() => setIsExpanded(!isExpanded)} 
+          className="flex items-start space-x-3 cursor-pointer group select-none"
+        >
+          <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 group-hover:scale-105 transition-transform mt-0.5">
+            <FlaskConical className="w-5 h-5" />
           </div>
-          <p className="text-xs text-content-secondary mt-1">
-            Test hypothetical diversions and speed advisories in an isolated sandbox to evaluate instant KPI shifts.
-          </p>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-sm font-bold text-content-primary group-hover:text-brand-500 transition-colors">
+                What-If Operational Sandbox
+              </h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-bg border border-surface-border text-content-secondary font-mono">
+                {isExpanded ? 'Active' : 'Collapsed'}
+              </span>
+            </div>
+            <p className="text-xs text-content-secondary mt-0.5">
+              Simulate hypothetical diversions and slow-steaming speed advisories to test instant impact on port delays & demurrage.
+            </p>
+          </div>
         </div>
 
-        <span className="text-xs px-2.5 py-1 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-semibold self-start sm:self-auto">
-          Non-Destructive Simulation
-        </span>
+        <div className="flex items-center space-x-2 self-start sm:self-auto">
+          <span className="text-xs px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 font-semibold border border-brand-200/50 dark:border-brand-900/50">
+            Non-Destructive
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-border/50 text-xs font-semibold text-content-primary transition-colors"
+          >
+            <span>{isExpanded ? 'Collapse' : 'Expand'}</span>
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
-      {/* Control Form */}
-      <form onSubmit={handleRunSimulation} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {isExpanded && (
+        <>
+          {/* Control Form */}
+          <form onSubmit={handleRunSimulation} className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-xs font-semibold text-content-secondary mb-1">
             Scenario Label
@@ -200,7 +242,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
                     <div>
                       <span className="text-[10px] text-content-muted block">Before</span>
                       <span className="text-xs font-mono font-semibold text-content-secondary">
-                        {c.baseline_value} {c.unit}
+                        {formatMetricVal(c.baseline_value, c.unit)}
                       </span>
                     </div>
 
@@ -209,7 +251,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
                     <div>
                       <span className="text-[10px] text-content-muted block">Simulated</span>
                       <span className="text-xs font-mono font-bold text-content-primary">
-                        {c.simulated_value} {c.unit}
+                        {formatMetricVal(c.simulated_value, c.unit)}
                       </span>
                     </div>
                   </div>
@@ -229,7 +271,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
                         <TrendingUp className="w-3 h-3" />
                       )}
                       <span>
-                        {c.delta > 0 ? `+${c.delta}` : c.delta} {c.unit}
+                        {formatDelta(c.delta, c.unit)}
                       </span>
                     </span>
                   </div>
@@ -238,6 +280,8 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
             })}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

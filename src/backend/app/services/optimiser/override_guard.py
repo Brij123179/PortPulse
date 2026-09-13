@@ -12,7 +12,7 @@ from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session
 
 from app.models.entities import Berth, Vessel
-from app.schemas.optimiser import ManualOverrideRequest, OverrideValidationResult
+from app.schemas.optimiser import ManualOverrideRequest, OverrideValidationResult, SuggestedResolution
 from app.core.logging import logger, correlation_id_ctx
 
 
@@ -116,6 +116,70 @@ class OverrideGuardrail:
                 f"Manual override for vessel {vessel.id} to berth {target_berth.id} REJECTED: {violations}",
                 extra={"extra_data": {"violations": violations, "actor": actor_username}}
             )
+
+            # Compute automated collision / constraint resolutions
+            resolutions: List[SuggestedResolution] = []
+
+            # 1. Alternative Berth Resolution (Find available compatible berths)
+            all_berths = db.query(Berth).filter(Berth.id != target_berth.id).all()
+            for cand_b in all_berths:
+                if cand_b.status == "MAINTENANCE":
+                    continue
+                if vessel.draft_m > cand_b.draft_limit_m or vessel.length_m > cand_b.length_m:
+                    continue
+                
+                # Check conflict on cand_b
+                b_vessels = db.query(Vessel).filter(
+                    Vessel.assigned_berth_id == cand_b.id,
+                    Vessel.id != vessel.id,
+                    Vessel.status.in_(["BERTHED", "SCHEDULED", "APPROACHING"])
+                ).all()
+
+                has_conflict = False
+                for bv in b_vessels:
+                    bv_eta = to_aware_utc(bv.corrected_eta or bv.carrier_eta or req_start)
+                    bv_dwell = max(8.0, float(getattr(bv, "dwell_hours", 24.0) or 24.0))
+                    bv_end = bv_eta + timedelta(hours=bv_dwell)
+                    if not (req_end <= bv_eta or req_start >= bv_end):
+                        has_conflict = True
+                        break
+
+                if not has_conflict:
+                    resolutions.append(
+                        SuggestedResolution(
+                            resolution_type="ALTERNATIVE_BERTH",
+                            description=f"Reassign to {cand_b.name} ({cand_b.id})",
+                            target_berth_id=cand_b.id,
+                            target_berth_name=cand_b.name,
+                            recommended_start_time=req_start,
+                            reasoning=f"Fully compatible (Max {cand_b.length_m:.0f}m LOA, {cand_b.draft_limit_m:.1f}m Draft) and immediately available with 0 collisions."
+                        )
+                    )
+                    if len(resolutions) >= 3:
+                        break
+
+            # 2. Deferred Time Window Resolution (if target berth had a collision)
+            colliding_ends = []
+            for ov in other_vessels:
+                ov_eta = to_aware_utc(ov.corrected_eta or ov.carrier_eta or req_start)
+                ov_dwell = max(8.0, float(getattr(ov, "dwell_hours", 24.0) or 24.0))
+                ov_end = ov_eta + timedelta(hours=ov_dwell)
+                if not (req_end <= ov_eta or req_start >= ov_end):
+                    colliding_ends.append(ov_end)
+
+            if colliding_ends:
+                earliest_free = max(colliding_ends) + timedelta(minutes=45)
+                resolutions.append(
+                    SuggestedResolution(
+                        resolution_type="DEFERRED_TIME_WINDOW",
+                        description=f"Schedule at {target_berth.name} starting {earliest_free.strftime('%Y-%m-%d %H:%M')}",
+                        target_berth_id=target_berth.id,
+                        target_berth_name=target_berth.name,
+                        recommended_start_time=earliest_free,
+                        reasoning="Immediate slot after current ship departs with mandatory 45-minute safety buffer."
+                    )
+                )
+
             return OverrideValidationResult(
                 correlation_id=corr_id,
                 is_valid=False,
@@ -126,6 +190,7 @@ class OverrideGuardrail:
                 berth_name=target_berth.name,
                 constraint_violations=violations,
                 warnings=warnings,
+                suggested_resolutions=resolutions,
                 message=f"Override rejected: {len(violations)} hard physical constraint violation(s) detected."
             )
 

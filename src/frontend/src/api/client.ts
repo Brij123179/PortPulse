@@ -19,6 +19,8 @@ export interface VesselStatusItem {
   assigned_berth_name: string | null;
   quay_fit: boolean;
   draft_fit: boolean;
+  predicted_delay_hours?: number;
+  delay_factors?: string[];
 }
 
 export interface BerthStatusItem {
@@ -184,6 +186,9 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     const response = await fetch(url, { ...options, headers });
     
     if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('portpulse-token');
+      }
       let errBody: ApiError;
       try {
         errBody = await response.json();
@@ -210,12 +215,29 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
+export interface UserItem {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
 export const api = {
   // Authentication & Session
   login: (credentials: { username: string; password: string }) =>
     apiFetch<{ access_token: string; token_type: string; user: { id: number; username: string; email: string; role: string } }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    }),
+
+  listUsers: () => apiFetch<UserItem[]>('/auth/users'),
+
+  createUser: (userData: { username: string; email: string; password: string; role: string }) =>
+    apiFetch<UserItem>('/auth/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
     }),
 
   // Live Status (F-105)
@@ -257,6 +279,29 @@ export const api = {
   deleteVessel: (vesselId: string) =>
     apiFetch<any>(`/master-data/vessels/${vesselId}`, { method: 'DELETE' }),
 
+  // CSV Import & Export Operations
+  getExportBerthsUrl: () => `${API_BASE}/master-data/export/berths.csv`,
+  getExportVesselsUrl: () => `${API_BASE}/master-data/export/vessels.csv`,
+  getExportOperationsPlanUrl: () => `${API_BASE}/optimiser/export/operations-plan.csv`,
+
+  importBerthsCsv: (csvContent: string) =>
+    apiFetch<{ status: string; imported_count: number; berths: any[]; cranes_created: number; message: string }>(
+      '/master-data/import/berths',
+      {
+        method: 'POST',
+        body: JSON.stringify({ csv_content: csvContent }),
+      }
+    ),
+
+  importVesselsCsv: (csvContent: string) =>
+    apiFetch<{ status: string; imported_count: number; vessels: any[]; message: string }>(
+      '/master-data/import/vessels',
+      {
+        method: 'POST',
+        body: JSON.stringify({ csv_content: csvContent }),
+      }
+    ),
+
   // Increment 2: Prediction Core & Heatmap (F-201 to F-207)
   getHeatmap: (horizon = 72) =>
     apiFetch<HeatmapResponse>(`/risk/heatmap?horizon=${horizon}`),
@@ -282,6 +327,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ action, notes }),
     }),
+
+  getOptimisationPlan: (horizon = 72) =>
+    apiFetch<OptimisationRunResponse>(`/optimiser/plan?horizon=${horizon}`),
 
   runOptimisation: (horizon = 72) =>
     apiFetch<OptimisationRunResponse>('/optimiser/run', {
@@ -421,6 +469,15 @@ export interface ManualOverrideRequest {
   override_reason: string;
 }
 
+export interface SuggestedResolution {
+  resolution_type: 'ALTERNATIVE_BERTH' | 'DEFERRED_TIME_WINDOW';
+  description: string;
+  target_berth_id?: string;
+  target_berth_name?: string;
+  recommended_start_time?: string;
+  reasoning: string;
+}
+
 export interface OverrideValidationResult {
   correlation_id: string;
   is_valid: boolean;
@@ -431,6 +488,7 @@ export interface OverrideValidationResult {
   berth_name: string;
   constraint_violations: string[];
   warnings: string[];
+  suggested_resolutions?: SuggestedResolution[];
   message: string;
 }
 

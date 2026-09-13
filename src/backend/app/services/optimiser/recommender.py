@@ -34,6 +34,8 @@ class PrescriptiveRecommender:
     def __init__(self):
         # In-memory store for recommendation statuses and supervisor audit actions
         self._action_store: Dict[str, Dict[str, Any]] = {}
+        # Persistent cache of all generated and acted-upon recommendations
+        self._all_recommendations: Dict[str, PrescriptiveRecommendation] = {}
 
     def generate_recommendations(self, db: Session, horizon_hours: int = 72) -> RecommendationsListResponse:
         """
@@ -227,6 +229,16 @@ class PrescriptiveRecommender:
             )
             recommendations.append(rec)
 
+        # Track all generated recommendations into memory
+        for r in recommendations:
+            self._all_recommendations[r.id] = r
+
+        # Ensure all historically acted-upon recommendations (ACCEPTED, REJECTED, MODIFIED) are preserved
+        existing_ids = {r.id for r in recommendations}
+        for rec_id, stored_rec in self._all_recommendations.items():
+            if stored_rec.status in ["ACCEPTED", "REJECTED", "MODIFIED"] and rec_id not in existing_ids:
+                recommendations.append(stored_rec)
+
         active = [r for r in recommendations if r.status == "PENDING"]
         return RecommendationsListResponse(
             correlation_id=corr_id,
@@ -247,8 +259,18 @@ class PrescriptiveRecommender:
         corr_id = correlation_id_ctx.get() or "rec-action"
         action_time = datetime.now(timezone.utc)
 
+        status_map = {
+            "ACCEPT": "ACCEPTED",
+            "REJECT": "REJECTED",
+            "MODIFY": "MODIFIED",
+            "ACCEPTED": "ACCEPTED",
+            "REJECTED": "REJECTED",
+            "MODIFIED": "MODIFIED"
+        }
+        normalized_status = status_map.get(req.action.upper(), req.action.upper())
+
         self._action_store[recommendation_id] = {
-            "status": req.action.upper(),
+            "status": normalized_status,
             "action_by": username,
             "action_timestamp": action_time,
             "notes": req.notes,
@@ -256,9 +278,17 @@ class PrescriptiveRecommender:
             "modified_eta": req.modified_eta
         }
 
+        # Update persistent recommendation object
+        if recommendation_id in self._all_recommendations:
+            stored_rec = self._all_recommendations[recommendation_id]
+            stored_rec.status = normalized_status
+            stored_rec.action_timestamp = action_time
+            stored_rec.action_by_user = username
+            stored_rec.action_notes = req.notes
+
         logger.info(
-            f"Prescriptive recommendation '{recommendation_id}' marked as '{req.action}' by user '{username}'",
-            extra={"extra_data": {"rec_id": recommendation_id, "action": req.action, "user": username}}
+            f"Prescriptive recommendation '{recommendation_id}' marked as '{normalized_status}' by user '{username}'",
+            extra={"extra_data": {"rec_id": recommendation_id, "action": normalized_status, "user": username}}
         )
 
         return RecommendationActionResponse(
@@ -267,7 +297,7 @@ class PrescriptiveRecommender:
             status=req.action.upper(),
             action_by=username,
             action_timestamp=action_time,
-            message=f"Recommendation successfully updated to {req.action.upper()}."
+            message=f"Recommendation successfully updated to {normalized_status}."
         )
 
 

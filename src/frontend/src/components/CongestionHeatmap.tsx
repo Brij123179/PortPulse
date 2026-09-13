@@ -36,7 +36,7 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
       <div className="bg-surface-card border border-surface-border rounded-xl p-12 text-center shadow-sm">
         <Clock className="w-8 h-8 text-brand-500 animate-spin mx-auto mb-3" />
         <p className="text-xs text-content-secondary font-medium">
-          Computing 72-hour probabilistic occupancy models and SHAP attributions...
+          Computing 72-hour probabilistic quay occupancy forecasts and factor attributions...
         </p>
       </div>
     );
@@ -118,11 +118,11 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
           </p>
         </div>
 
-        {/* Model Grounding Status */}
+        {/* Forecasting Engine Grounding Status */}
         <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-content-secondary uppercase tracking-wider">
-              ML Engine & Version
+              Forecasting Engine & Version
             </span>
             <Sparkles className="w-4 h-4 text-brand-500" />
           </div>
@@ -135,7 +135,7 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
             </span>
           </div>
           <p className="mt-2 text-xs text-content-muted">
-            Beats naive baseline · SHAP explainability active
+            Validated against historical baseline · Factor attribution active
           </p>
         </div>
       </div>
@@ -254,6 +254,7 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
                       <button
                         key={cellIdx}
                         onClick={() => setSelectedCell({ berth: b, item })}
+                        aria-label={`${b.berth_name} hour +${item.hour_offset}h: ${isRed ? 'High' : isAmber ? 'Medium' : 'Low'} Risk, ${Math.round(item.occupancy_probability * 100)}% occupancy`}
                         className={`h-9 rounded flex flex-col items-center justify-center transition-all relative group focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                           isRed
                             ? 'bg-rose-500/90 text-white hover:bg-rose-600'
@@ -261,19 +262,20 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
                             ? 'bg-amber-400 text-amber-950 hover:bg-amber-500'
                             : 'bg-emerald-500/80 text-white hover:bg-emerald-600'
                         } ${isSelected ? 'ring-2 ring-content-primary scale-105 z-10' : ''}`}
-                        title={`${b.berth_name} @ +${item.hour_offset}h: ${Math.round(
+                        title={`${b.berth_name} @ +${item.hour_offset}h: [${isRed ? 'HIGH' : isAmber ? 'MED' : 'LOW'}] ${Math.round(
                           item.occupancy_probability * 100
                         )}% [${Math.round(item.confidence_low * 100)}% - ${Math.round(
                           item.confidence_high * 100
                         )}%]`}
                       >
-                        <span className="text-[10px] font-bold font-mono">
-                          {Math.round(item.occupancy_probability * 100)}%
-                        </span>
-
-                        {/* Accessibility Icon Overlay */}
-                        {isRed && <AlertTriangle className="w-2.5 h-2.5" />}
-                        {isAmber && <span className="w-1.5 h-1.5 rounded-full bg-amber-950" />}
+                        <div className="flex items-center space-x-0.5">
+                          <span className="text-[10px] font-black font-mono tracking-tight">
+                            {isRed ? 'H' : isAmber ? 'M' : 'L'}
+                          </span>
+                          <span className="text-[9px] font-medium font-mono opacity-85">
+                            {Math.round(item.occupancy_probability * 100)}%
+                          </span>
+                        </div>
                       </button>
                     );
                   })}

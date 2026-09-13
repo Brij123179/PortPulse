@@ -43,7 +43,7 @@ export const CascadeDelaySimulator: React.FC<CascadeDelaySimulatorProps> = ({ ve
             </h2>
           </div>
           <p className="text-xs text-content-secondary mt-1">
-            Model how an upstream berth delay cascades through subsequent scheduled vessel assignments.
+            Simulate how an upstream berth delay ripples through subsequent scheduled vessel assignments.
           </p>
         </div>
       </div>

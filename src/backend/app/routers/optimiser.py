@@ -72,6 +72,19 @@ def act_on_recommendation(
 
 # --- F-305: Berth & Crane Assignment Optimisation (MILP) ---
 
+@router.get("/optimiser/plan", response_model=OptimisationRunResponse)
+def get_optimisation_plan(
+    horizon: int = Query(72, ge=12, le=168, description="Lookahead horizon in hours"),
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles("admin", "terminal_manager", "shift_supervisor", "vessel_planner"))
+):
+    """
+    F-305 / Challenge Feature 4: Read-only access to current 72h optimized berth/crane operations plan.
+    Accessible to all operational roles (Admin, Terminal Manager, Shift Supervisor, Vessel Planner).
+    """
+    return berth_optimiser.solve(db, horizon_hours=horizon)
+
+
 @router.post("/optimiser/run", response_model=OptimisationRunResponse)
 def run_optimisation(
     payload: OptimisationRunRequest = OptimisationRunRequest(),

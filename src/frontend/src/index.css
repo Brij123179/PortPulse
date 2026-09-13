@@ -15,3 +15,68 @@
     font-family: 'IBM Plex Mono', monospace;
   }
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Table styling for official reports */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th, td {
+    border: 1px solid #d1d5db !important;
+    color: #111827 !important;
+    background: #ffffff !important;
+    padding: 6px 8px !important;
+    font-size: 8.5pt !important;
+  }
+
+  th {
+    background-color: #f3f4f6 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em;
+  }
+
+  @page {
+    margin: 1.2cm;
+    size: landscape;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}

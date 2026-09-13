@@ -137,6 +137,11 @@ class MasterDataService:
     @staticmethod
     def delete_vessel(db: Session, vessel_id: str) -> bool:
         vessel = MasterDataService.get_vessel(db, vessel_id)
+        if vessel.status == "BERTHED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete vessel '{vessel.name}' while actively berthed at {vessel.assigned_berth_id or 'quay'}. Departure must be logged first."
+            )
         db.delete(vessel)
         db.commit()
         return True

@@ -74,19 +74,19 @@ export const ActivityLogView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header & Controls */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-xl text-indigo-400">
+          <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl text-blue-500">
             📋
           </div>
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <h2 className="text-base font-bold text-content-primary flex items-center gap-2">
               <span>Operational Activity &amp; Audit Trail</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-bg text-content-secondary border border-surface-border font-mono">
                 {total} Total Events
               </span>
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-content-secondary">
               Immutable audit records for berth modifications, vessel provisions, recommendation decisions, and manual overrides
             </p>
           </div>
@@ -95,15 +95,15 @@ export const ActivityLogView: React.FC = () => {
         {/* Filter Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Entity Filter */}
-          <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+          <div className="flex bg-surface-bg p-0.5 rounded-lg border border-surface-border text-xs">
             {['ALL', 'BERTH', 'VESSEL', 'RECOMMENDATION', 'SOLVER', 'BERTH_ASSIGNMENT'].map((type) => (
               <button
                 key={type}
                 onClick={() => setSelectedEntity(type)}
                 className={`px-2.5 py-1 rounded capitalize font-medium transition ${
                   selectedEntity === type
-                    ? 'bg-blue-600 text-white font-bold'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-blue-600 text-white font-bold shadow-sm'
+                    : 'text-content-secondary hover:text-content-primary'
                 }`}
               >
                 {type === 'ALL'
@@ -122,12 +122,12 @@ export const ActivityLogView: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search actor, ID, action..."
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-44"
+              className="bg-surface-bg border border-surface-border rounded-lg px-3 py-1.5 text-xs text-content-primary placeholder-content-muted focus:outline-none focus:border-blue-500 w-44"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1.5 text-slate-400 hover:text-white text-xs"
+                className="absolute right-2 top-1.5 text-content-muted hover:text-content-primary text-xs"
               >
                 ✕
               </button>
@@ -138,7 +138,7 @@ export const ActivityLogView: React.FC = () => {
           <button
             onClick={fetchLogs}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+            className="p-1.5 rounded-lg bg-surface-bg hover:bg-surface-hover text-content-primary border border-surface-border transition"
             title="Refresh Audit Logs"
           >
             🔄
@@ -154,10 +154,10 @@ export const ActivityLogView: React.FC = () => {
       )}
 
       {/* Logs Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+            <thead className="bg-surface-bg text-content-secondary border-b border-surface-border">
               <tr>
                 <th className="p-3.5 font-semibold">Timestamp</th>
                 <th className="p-3.5 font-semibold">Operator</th>
@@ -167,16 +167,16 @@ export const ActivityLogView: React.FC = () => {
                 <th className="p-3.5 font-semibold">Details / Payload</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-surface-border font-mono">
               {loading && logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400">
+                  <td colSpan={6} className="p-8 text-center text-content-muted">
                     Loading audit trail...
                   </td>
                 </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500 font-sans italic">
+                  <td colSpan={6} className="p-8 text-center text-content-muted font-sans italic">
                     No activity logs recorded matching current criteria.
                   </td>
                 </tr>
@@ -199,9 +199,9 @@ export const ActivityLogView: React.FC = () => {
                     <tr
                       key={log.id}
                       onClick={() => setSelectedLog(log)}
-                      className="hover:bg-slate-800/50 cursor-pointer transition"
+                      className="hover:bg-surface-hover/60 cursor-pointer transition-colors"
                     >
-                      <td className="p-3 text-slate-400 text-[11px] whitespace-nowrap">
+                      <td className="p-3 text-content-muted text-[11px] whitespace-nowrap">
                         {new Date(log.timestamp).toLocaleString([], {
                           month: 'short',
                           day: '2-digit',
@@ -228,15 +228,15 @@ export const ActivityLogView: React.FC = () => {
                           {log.action}
                         </span>
                       </td>
-                      <td className="p-3 whitespace-nowrap font-semibold text-slate-200">
-                        <span className="text-[10px] text-slate-400 block font-normal">{log.entity_type}</span>
+                      <td className="p-3 whitespace-nowrap font-semibold text-content-primary">
+                        <span className="text-[10px] text-content-muted block font-normal">{log.entity_type}</span>
                         {log.entity_id}
                       </td>
-                      <td className="p-3 text-slate-400 text-[11px] truncate max-w-[140px]" title={log.correlation_id}>
+                      <td className="p-3 text-content-muted text-[11px] truncate max-w-[140px]" title={log.correlation_id}>
                         {log.correlation_id}
                       </td>
-                      <td className="p-3 text-slate-300 text-[11px] truncate max-w-[260px]" title={log.payload_snapshot || ''}>
-                        {formattedPayload || <span className="text-slate-600 italic">No extra payload</span>}
+                      <td className="p-3 text-content-secondary text-[11px] truncate max-w-[260px]" title={log.payload_snapshot || ''}>
+                        {formattedPayload || <span className="text-content-muted italic">No extra payload</span>}
                       </td>
                     </tr>
                   );
@@ -250,57 +250,57 @@ export const ActivityLogView: React.FC = () => {
       {/* Snapshot Drawer Modal */}
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-100 relative space-y-4">
+          <div className="bg-surface-card border border-surface-border rounded-2xl shadow-2xl max-w-lg w-full p-6 text-content-primary relative space-y-4">
             <button
               onClick={() => setSelectedLog(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2 rounded-lg hover:bg-slate-800 transition"
+              className="absolute top-4 right-4 text-content-muted hover:text-content-primary text-lg p-2 rounded-lg hover:bg-surface-hover transition"
             >
               ✕
             </button>
 
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-xl text-blue-400">
+            <div className="flex items-center gap-3 border-b border-surface-border pb-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl text-blue-500">
                 📝
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Audit Event Record #{selectedLog.id}</h3>
-                <p className="text-xs text-slate-400">{new Date(selectedLog.timestamp).toLocaleString()}</p>
+                <h3 className="text-sm font-bold text-content-primary">Audit Event Record #{selectedLog.id}</h3>
+                <p className="text-xs text-content-secondary">{new Date(selectedLog.timestamp).toLocaleString()}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-2.5 bg-slate-800/60 rounded-lg border border-slate-700">
-                <span className="text-[10px] text-slate-400 block">Operator (Actor)</span>
-                <span className="font-bold text-blue-300">@{selectedLog.actor}</span>
+              <div className="p-2.5 bg-surface-bg rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block">Operator (Actor)</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">@{selectedLog.actor}</span>
               </div>
-              <div className="p-2.5 bg-slate-800/60 rounded-lg border border-slate-700">
-                <span className="text-[10px] text-slate-400 block">Action</span>
-                <span className="font-bold text-emerald-300">{selectedLog.action}</span>
+              <div className="p-2.5 bg-surface-bg rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block">Action</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{selectedLog.action}</span>
               </div>
-              <div className="p-2.5 bg-slate-800/60 rounded-lg border border-slate-700">
-                <span className="text-[10px] text-slate-400 block">Entity Type</span>
-                <span className="font-bold text-slate-200">{selectedLog.entity_type}</span>
+              <div className="p-2.5 bg-surface-bg rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block">Entity Type</span>
+                <span className="font-bold text-content-primary">{selectedLog.entity_type}</span>
               </div>
-              <div className="p-2.5 bg-slate-800/60 rounded-lg border border-slate-700">
-                <span className="text-[10px] text-slate-400 block">Entity ID</span>
-                <span className="font-mono font-bold text-slate-200">{selectedLog.entity_id}</span>
+              <div className="p-2.5 bg-surface-bg rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block">Entity ID</span>
+                <span className="font-mono font-bold text-content-primary">{selectedLog.entity_id}</span>
               </div>
             </div>
 
             <div>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[10px] font-semibold text-content-secondary uppercase tracking-wider block mb-1">
                 Correlation ID
               </span>
-              <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 font-mono text-xs text-slate-300 select-all">
+              <div className="p-2 bg-surface-bg rounded-lg border border-surface-border font-mono text-xs text-content-primary select-all">
                 {selectedLog.correlation_id}
               </div>
             </div>
 
             <div>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[10px] font-semibold text-content-secondary uppercase tracking-wider block mb-1">
                 Full Payload Snapshot
               </span>
-              <pre className="p-3 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 max-h-48 overflow-y-auto whitespace-pre-wrap">
+              <pre className="p-3 bg-surface-bg rounded-lg border border-surface-border font-mono text-[11px] text-content-primary max-h-48 overflow-y-auto whitespace-pre-wrap">
                 {(() => {
                   try {
                     return JSON.stringify(JSON.parse(selectedLog.payload_snapshot || '{}'), null, 2);

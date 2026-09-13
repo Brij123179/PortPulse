@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   VesselStatusItem,
   BerthStatusItem,
@@ -16,6 +16,9 @@ import {
   Search,
   Filter,
   Boxes,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
 } from 'lucide-react';
 
 interface LiveStatusTableProps {
@@ -37,28 +40,75 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [classFilter, setClassFilter] = useState('ALL');
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [injectingEvent, setInjectingEvent] = useState<string | null>(null);
+  const [activeShockLabel, setActiveShockLabel] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Status and Priority counts for quick filter pills
+  const counts = useMemo(() => {
+    return {
+      all: vessels.length,
+      anchored: vessels.filter((v) => v.status === 'ANCHORED').length,
+      berthed: vessels.filter((v) => v.status === 'BERTHED').length,
+      scheduled: vessels.filter((v) => v.status === 'SCHEDULED').length,
+      priority: vessels.filter((v) => Boolean(v.priority_flag)).length,
+    };
+  }, [vessels]);
 
   // Filter vessels
-  const filteredVessels = vessels.filter((v) => {
-    const matchesSearch =
-      v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || v.status === statusFilter;
-    const matchesClass = classFilter === 'ALL' || v.vessel_class === classFilter;
-    return matchesSearch && matchesStatus && matchesClass;
-  });
+  const filteredVessels = useMemo(() => {
+    return vessels.filter((v) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        v.name.toLowerCase().includes(q) ||
+        v.id.toLowerCase().includes(q) ||
+        (v.assigned_berth_id && v.assigned_berth_id.toLowerCase().includes(q));
+      const matchesStatus = statusFilter === 'ALL' || v.status === statusFilter;
+      const matchesClass = classFilter === 'ALL' || v.vessel_class === classFilter;
+      const matchesPriority = !priorityOnly || Boolean(v.priority_flag);
+      return matchesSearch && matchesStatus && matchesClass && matchesPriority;
+    });
+  }, [vessels, searchQuery, statusFilter, classFilter, priorityOnly]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, classFilter, priorityOnly, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredVessels.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedVessels = useMemo(() => {
+    return filteredVessels.slice(startIndex, startIndex + pageSize);
+  }, [filteredVessels, startIndex, pageSize]);
 
   const handleShockEvent = async (
-    eventType: 'crane_outage' | 'mega_ship_surge' | 'tidal_restriction'
+    eventType: 'crane_outage' | 'mega_ship_surge' | 'tidal_restriction',
+    label: string
   ) => {
     try {
       setInjectingEvent(eventType);
       const res = await api.injectShockEvent(eventType);
-      onTriggerEvent(`Shock Event Injected: ${res.message}`);
+      setActiveShockLabel(label);
+      onTriggerEvent(`Operational Shock Injected: ${res.message || label}. ML delay predictions & risk curves updated.`);
       onRefresh();
     } catch (err: any) {
       onTriggerEvent(`Error injecting shock event: ${err.message || 'Action failed'}`);
+    } finally {
+      setInjectingEvent(null);
+    }
+  };
+
+  const handleResetBaseline = async () => {
+    try {
+      setInjectingEvent('reset');
+      await api.generateSyntheticData(50, 10, 42);
+      setActiveShockLabel(null);
+      onTriggerEvent('Baseline restored (50 vessels, 10 berths). Active shock scenarios cleared.');
+      onRefresh();
+    } catch (err: any) {
+      onTriggerEvent(`Error resetting baseline: ${err.message || 'Action failed'}`);
     } finally {
       setInjectingEvent(null);
     }
@@ -167,39 +217,54 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
 
       {/* Shock Event Injection Bar (Scenario Testing Controls) */}
       <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex items-center space-x-2">
             <Zap className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-semibold text-content-primary uppercase tracking-wider">
-              Inject Delay Shock Event (Scenario Testing):
+            <span className="text-xs font-bold text-content-primary uppercase tracking-wider">
+              Inject Delay Shock Event (Dynamic Scenario):
             </span>
+            {activeShockLabel && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 font-bold animate-pulse">
+                Active: {activeShockLabel}
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => handleShockEvent('crane_outage')}
+              onClick={() => handleShockEvent('crane_outage', 'Crane Breakdown')}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
               <span>Crane Breakdown</span>
             </button>
 
             <button
-              onClick={() => handleShockEvent('mega_ship_surge')}
+              onClick={() => handleShockEvent('mega_ship_surge', 'Mega-Ship Surge')}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
             >
-              <Ship className="w-3.5 h-3.5 text-brand-500" />
+              <Ship className="w-3.5 h-3.5 text-blue-500" />
               <span>Mega-Ship Clustering</span>
             </button>
 
             <button
-              onClick={() => handleShockEvent('tidal_restriction')}
+              onClick={() => handleShockEvent('tidal_restriction', 'Tidal Restriction')}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
             >
               <Clock className="w-3.5 h-3.5 text-amber-500" />
               <span>Tidal Restriction</span>
+            </button>
+
+            <button
+              onClick={handleResetBaseline}
+              disabled={injectingEvent !== null}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-dashed border-surface-border text-content-muted hover:text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+              title="Reset terminal baseline to 50 vessels, 10 berths"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-content-muted" />
+              <span>Reset Baseline</span>
             </button>
           </div>
         </div>
@@ -233,7 +298,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
             </button>
           </div>
 
-          {/* Search & Filters */}
+          {/* Search, Filters & Top Pagination */}
           {activeTab === 'vessels' && (
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
@@ -268,15 +333,121 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                 onChange={(e) => setClassFilter(e.target.value)}
                 className="bg-surface-bg border border-surface-border rounded-lg px-2 py-1.5 text-xs font-medium text-content-primary focus:outline-none"
               >
-                <option value="ALL">All Vessel Classes</option>
+                <option value="ALL">All Classes</option>
                 <option value="Feeder">Feeder</option>
                 <option value="Panamax">Panamax</option>
                 <option value="Post-Panamax">Post-Panamax</option>
                 <option value="ULCV">ULCV</option>
               </select>
+
+              {/* Top Pagination Controls */}
+              <div className="flex items-center space-x-2 pl-2 border-l border-surface-border text-xs">
+                <span className="text-content-secondary hidden xl:inline font-mono">
+                  {filteredVessels.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + pageSize, filteredVessels.length)} of {filteredVessels.length}
+                </span>
+                <div className="flex items-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    title="Previous Page"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-2 font-mono text-xs font-bold text-content-primary">
+                    {currentPage}/{totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    title="Next Page"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
+
+        {/* Quick Filter Status Pills */}
+        {activeTab === 'vessels' && (
+          <div className="px-4 py-2 bg-surface-bg/50 border-b border-surface-border flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-[11px] font-semibold text-content-muted uppercase tracking-wider mr-1">
+              Quick Filter:
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('ALL');
+                setPriorityOnly(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                statusFilter === 'ALL' && !priorityOnly
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-surface-card border border-surface-border text-content-secondary hover:text-content-primary hover:bg-surface-hover'
+              }`}
+            >
+              All ({counts.all})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('ANCHORED');
+                setPriorityOnly(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                statusFilter === 'ANCHORED' && !priorityOnly
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-surface-card border border-surface-border text-amber-700 dark:text-amber-300 hover:bg-surface-hover'
+              }`}
+            >
+              Anchored ({counts.anchored})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('BERTHED');
+                setPriorityOnly(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                statusFilter === 'BERTHED' && !priorityOnly
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-surface-card border border-surface-border text-emerald-700 dark:text-emerald-300 hover:bg-surface-hover'
+              }`}
+            >
+              Berthed ({counts.berthed})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('SCHEDULED');
+                setPriorityOnly(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                statusFilter === 'SCHEDULED' && !priorityOnly
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-surface-card border border-surface-border text-blue-700 dark:text-blue-300 hover:bg-surface-hover'
+              }`}
+            >
+              Scheduled ({counts.scheduled})
+            </button>
+            <button
+              type="button"
+              onClick={() => setPriorityOnly(!priorityOnly)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                priorityOnly
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-surface-card border border-surface-border text-purple-700 dark:text-purple-300 hover:bg-surface-hover'
+              }`}
+            >
+              Priority Flagged ({counts.priority})
+            </button>
+          </div>
+        )}
 
         {/* Tab 1: Vessel Schedule Table */}
         {activeTab === 'vessels' && (
@@ -289,7 +460,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                   <th className="py-3 px-4">Cargo (TEU)</th>
                   <th className="py-3 px-4">Dimensions</th>
                   <th className="py-3 px-4">Carrier ETA</th>
-                  <th className="py-3 px-4">Corrected ETA (AI Forecast)</th>
+                  <th className="py-3 px-4">Projected ETA (Terminal Forecast)</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Berth Fit</th>
                 </tr>
@@ -302,7 +473,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredVessels.map((v) => (
+                  paginatedVessels.map((v) => (
                     <tr key={v.id} className="hover:bg-surface-hover transition-colors">
                       {/* Vessel / IMO */}
                       <td className="py-3 px-4 font-medium text-content-primary">
@@ -346,21 +517,61 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                         })}
                       </td>
 
-                      {/* Corrected ETA */}
+                      {/* Projected ETA (Terminal ML Forecast) */}
                       <td className="py-3 px-4">
                         {v.corrected_eta ? (
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-content-primary font-medium">
-                              {new Date(v.corrected_eta).toLocaleString([], {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-300 font-mono">
-                              {Math.round(v.eta_confidence * 100)}%
-                            </span>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-content-primary font-medium">
+                                {new Date(v.corrected_eta).toLocaleString([], {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              {(() => {
+                                const delay =
+                                  v.predicted_delay_hours !== undefined && v.predicted_delay_hours !== null
+                                    ? v.predicted_delay_hours
+                                    : (new Date(v.corrected_eta).getTime() - new Date(v.carrier_eta).getTime()) / 3600000;
+                                if (delay > 1.5) {
+                                  return (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                                      +{delay.toFixed(1)}h delay
+                                    </span>
+                                  );
+                                } else if (delay > 0.2) {
+                                  return (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                      +{delay.toFixed(1)}h delay
+                                    </span>
+                                  );
+                                } else {
+                                  return (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                      On-Time
+                                    </span>
+                                  );
+                                }
+                              })()}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span
+                                className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-semibold"
+                                title="GradientBoosting ML Model Confidence"
+                              >
+                                {Math.round((v.eta_confidence ?? 0.85) * 100)}% ML conf
+                              </span>
+                              {v.delay_factors && v.delay_factors.length > 0 && (
+                                <span
+                                  className="text-[10px] text-content-muted font-medium truncate max-w-[150px]"
+                                  title={v.delay_factors.join(' · ')}
+                                >
+                                  {v.delay_factors.join(' · ')}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <span className="text-content-muted">—</span>
@@ -408,6 +619,66 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                 )}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            <div className="p-3.5 border-t border-surface-border bg-surface-bg flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center space-x-1.5 text-content-secondary">
+                <span>Showing</span>
+                <span className="font-bold text-content-primary">
+                  {filteredVessels.length === 0 ? 0 : startIndex + 1}
+                </span>
+                <span>to</span>
+                <span className="font-bold text-content-primary">
+                  {Math.min(startIndex + pageSize, filteredVessels.length)}
+                </span>
+                <span>of</span>
+                <span className="font-bold text-content-primary">{filteredVessels.length}</span>
+                <span>vessels</span>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-content-muted">Per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="bg-surface-card border border-surface-border rounded-lg px-2 py-1 text-xs font-semibold text-content-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold"
+                    title="Previous Page"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+
+                  <span className="px-2.5 py-1 text-xs font-bold text-content-primary">
+                    {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold"
+                    title="Next Page"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -8,6 +9,7 @@ from app.core.auth import (
 from app.models.entities import User
 from app.schemas.auth import UserLoginRequest, TokenResponse, UserResponse, UserCreateRequest
 from app.config import settings
+from app.services.audit import AuditService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication & RBAC"])
 
@@ -50,7 +52,17 @@ def get_me(current_user: CurrentUser = Depends(get_current_user)):
     return current_user
 
 
+@router.get("/users", response_model=List[UserResponse])
+def list_users(
+    db: Session = Depends(get_db),
+    admin: CurrentUser = Depends(require_roles([UserRole.ADMIN]))
+):
+    """Admin-only list of all registered users and assigned roles."""
+    return db.query(User).order_by(User.id.asc()).all()
+
+
 @router.post("/register", response_model=UserResponse)
+@router.post("/users", response_model=UserResponse)
 def register_user(
     req: UserCreateRequest,
     db: Session = Depends(get_db),
@@ -71,4 +83,14 @@ def register_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    AuditService.record_event(
+        db=db,
+        actor=admin.username,
+        action="CREATE_USER",
+        entity_type="USER",
+        entity_id=user.username,
+        payload_snapshot={"username": user.username, "role": user.role, "email": user.email}
+    )
+
     return user

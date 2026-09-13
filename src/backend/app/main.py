@@ -11,7 +11,7 @@ from app.core.logging import logger, correlation_id_ctx
 from app.core.database import engine, Base, SessionLocal
 from app.models.entities import User, Berth
 from app.services.ingestion import PortDataGenerator
-from app.routers import auth, ingestion, master_data, status as status_router, forecast, optimiser, audit
+from app.routers import auth, ingestion, master_data, status as status_router, forecast, optimiser, audit, csv_data, compat_api
 
 
 @asynccontextmanager
@@ -38,6 +38,14 @@ async def lifespan(app: FastAPI):
             logger.info(f"Database seeded with {stats}")
         else:
             logger.info(f"Database ready with {berth_count} berths and {user_count} users.")
+
+        # Train and initialize Gradient Boosting ML Prediction Models (F-201/F-202/F-203)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.initialize_models(db)
+            logger.info("ML Prediction Models initialized and fitted successfully.")
+        except Exception as mle:
+            logger.warning(f"Could not fit ML models on startup: {mle}")
     finally:
         db.close()
 
@@ -63,6 +71,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Security Headers Middleware (SECURITY.md §1)
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 
 # Correlation ID Middleware (FR-X2)
@@ -156,3 +175,5 @@ app.include_router(status_router.router)
 app.include_router(forecast.router)
 app.include_router(optimiser.router)
 app.include_router(audit.router)
+app.include_router(csv_data.router)
+app.include_router(compat_api.router)

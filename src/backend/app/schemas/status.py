@@ -21,6 +21,8 @@ class VesselStatusItem(BaseModel):
     assigned_berth_name: Optional[str] = None
     quay_fit: bool = True
     draft_fit: bool = True
+    predicted_delay_hours: Optional[float] = None
+    delay_factors: Optional[List[str]] = None
 
 
 class BerthStatusItem(BaseModel):

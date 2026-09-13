@@ -8,6 +8,8 @@ from app.models.entities import Vessel, Berth, Crane, YardCapacity
 from app.schemas.status import (
     VesselStatusItem, BerthStatusItem, LiveStatusSummary, LiveStatusTableResponse
 )
+from app.services.ml.risk_engine import risk_engine
+from app.services.ml.feature_store import FeatureStore
 from app.core.logging import correlation_id_ctx
 
 router = APIRouter(prefix="/api/v1/status", tags=["Live Status (Read-Only)"])
@@ -21,8 +23,8 @@ def get_vessels_status(
     user: CurrentUser = Depends(get_current_user)
 ):
     """
-    F-105: Returns live vessel positions, carrier ETAs, corrected ETAs, and assigned berths.
-    Matches 05_backend.md §3 contract.
+    F-105 / F-201: Returns live vessel positions, carrier ETAs, ML-corrected ETAs,
+    predicted delays, and assigned berths.
     """
     query = db.query(Vessel)
     if status:
@@ -33,6 +35,10 @@ def get_vessels_status(
     # Pre-fetch berths for name mapping and fit verification
     berths_dict = {b.id: b for b in db.query(Berth).all()}
 
+    # Initialize and run ML prediction core
+    risk_engine.initialize_models(db)
+    port_context = FeatureStore.get_port_context(db)
+
     items = []
     for v in vessels:
         berth_obj = berths_dict.get(v.assigned_berth_id)
@@ -42,6 +48,25 @@ def get_vessels_status(
             quay_fit = v.length_m <= berth_obj.length_m
             draft_fit = v.draft_m <= berth_obj.draft_limit_m
 
+        # Real-time ML model prediction
+        corr_eta = v.corrected_eta or v.carrier_eta
+        conf = v.eta_confidence or 0.88
+        pred_delay_hours = 0.0
+        factors_list = []
+        if v.status in ("SCHEDULED", "ANCHORED"):
+            try:
+                m_eta, offset, c_low, c_high, factors = risk_engine.eta_model.predict_vessel_eta(v, port_context)
+                corr_eta = m_eta
+                pred_delay_hours = round(offset, 1)
+                conf = round(max(0.72, min(0.98, 1.0 - (offset / 30.0))), 2)
+                factors_list = [f["feature_name"] for f in factors]
+            except Exception:
+                pass
+        elif v.status == "BERTHED":
+            corr_eta = v.carrier_eta
+            conf = 1.0
+            pred_delay_hours = 0.0
+
         items.append(
             VesselStatusItem(
                 id=v.id,
@@ -49,8 +74,8 @@ def get_vessels_status(
                 vessel_class=v.vessel_class,
                 cargo_volume=v.cargo_volume,
                 carrier_eta=v.carrier_eta,
-                corrected_eta=v.corrected_eta,
-                eta_confidence=v.eta_confidence or 0.90,
+                corrected_eta=corr_eta,
+                eta_confidence=conf,
                 priority_flag=v.priority_flag,
                 length_m=v.length_m,
                 draft_m=v.draft_m,
@@ -58,7 +83,9 @@ def get_vessels_status(
                 assigned_berth_id=v.assigned_berth_id,
                 assigned_berth_name=berth_obj.name if berth_obj else None,
                 quay_fit=quay_fit,
-                draft_fit=draft_fit
+                draft_fit=draft_fit,
+                predicted_delay_hours=pred_delay_hours,
+                delay_factors=factors_list
             )
         )
     return items

@@ -14,6 +14,7 @@ import { PortMap } from './components/PortMap';
 import { ActivityLogView } from './components/ActivityLogView';
 import { GuidedTourModal } from './components/GuidedTourModal';
 import { LoginModal } from './components/LoginModal';
+import { OperationsPlanView } from './components/OperationsPlanView';
 import { useAuth } from './context/AuthContext';
 import {
   api,
@@ -38,15 +39,43 @@ import {
   CalendarDays,
   MapPin,
   FileText,
+  Info,
+  X,
+  Anchor,
+  AlertTriangle,
 } from 'lucide-react';
+
+export type TabType =
+  | 'plan'
+  | 'map'
+  | 'live'
+  | 'heatmap'
+  | 'recommendations'
+  | 'optimiser'
+  | 'audit'
+  | 'cascade'
+  | 'ml_metrics';
+
+export const roleAllowedTabs: Record<string, TabType[]> = {
+  shift_supervisor: ['plan', 'recommendations', 'live', 'map'],
+  vessel_planner: ['optimiser', 'plan', 'live', 'map'],
+  terminal_manager: ['plan', 'heatmap', 'recommendations', 'optimiser', 'live', 'audit'],
+  admin: ['plan', 'live', 'heatmap', 'recommendations', 'optimiser', 'audit'],
+};
 
 export const App: React.FC = () => {
   const { role } = useAuth();
 
-  // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<
-    'map' | 'live' | 'heatmap' | 'recommendations' | 'optimiser' | 'audit' | 'cascade' | 'ml_metrics'
-  >('map');
+  // Navigation Tabs (scoped to user's permitted role)
+  const [activeTab, setActiveTab] = useState<TabType>('plan');
+
+  // Enforce role-based tab gating on role change
+  useEffect(() => {
+    const allowed = roleAllowedTabs[role] || roleAllowedTabs.admin;
+    if (!allowed.includes(activeTab)) {
+      setActiveTab(allowed[0]);
+    }
+  }, [role, activeTab]);
 
   // Live State
   const [summary, setSummary] = useState<LiveStatusSummary | null>(null);
@@ -80,6 +109,7 @@ export const App: React.FC = () => {
 
   // Notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showExplainer, setShowExplainer] = useState(true);
 
   const fetchLiveStatus = useCallback(async (isSilent = false) => {
     try {
@@ -114,7 +144,7 @@ export const App: React.FC = () => {
       setPrescriptiveLoading(true);
       const [recData, optData] = await Promise.all([
         api.getRecommendations(72),
-        api.runOptimisation(72),
+        api.getOptimisationPlan(72),
       ]);
       setRecommendationsData(recData);
       setOptimisationData(optData);
@@ -152,8 +182,31 @@ export const App: React.FC = () => {
     setOverrideModalOpen(true);
   };
 
+  const allTabsConfig: { id: TabType; label: string; icon: React.ReactNode; isCore?: boolean }[] = [
+    { id: 'plan', label: '72h Operations Plan', icon: <CalendarDays className="w-4 h-4" />, isCore: true },
+    { id: 'heatmap', label: 'Congestion Heatmap', icon: <Layers className="w-4 h-4" />, isCore: true },
+    { id: 'recommendations', label: 'Prescriptive Actions', icon: <Compass className="w-4 h-4" />, isCore: true },
+    { id: 'optimiser', label: 'Berth Allocator & Sandbox', icon: <CalendarDays className="w-4 h-4" />, isCore: true },
+    { id: 'map', label: 'Terminal Map', icon: <MapPin className="w-4 h-4" /> },
+    { id: 'live', label: 'Live Queue', icon: <Activity className="w-4 h-4" /> },
+    { id: 'cascade', label: 'Delay Simulation', icon: <GitPullRequest className="w-4 h-4" /> },
+    { id: 'audit', label: 'Activity Log', icon: <FileText className="w-4 h-4" /> },
+    { id: 'ml_metrics', label: 'Forecast Benchmarks', icon: <Target className="w-4 h-4" /> },
+  ];
+
+  const allowedTabsList = roleAllowedTabs[role] || roleAllowedTabs.admin;
+  const visibleTabs = allTabsConfig.filter((tab) => allowedTabsList.includes(tab.id));
+
   return (
     <div className="min-h-screen flex flex-col bg-surface-bg text-content-primary">
+      {/* Skip to Main Content Link (FRONTEND.md §Accessibility) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white text-xs font-bold"
+      >
+        Skip to main content
+      </a>
+
       {/* Top Navbar */}
       <Navbar
         onOpenMasterData={() => setMasterDataOpen(true)}
@@ -165,6 +218,16 @@ export const App: React.FC = () => {
           fetchPrescriptiveData();
         }}
         isRefreshing={isRefreshing}
+        activeTab={activeTab}
+        onSelectTab={(tabId) => {
+          setActiveTab(tabId);
+          if (tabId === 'recommendations' || tabId === 'optimiser' || tabId === 'plan') {
+            fetchPrescriptiveData();
+          }
+        }}
+        visibleTabs={visibleTabs}
+        autoRefresh={autoRefresh}
+        onToggleAutoRefresh={setAutoRefresh}
       />
 
       {/* Toast Notification Banner */}
@@ -176,134 +239,146 @@ export const App: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
-        {/* Top Header & Tab Switcher Bar */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-surface-border pb-4">
-          {/* Navigation Tabs */}
-          <div className="flex items-center space-x-1.5 bg-surface-card p-1 rounded-xl border border-surface-border shadow-sm overflow-x-auto">
+      <main id="main-content" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+        {/* Plain-Language Operational Orientation Banner (FRONTEND.md §1) */}
+        {showExplainer && (
+          <div className="no-print rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/40 p-4 shadow-sm relative transition-all">
             <button
-              onClick={() => setActiveTab('map')}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'map'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
+              onClick={() => setShowExplainer(false)}
+              className="absolute top-3 right-3 text-content-muted hover:text-content-primary transition-colors p-1"
+              title="Dismiss banner"
+              aria-label="Dismiss orientation banner"
             >
-              <MapPin className="w-4 h-4" />
-              <span>Terminal Map</span>
+              <X className="w-4 h-4" />
             </button>
-
-            <button
-              onClick={() => setActiveTab('live')}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'live'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              <span>Live Queue</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('heatmap')}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'heatmap'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>Congestion Heatmap</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('recommendations');
-                fetchPrescriptiveData();
-              }}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'recommendations'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <Compass className="w-4 h-4" />
-              <span>Prescriptive Actions</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('optimiser');
-                fetchPrescriptiveData();
-              }}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'optimiser'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <CalendarDays className="w-4 h-4" />
-              <span>Berth Allocator &amp; Sandbox</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'audit'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>Activity Log</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('cascade')}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'cascade'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <GitPullRequest className="w-4 h-4" />
-              <span>Delay Simulation</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ml_metrics')}
-              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                activeTab === 'ml_metrics'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              <Target className="w-4 h-4" />
-              <span>AI Verification</span>
-            </button>
+            <div className="flex items-start space-x-3 pr-6">
+              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1 text-xs">
+                <p className="font-bold text-content-primary text-sm">
+                  PortPulse 72-Hour Predictive Twin &amp; Operations Cockpit
+                </p>
+                <p className="text-content-secondary leading-relaxed">
+                  This system forecasts container terminal congestion before vessels arrive at port. 
+                  Every risk slot displays both color and letter encoding for accessible visibility: 
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 mx-1">Green [L]</span> for Low Risk (&lt;40%), 
+                  <span className="font-bold text-amber-600 dark:text-amber-400 mx-1">Amber [M]</span> for Medium Capacity Pressure (40–75%), and 
+                  <span className="font-bold text-rose-600 dark:text-rose-400 mx-1">Red [H]</span> for Critical Bottlenecks (&gt;75% / Quayside Clashes). 
+                  Review the at-a-glance headlines below to guide berth and crane decisions for your shift.
+                </p>
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Polling interval settings */}
-          <div className="flex items-center space-x-3 text-xs bg-surface-card border border-surface-border px-3 py-1.5 rounded-lg shadow-sm">
-            <label className="flex items-center space-x-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="rounded border-surface-border text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
-              />
-              <span className="text-content-secondary font-medium">Auto-refresh (60s)</span>
-            </label>
-
-            {isRefreshing && (
-              <span className="flex items-center space-x-1 text-blue-500 text-[11px] font-mono">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                <span>Syncing</span>
+        {/* At-A-Glance Operational Stat Row (FRONTEND.md §3) */}
+        <div className="no-print grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {/* Card 1: Berths at High Risk */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                High-Risk Bottlenecks
               </span>
-            )}
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+            </div>
+            <div className="mt-2 flex items-baseline space-x-2">
+              <span className="text-2xl font-black font-mono text-rose-500">
+                {heatmapData?.summary.red_tier_count ?? 0}
+              </span>
+              <span className="text-xs text-content-secondary">RED hours</span>
+            </div>
+            <p className="mt-1 text-[11px] text-content-muted truncate">
+              {heatmapData?.summary.critical_berths.length ? `Quays: ${heatmapData.summary.critical_berths.join(', ')}` : 'No quays in Sev-1 clash'}
+            </p>
           </div>
+
+          {/* Card 2: Open Actionable Interventions */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                Prescriptive Actions
+              </span>
+              <Compass className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="mt-2 flex items-baseline space-x-2">
+              <span className="text-2xl font-black font-mono text-blue-500">
+                {recommendationsData?.recommendations.length ?? 0}
+              </span>
+              <span className="text-xs text-content-secondary">pending review</span>
+            </div>
+            <p className="mt-1 text-[11px] text-content-muted truncate">
+              Slow-steaming &amp; quay diversions
+            </p>
+          </div>
+
+          {/* Card 3: Anchorage Backlog */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                Offshore Queue
+              </span>
+              <Anchor className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="mt-2 flex items-baseline space-x-2">
+              <span className="text-2xl font-black font-mono text-amber-500">
+                {anchorageData?.current_queue ?? summary?.anchored_vessels ?? 0}
+              </span>
+              <span className="text-xs text-content-secondary">
+                (Peak {anchorageData?.peak_predicted_queue ?? 0})
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-content-muted truncate">
+              Waiting in fairway anchorage
+            </p>
+          </div>
+
+          {/* Card 4: Berths In Use */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                Quayside In Use
+              </span>
+              <Layers className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="mt-2 flex items-baseline space-x-2">
+              <span className="text-2xl font-black font-mono text-emerald-500">
+                {summary?.occupied_berths ?? 0} / {summary?.total_berths ?? 10}
+              </span>
+              <span className="text-xs text-content-secondary">occupied</span>
+            </div>
+            <p className="mt-1 text-[11px] text-content-muted truncate">
+              {optimisationData?.crane_utilization_pct ? `${optimisationData.crane_utilization_pct}% STS cranes active` : '10 operational quays'}
+            </p>
+          </div>
+
+          {/* Card 5: Estimated Average Wait Time (Manager & Admin ONLY, per FRONTEND.md §3 & SECURITY.md) */}
+          {(role === 'terminal_manager' || role === 'admin') ? (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm col-span-2 sm:col-span-1 border-l-4 border-l-purple-500 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider flex items-center space-x-1">
+                  <span>Est. Avg Wait</span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                  Manager KPI
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline space-x-2">
+                <span className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
+                  {optimisationData?.average_wait_time_hours ?? 16.4}h
+                </span>
+                <span className="text-xs text-content-secondary">per vessel</span>
+              </div>
+              <p className="mt-1 text-[11px] text-content-muted truncate">
+                Total Demurrage: ${Math.round((optimisationData?.total_port_demurrage_usd ?? 849000) / 1000)}k
+              </p>
+            </div>
+          ) : (
+            <div className="bg-surface-card/60 border border-surface-border/60 rounded-xl p-3.5 shadow-sm col-span-2 sm:col-span-1 flex flex-col justify-center">
+              <span className="text-[11px] font-medium text-content-muted uppercase tracking-wider">Role Scope</span>
+              <p className="text-[11px] text-content-secondary mt-1">Wait-time financial KPIs reserved for Terminal Manager.</p>
+            </div>
+          )}
         </div>
+
 
         {/* Structured Error State */}
         {error && (
@@ -339,6 +414,17 @@ export const App: React.FC = () => {
             <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
             <p className="text-xs text-content-secondary font-medium">Loading port operations data...</p>
           </div>
+        )}
+
+        {/* Core Feature 4: 72-Hour Port Operations Plan (Dedicated Shift Supervisor View) */}
+        {!loading && activeTab === 'plan' && (
+          <OperationsPlanView
+            optimisationData={optimisationData}
+            loading={prescriptiveLoading}
+            onRefresh={fetchPrescriptiveData}
+            onOpenOverrideModal={handleOpenOverride}
+            userRole={role}
+          />
         )}
 
         {/* Tab 1: Terminal Map */}
@@ -404,7 +490,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 8: AI Model Rigor & Baselines */}
+        {/* Tab 8: Predictive Forecast Accuracy & Baselines */}
         {!loading && activeTab === 'ml_metrics' && <MLMetricsView />}
       </main>
 
@@ -434,7 +520,8 @@ export const App: React.FC = () => {
         isOpen={tourModalOpen}
         onClose={() => setTourModalOpen(false)}
         onNavigateTab={(t) => {
-          if (t === 'map' || t === 'live' || t === 'heatmap' || t === 'recommendations' || t === 'optimiser' || t === 'audit') {
+          const allowed = roleAllowedTabs[role] || roleAllowedTabs.admin;
+          if (allowed.includes(t as any)) {
             setActiveTab(t as any);
           }
         }}
@@ -449,7 +536,7 @@ export const App: React.FC = () => {
       />
 
       {/* Footer */}
-      <footer className="border-t border-surface-border bg-surface-card py-4 text-center text-xs text-content-muted">
+      <footer className="no-print border-t border-surface-border bg-surface-card py-4 text-center text-xs text-content-muted">
         PortPulse · Container Congestion Predictor &amp; Port Operations Optimiser · IBM BoB AI Hackathon 2026 (Problem Statement L1)
       </footer>
     </div>

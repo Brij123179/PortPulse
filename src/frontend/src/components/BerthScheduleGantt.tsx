@@ -9,7 +9,10 @@ import {
   Play,
   CheckCircle,
   Edit3,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 
 interface BerthScheduleGanttProps {
@@ -30,6 +33,8 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
   const [runningSolver, setRunningSolver] = useState(false);
   const horizon = 72;
   const [selectedAssignment, setSelectedAssignment] = useState<VesselAssignment | null>(null);
+  const [collapsedBerths, setCollapsedBerths] = useState<Record<string, boolean>>({});
+  const [selectedBerthFilter, setSelectedBerthFilter] = useState<string>('ALL');
 
   const canRunSolver = ['admin', 'terminal_manager'].includes(userRole);
   const canOverride = ['admin', 'terminal_manager', 'shift_supervisor'].includes(userRole);
@@ -78,11 +83,11 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
             <div className="flex items-center space-x-2">
               <Layers className="w-5 h-5 text-brand-500" />
               <h2 className="text-base font-bold text-content-primary">
-                Berth & Crane Allocation Schedule (72h Horizon)
+                Automated Berth &amp; Crane Allocation (72h Horizon)
               </h2>
             </div>
             <p className="text-xs text-content-secondary mt-1">
-              Deterministic constraint solver enforcing physical draft limits, quay length, non-overlapping windows, and crane capacity.
+              Automated quayside scheduling: Guarantees zero berth collisions, safe draft limits, and optimal crane capacity.
             </p>
           </div>
 
@@ -91,14 +96,14 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
               <button
                 onClick={handleRunOptimization}
                 disabled={runningSolver}
-                className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50"
               >
                 {runningSolver ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Play className="w-3.5 h-3.5 fill-current" />
                 )}
-                <span>Run MILP Solver</span>
+                <span>Auto-Optimize Schedule</span>
               </button>
             ) : (
               <span className="text-[11px] text-content-muted font-medium">
@@ -124,7 +129,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
             <div className="bg-surface-bg p-3 rounded-lg border border-surface-border">
               <span className="text-[10px] text-content-muted block font-semibold uppercase">Status</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                {solverRes.solver_status}
+                {solverRes.solver_status === 'OPTIMAL' ? 'Optimal (0 Conflicts)' : solverRes.solver_status}
               </span>
             </div>
 
@@ -144,7 +149,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
 
             <div className="bg-surface-bg p-3 rounded-lg border border-surface-border">
               <span className="text-[10px] text-content-muted block font-semibold uppercase">Avg Wait Time</span>
-              <span className="font-bold text-brand-600 dark:text-brand-400 font-mono">
+              <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
                 {solverRes.average_wait_time_hours}h
               </span>
             </div>
@@ -152,7 +157,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
             <div className="bg-surface-bg p-3 rounded-lg border border-surface-border">
               <span className="text-[10px] text-content-muted block font-semibold uppercase">Total Demurrage</span>
               <span className="font-bold text-content-primary font-mono">
-                ${solverRes.total_port_demurrage_usd.toLocaleString()}
+                ${Math.round(solverRes.total_port_demurrage_usd).toLocaleString()}
               </span>
             </div>
 
@@ -168,41 +173,111 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
 
       {/* 72h Gantt Matrix */}
       <div className="bg-surface-card border border-surface-border rounded-xl p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-content-primary uppercase tracking-wider">
-            72-Hour Berth Assignment Schedule
-          </h3>
-          <span className="text-[11px] text-content-muted font-mono">
-            Click any vessel assignment block to inspect compatibility constraints
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-border pb-3">
+          <div>
+            <h3 className="text-xs font-bold text-content-primary uppercase tracking-wider">
+              72-Hour Berth Assignment Schedule
+            </h3>
+            <span className="text-[11px] text-content-muted">
+              Click any berth row to expand or collapse. Click a vessel to inspect details.
+            </span>
+          </div>
+
+          {/* Expand / Collapse Controls */}
+          <div className="flex items-center space-x-2 text-xs">
+            <button
+              onClick={() => setCollapsedBerths({})}
+              className="px-2.5 py-1 rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary font-semibold transition"
+            >
+              Expand All
+            </button>
+            <button
+              onClick={() => {
+                const allCollapsed: Record<string, boolean> = {};
+                Object.keys(assignmentsByBerth).forEach((k) => (allCollapsed[k] = true));
+                setCollapsedBerths(allCollapsed);
+              }}
+              className="px-2.5 py-1 rounded-lg border border-surface-border hover:bg-surface-hover text-content-secondary font-medium transition"
+            >
+              Collapse All
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Berth Selector Filter Bar */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs">
+          <span className="text-content-muted font-semibold mr-1 flex items-center gap-1 text-[11px]">
+            <Filter className="w-3 h-3" /> Filter:
           </span>
+          <button
+            onClick={() => setSelectedBerthFilter('ALL')}
+            className={`px-2.5 py-1 rounded-lg font-semibold transition whitespace-nowrap ${
+              selectedBerthFilter === 'ALL'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-surface-bg border border-surface-border text-content-secondary hover:text-content-primary'
+            }`}
+          >
+            All Berths ({Object.keys(assignmentsByBerth).length})
+          </button>
+          {Object.keys(assignmentsByBerth).map((bName) => (
+            <button
+              key={bName}
+              onClick={() => setSelectedBerthFilter(bName)}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition ${
+                selectedBerthFilter === bName
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-surface-bg border border-surface-border text-content-secondary hover:text-content-primary'
+              }`}
+            >
+              {bName.replace(' Quay', '')}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-3">
           {Object.keys(assignmentsByBerth).length === 0 ? (
             <div className="p-8 text-center text-xs text-content-muted">
-              No assignments currently generated. Click 'Run MILP Solver' to schedule.
+              No assignments currently generated. Click 'Auto-Optimize Schedule' to schedule.
             </div>
           ) : (
-            Object.entries(assignmentsByBerth).map(([berthName, bAssignments]) => (
-              <div
-                key={berthName}
-                className="bg-surface-bg border border-surface-border rounded-xl p-3 space-y-2"
-              >
-                {/* Berth Row Label */}
-                <div className="flex items-center justify-between text-xs border-b border-surface-border/50 pb-1.5">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold text-content-primary">{berthName}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-surface-card border border-surface-border text-content-muted font-mono">
-                      {bAssignments[0]?.assigned_berth_id}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-content-muted font-mono">
-                    {bAssignments.length} vessel(s) scheduled
-                  </span>
-                </div>
+            Object.entries(assignmentsByBerth)
+              .filter(([berthName]) => selectedBerthFilter === 'ALL' || selectedBerthFilter === berthName)
+              .map(([berthName, bAssignments]) => {
+                const isCollapsed = !!collapsedBerths[berthName];
+                return (
+                  <div
+                    key={berthName}
+                    className="bg-surface-bg border border-surface-border rounded-xl p-3 space-y-2 transition-all"
+                  >
+                    {/* Berth Row Label - Clickable Accordion Header */}
+                    <div
+                      onClick={() =>
+                        setCollapsedBerths((prev) => ({
+                          ...prev,
+                          [berthName]: !prev[berthName],
+                        }))
+                      }
+                      className="flex items-center justify-between text-xs cursor-pointer select-none hover:opacity-80 transition-opacity"
+                    >
+                      <div className="flex items-center space-x-2">
+                        {isCollapsed ? (
+                          <ChevronRight className="w-4 h-4 text-content-muted" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-blue-500" />
+                        )}
+                        <span className="font-bold text-content-primary">{berthName}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-surface-card border border-surface-border text-content-muted font-mono">
+                          {bAssignments[0]?.assigned_berth_id}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-content-secondary font-medium">
+                        {bAssignments.length} vessel(s) scheduled {isCollapsed ? '· (Click to expand)' : ''}
+                      </span>
+                    </div>
 
-                {/* Vessel Assignment Blocks */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
+                    {/* Vessel Assignment Blocks (Collapsible) */}
+                    {!isCollapsed && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1 animate-in fade-in duration-150">
                   {bAssignments.map((a) => {
                     const isSelected = selectedAssignment?.vessel_id === a.vessel_id;
                     const startTime = new Date(a.start_time);
@@ -253,10 +328,12 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
                     );
                   })}
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              )}
+            </div>
+          );
+        })
+      )}
+    </div>
 
         {/* Selected Vessel Inspector Card */}
         {selectedAssignment && (

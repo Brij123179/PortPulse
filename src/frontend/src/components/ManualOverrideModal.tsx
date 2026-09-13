@@ -3,6 +3,7 @@ import {
   VesselStatusItem,
   BerthStatusItem,
   OverrideValidationResult,
+  SuggestedResolution,
   api
 } from '../api/client';
 import {
@@ -10,7 +11,8 @@ import {
   CheckCircle2,
   X,
   ShieldAlert,
-  Clock
+  Clock,
+  Zap
 } from 'lucide-react';
 
 interface ManualOverrideModalProps {
@@ -84,6 +86,25 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
   }, [selectedVesselId, targetBerthId, vessels, berths]);
 
   if (!isOpen) return null;
+
+  const applyResolution = (res: SuggestedResolution) => {
+    if (res.target_berth_id) {
+      setTargetBerthId(res.target_berth_id);
+    }
+    if (res.recommended_start_time) {
+      try {
+        const dt = new Date(res.recommended_start_time);
+        if (!isNaN(dt.getTime())) {
+          const tzOffset = dt.getTimezoneOffset() * 60000;
+          const localISOTime = new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
+          setNewStartTime(localISOTime);
+        }
+      } catch {
+        // preserve current time
+      }
+    }
+    setClientWarning(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,6 +200,53 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
                     ))}
                   </ul>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Intelligent Collision Resolution Suggestions (Auto-computed by Optimizer) */}
+          {result && !result.is_valid && result.suggested_resolutions && result.suggested_resolutions.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 space-y-2.5">
+              <div className="flex items-center space-x-2 text-blue-500 font-bold text-xs">
+                <Zap className="w-4 h-4 flex-shrink-0" />
+                <span>Collision Resolution Suggestions (Safe Alternatives)</span>
+              </div>
+              <p className="text-[11px] text-content-secondary">
+                The solver evaluated quay capacity, vessel draft, and berth occupancy to find available options:
+              </p>
+              <div className="space-y-2">
+                {result.suggested_resolutions.map((res, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-lg bg-surface-card border border-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 shadow-sm"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-xs text-content-primary">
+                          {res.description}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-mono uppercase">
+                          {res.resolution_type.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-content-muted">{res.reasoning}</p>
+                      {res.recommended_start_time && (
+                        <p className="text-[10px] font-mono text-emerald-500 flex items-center space-x-1">
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          <span>Suggested Window: {new Date(res.recommended_start_time).toLocaleString()}</span>
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => applyResolution(res)}
+                      className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center space-x-1 shadow-sm whitespace-nowrap"
+                    >
+                      <Zap className="w-3 h-3" />
+                      <span>Apply Resolution</span>
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

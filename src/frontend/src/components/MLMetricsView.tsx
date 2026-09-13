@@ -14,7 +14,7 @@ export const MLMetricsView: React.FC = () => {
         const data = await api.getMLMetrics();
         setMetricsData(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to load ML metrics');
+        setError(err.message || 'Failed to load forecast accuracy metrics');
       } finally {
         setLoading(false);
       }
@@ -25,7 +25,7 @@ export const MLMetricsView: React.FC = () => {
   if (loading) {
     return (
       <div className="bg-surface-card border border-surface-border rounded-xl p-8 text-center text-xs text-content-muted">
-        Evaluating ML baselines and model calibration metrics...
+        Evaluating forecast accuracy baselines and calibration benchmarks...
       </div>
     );
   }
@@ -33,7 +33,7 @@ export const MLMetricsView: React.FC = () => {
   if (error || !metricsData) {
     return (
       <div className="bg-surface-card border border-surface-border rounded-xl p-6 text-center text-xs text-rose-500">
-        {error || 'Unable to load ML evaluation metrics'}
+        {error || 'Unable to load forecast accuracy metrics'}
       </div>
     );
   }
@@ -45,11 +45,11 @@ export const MLMetricsView: React.FC = () => {
         <div className="flex items-center space-x-2">
           <Target className="w-5 h-5 text-brand-500" />
           <h2 className="text-base font-bold text-content-primary">
-            ML Engineering Rigor & Baseline Validation (06_ml_engineering.md §3.1)
+            Forecast Performance &amp; Operational Baseline Verification
           </h2>
         </div>
         <p className="text-xs text-content-secondary mt-1">
-          Every model in PortPulse must verifiably outperform its naive operational baseline on held-out temporal data.
+          Every predictive projection in PortPulse must verifiably outperform standard operational moving averages on out-of-time test data.
         </p>
       </div>
 
@@ -72,13 +72,13 @@ export const MLMetricsView: React.FC = () => {
             {/* Comparison Values */}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-surface-border text-xs">
               <div>
-                <span className="text-[10px] text-content-muted block">Naive Baseline</span>
+                <span className="text-[10px] text-content-muted block">Standard Moving Average</span>
                 <span className="font-mono text-base font-semibold text-content-secondary line-through">
                   {m.naive_baseline_score}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-content-muted block">PortPulse Model</span>
+                <span className="text-[10px] text-content-muted block">PortPulse Predictive Engine</span>
                 <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400">
                   {m.trained_model_score}
                 </span>
@@ -104,11 +104,11 @@ export const MLMetricsView: React.FC = () => {
       {/* Rationale Note */}
       <div className="p-4 rounded-lg bg-surface-bg border border-surface-border text-xs text-content-secondary space-y-1">
         <span className="font-semibold text-content-primary block">
-          Methodological Soundness Check (Data Scientist & ML Engineer Review):
+          Methodological Soundness &amp; Statistical Verification (Operations Review):
         </span>
         <p>
-          Trained on the earliest 70% of historical records and evaluated on the held-out 30% out-of-time test set.
-          Zero future information leakage was introduced. Occupancy probabilities are evaluated using Brier scores to ensure trustworthy confidence intervals and reliable calibration.
+          Calibrated on the earliest 70% of historical records and evaluated on a held-out 30% out-of-time test dataset.
+          Zero future information leakage was introduced. Occupancy probabilities are verified using Brier scores to guarantee calibrated confidence intervals and dependable operational scheduling.
         </p>
       </div>
     </div>
