@@ -19,7 +19,8 @@ class CsvImportResult(BaseModel):
     status: str
     imported_count: int
     updated_count: int
-    errors: List[str]
+    cranes_created: int = 0
+    errors: List[str] = []
     message: str
 
 
@@ -187,21 +188,63 @@ async def extract_csv_text(request: Request) -> str:
     return ""
 
 
+def safe_float(val, default: float = 0.0) -> float:
+    if val is None:
+        return default
+    s = str(val).strip()
+    if not s:
+        return default
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return default
+
+
+def safe_int(val, default: int = 0) -> int:
+    if val is None:
+        return default
+    s = str(val).strip()
+    if not s:
+        return default
+    try:
+        return int(float(s))
+    except (ValueError, TypeError):
+        return default
+
+
 def parse_csv_stream(content: str) -> List[dict]:
+    # Strip UTF-8 BOM if present (e.g. from Excel exports)
+    if content.startswith("\ufeff"):
+        content = content[1:]
     f = io.StringIO(content.strip())
     reader = csv.DictReader(f)
-    return [row for row in reader]
+    rows = []
+    for raw_row in reader:
+        if not raw_row:
+            continue
+        # Normalize keys: strip whitespace, lowercase, normalize separators
+        cleaned = {}
+        for k, v in raw_row.items():
+            if k is not None:
+                clean_k = k.strip().lower().replace(" ", "_").replace("-", "_")
+                clean_v = v.strip() if isinstance(v, str) else v
+                cleaned[clean_k] = clean_v
+        if any(v is not None and v != "" for v in cleaned.values()):
+            rows.append(cleaned)
+    return rows
 
 
 @router.post("/master-data/import/berths", response_model=CsvImportResult)
 async def import_berths_csv(
     request: Request,
     db: Session = Depends(get_db),
-    admin: CurrentUser = Depends(require_roles([UserRole.ADMIN]))
+    user: CurrentUser = Depends(require_roles([
+        UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.VESSEL_PLANNER, UserRole.SHIFT_SUPERVISOR
+    ]))
 ):
     """
     Imports berths from CSV. Automatically connects cranes and validates boundaries.
-    Restricted to Admin role.
+    Available to all operational port roles.
     """
     csv_text = await extract_csv_text(request)
     if not csv_text.strip():
@@ -213,18 +256,19 @@ async def import_berths_csv(
 
     imported = 0
     updated = 0
+    cranes_created = 0
     errors = []
 
     for idx, row in enumerate(rows, start=1):
         try:
             with db.begin_nested():
-                b_id = row.get("id", "").strip()
-                name = row.get("name", "").strip() or f"Berth {b_id}"
-                length_m = float(row.get("length_m", 0))
-                draft_limit_m = float(row.get("draft_limit_m", 0))
-                crane_slots = int(row.get("crane_slots", 2))
-                rules = row.get("contractual_priority_rules", "STANDARD").strip()
-                status_val = row.get("status", "AVAILABLE").strip().upper()
+                b_id = str(row.get("id") or row.get("berth_id") or row.get("berth") or "").strip()
+                name = str(row.get("name") or row.get("berth_name") or f"Berth {b_id}").strip()
+                length_m = safe_float(row.get("length_m") or row.get("length") or row.get("length(m)"), 0.0)
+                draft_limit_m = safe_float(row.get("draft_limit_m") or row.get("draft_limit") or row.get("draft_m") or row.get("draft"), 0.0)
+                crane_slots = safe_int(row.get("crane_slots") or row.get("cranes") or row.get("crane_count"), 2)
+                rules = str(row.get("contractual_priority_rules") or row.get("rules") or row.get("priority_rules") or "STANDARD").strip()
+                status_val = str(row.get("status") or "AVAILABLE").strip().upper()
 
                 if not b_id:
                     errors.append(f"Row {idx}: Missing berth ID.")
@@ -268,6 +312,7 @@ async def import_berths_csv(
                         )
                         db.add(crane)
                     imported += 1
+                    cranes_created += crane_slots
 
         except Exception as e:
             errors.append(f"Row {idx}: Error processing row: {str(e)}")
@@ -276,19 +321,20 @@ async def import_berths_csv(
 
     AuditService.record_event(
         db=db,
-        actor=admin.username,
+        actor=user.username,
         action="IMPORT_BERTHS_CSV",
         entity_type="BERTH",
         entity_id="BATCH",
-        payload_snapshot={"imported": imported, "updated": updated, "error_count": len(errors)}
+        payload_snapshot={"imported": imported, "updated": updated, "cranes_created": cranes_created, "error_count": len(errors)}
     )
 
     return CsvImportResult(
         status="success" if not errors else "partial_success",
         imported_count=imported,
         updated_count=updated,
+        cranes_created=cranes_created,
         errors=errors,
-        message=f"Processed {imported + updated} berths ({imported} new created with cranes, {updated} updated)."
+        message=f"Processed {imported + updated} berths ({imported} new created with {cranes_created} cranes, {updated} updated)."
     )
 
 
@@ -296,11 +342,13 @@ async def import_berths_csv(
 async def import_vessels_csv(
     request: Request,
     db: Session = Depends(get_db),
-    user: CurrentUser = Depends(require_roles([UserRole.ADMIN, UserRole.VESSEL_PLANNER]))
+    user: CurrentUser = Depends(require_roles([
+        UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.VESSEL_PLANNER, UserRole.SHIFT_SUPERVISOR
+    ]))
 ):
     """
     Imports vessels from CSV. Validates length and draft against assigned berths.
-    Restricted to Admin and Vessel Planner roles.
+    Available to all operational port roles.
     """
     csv_text = await extract_csv_text(request)
     if not csv_text.strip():
@@ -317,16 +365,25 @@ async def import_vessels_csv(
     for idx, row in enumerate(rows, start=1):
         try:
             with db.begin_nested():
-                v_id = row.get("id", "").strip()
-                name = row.get("name", "").strip() or f"Vessel {v_id}"
-                v_class = row.get("vessel_class", "POST_PANAMAX").strip().upper()
-                cargo_teu = int(float(row.get("cargo_volume_teu", row.get("cargo_volume", 4000))))
-                draft_m = float(row.get("draft_m", 11.5))
-                length_m = float(row.get("length_m", 250.0))
-                eta_raw = row.get("carrier_eta", "").strip()
-                priority_flag = str(row.get("priority_flag", "false")).strip().lower() in ["true", "1", "yes"]
-                assigned_berth_id = row.get("assigned_berth_id", "").strip() or None
-                status_val = row.get("status", "SCHEDULED").strip().upper()
+                v_id = str(row.get("id") or row.get("vessel_id") or row.get("imo") or "").strip()
+                name = str(row.get("name") or row.get("vessel_name") or f"Vessel {v_id}").strip()
+                v_class_raw = str(row.get("vessel_class") or row.get("class") or row.get("type") or "POST_PANAMAX").strip().upper().replace("-", "_")
+                if "ULCV" in v_class_raw or "ULTRA" in v_class_raw:
+                    v_class = "ULCV"
+                elif "POST" in v_class_raw:
+                    v_class = "Post-Panamax"
+                elif "FEED" in v_class_raw:
+                    v_class = "Feeder"
+                else:
+                    v_class = "Panamax"
+
+                cargo_teu = safe_int(row.get("cargo_volume_teu") or row.get("cargo_volume") or row.get("teu") or row.get("cargo"), 4000)
+                draft_m = safe_float(row.get("draft_m") or row.get("draft"), 11.5)
+                length_m = safe_float(row.get("length_m") or row.get("length"), 250.0)
+                eta_raw = str(row.get("carrier_eta") or row.get("eta") or row.get("arrival_time") or "").strip()
+                priority_flag = str(row.get("priority_flag") or row.get("priority") or "false").strip().lower() in ["true", "1", "yes"]
+                assigned_berth_id = str(row.get("assigned_berth_id") or row.get("berth_id") or row.get("berth") or "").strip() or None
+                status_val = str(row.get("status") or "SCHEDULED").strip().upper()
 
                 if not v_id:
                     errors.append(f"Row {idx}: Missing vessel ID.")

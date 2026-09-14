@@ -204,7 +204,11 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
       setError(null);
       setSuccess(null);
       const res = await api.importBerthsCsv(csvBerthContent);
-      setSuccess(`Import Success: ${res.imported_count} berth(s) imported, ${res.cranes_created} STS cranes auto-provisioned!`);
+      if (res.errors && res.errors.length > 0) {
+        setError(`Imported ${res.imported_count} new berth(s), updated ${res.updated_count}. Warnings:\n${res.errors.slice(0, 3).join('; ')}`);
+      } else {
+        setSuccess(`Import Success: ${res.imported_count} new berth(s) created with ${res.cranes_created || 0} cranes, ${res.updated_count} updated!`);
+      }
       setCsvBerthContent('');
       loadData();
       onDataChanged();
@@ -226,7 +230,11 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
       setError(null);
       setSuccess(null);
       const res = await api.importVesselsCsv(csvVesselContent);
-      setSuccess(`Import Success: ${res.imported_count} vessel(s) validated and imported into manifest!`);
+      if (res.errors && res.errors.length > 0) {
+        setError(`Imported ${res.imported_count} new vessel(s), updated ${res.updated_count}. Warnings:\n${res.errors.slice(0, 3).join('; ')}`);
+      } else {
+        setSuccess(`Import Success: ${res.imported_count} new vessel(s) created, ${res.updated_count} updated into manifest!`);
+      }
       setCsvVesselContent('');
       loadData();
       onDataChanged();
@@ -766,7 +774,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                         accept=".csv,text/csv"
                         className="hidden"
                         onChange={handleBerthFileUpload}
-                        disabled={!isAdmin || csvImporting}
+                        disabled={csvImporting}
                       />
                     </label>
                   </div>
@@ -775,14 +783,14 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                     placeholder="id,name,length_m,draft_limit_m,crane_slots,status&#10;B-11,East Quay 11,400.0,16.0,4,AVAILABLE"
                     value={csvBerthContent}
                     onChange={(e) => setCsvBerthContent(e.target.value)}
-                    disabled={!isAdmin || csvImporting}
+                    disabled={csvImporting}
                     className="w-full font-mono text-[11px] p-2 rounded border border-surface-border bg-surface-bg text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={handleImportBerthsCsv}
-                      disabled={!isAdmin || csvImporting || !csvBerthContent.trim()}
+                      disabled={csvImporting || !csvBerthContent.trim()}
                       className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs transition flex items-center space-x-1.5"
                     >
                       {csvImporting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
@@ -802,7 +810,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                         accept=".csv,text/csv"
                         className="hidden"
                         onChange={handleVesselFileUpload}
-                        disabled={!isAdmin || csvImporting}
+                        disabled={csvImporting}
                       />
                     </label>
                   </div>
@@ -811,14 +819,14 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                     placeholder="id,name,vessel_class,cargo_volume,length_m,draft_m,priority_flag,assigned_berth_id&#10;IMO9990001,Atlantic Pioneer,NEW_PANAMAX,8500,340.0,14.2,false,B-01"
                     value={csvVesselContent}
                     onChange={(e) => setCsvVesselContent(e.target.value)}
-                    disabled={!isAdmin || csvImporting}
+                    disabled={csvImporting}
                     className="w-full font-mono text-[11px] p-2 rounded border border-surface-border bg-surface-bg text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={handleImportVesselsCsv}
-                      disabled={!isAdmin || csvImporting || !csvVesselContent.trim()}
+                      disabled={csvImporting || !csvVesselContent.trim()}
                       className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs transition flex items-center space-x-1.5"
                     >
                       {csvImporting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}

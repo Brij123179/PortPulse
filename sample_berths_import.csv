@@ -1,0 +1,4 @@
+id,name,length_m,draft_limit_m,crane_slots,status,contractual_priority_rules
+B-11,East Mega Quay 11,440.0,17.0,4,AVAILABLE,Priority: ULCV & Post-Panamax with Tier 1 SLA
+B-12,South Terminal Berth 12,350.0,14.5,3,AVAILABLE,Standard container vessels max 14.5m draft
+B-13,Feeder Express Basin 13,240.0,11.5,2,AVAILABLE,Feeder priority turnaround <18h

@@ -1,0 +1,5 @@
+id,name,vessel_class,cargo_volume_teu,draft_m,length_m,carrier_eta,priority_flag,assigned_berth_id,status
+IMO9901001,CMA CGM Palais Royal,ULCV,18500,16.2,399.0,2026-09-15T08:00:00Z,true,B-01,SCHEDULED
+IMO9901002,MSC Oscar Test,ULCV,19200,16.0,395.4,2026-09-15T14:30:00Z,false,B-02,SCHEDULED
+IMO9901003,Ever Given Demo,POST_PANAMAX,11000,14.5,366.0,2026-09-15T18:00:00Z,false,B-03,SCHEDULED
+IMO9901004,Nordic Baltic Feeder,Feeder,1800,8.5,172.0,2026-09-15T22:00:00Z,true,B-08,SCHEDULED
