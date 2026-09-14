@@ -63,10 +63,11 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json"
 )
 
-# CORS Middleware
+# CORS Middleware (Supports local dev and Vercel cloud deployments)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

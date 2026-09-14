@@ -1,0 +1,11 @@
+{
+  "name": "portpulse-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PortPulse - Container Congestion Predictor and Port Operations Optimiser",
+  "scripts": {
+    "dev": "npm --prefix src/frontend run dev",
+    "build": "npm --prefix src/frontend run build",
+    "preview": "npm --prefix src/frontend run preview"
+  }
+}

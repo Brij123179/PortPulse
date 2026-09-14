@@ -14,6 +14,7 @@ import { PortMap } from './components/PortMap';
 import { ActivityLogView } from './components/ActivityLogView';
 import { GuidedTourModal } from './components/GuidedTourModal';
 import { LoginModal } from './components/LoginModal';
+import { LoginPage } from './components/LoginPage';
 import { OperationsPlanView } from './components/OperationsPlanView';
 import { ChatAssistantDrawer } from './components/ChatAssistantDrawer';
 import { useAuth } from './context/AuthContext';
@@ -65,7 +66,7 @@ export const roleAllowedTabs: Record<string, TabType[]> = {
 };
 
 export const App: React.FC = () => {
-  const { role } = useAuth();
+  const { role, isAuthenticated } = useAuth();
 
   // Navigation Tabs (scoped to user's permitted role)
   const [activeTab, setActiveTab] = useState<TabType>('plan');
@@ -159,18 +160,20 @@ export const App: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    fetchLiveStatus();
-    fetchPrescriptiveData();
-  }, [fetchLiveStatus, fetchPrescriptiveData]);
+    if (isAuthenticated) {
+      fetchLiveStatus();
+      fetchPrescriptiveData();
+    }
+  }, [isAuthenticated, fetchLiveStatus, fetchPrescriptiveData]);
 
   // Polling loop
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh || !isAuthenticated) return;
     const interval = setInterval(() => {
       fetchLiveStatus(true);
     }, refreshIntervalSec * 1000);
     return () => clearInterval(interval);
-  }, [autoRefresh, refreshIntervalSec, fetchLiveStatus]);
+  }, [autoRefresh, isAuthenticated, refreshIntervalSec, fetchLiveStatus]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -198,6 +201,17 @@ export const App: React.FC = () => {
 
   const allowedTabsList = roleAllowedTabs[role] || roleAllowedTabs.admin;
   const visibleTabs = allTabsConfig.filter((tab) => allowedTabsList.includes(tab.id));
+
+  if (!isAuthenticated) {
+    return (
+      <LoginPage
+        onLoginSuccess={() => {
+          fetchLiveStatus();
+          fetchPrescriptiveData();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-bg text-content-primary">

@@ -79,6 +79,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  quickLogin: (targetRole: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   switchRole: (role: UserRole) => Promise<void>;
 }
@@ -97,25 +98,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Keep local storage in sync
   useEffect(() => {
-    localStorage.setItem('portpulse-role', role);
-  }, [role]);
-
-  // Auto-authenticate default session if no token present
-  useEffect(() => {
-    if (!token) {
-      const profile = ROLE_PROFILES[role] || ROLE_PROFILES.shift_supervisor;
-      if (profile && profile.defaultPassword) {
-        api.login({ username: profile.username, password: profile.defaultPassword })
-          .then((res) => {
-            if (res.access_token) {
-              localStorage.setItem('portpulse-token', res.access_token);
-              setToken(res.access_token);
-            }
-          })
-          .catch((err) => console.warn('Auto initial login:', err));
-      }
+    if (role) {
+      localStorage.setItem('portpulse-role', role);
     }
-  }, []);
+  }, [role]);
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -139,11 +125,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const quickLogin = async (targetRole: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const profile = ROLE_PROFILES[targetRole];
+    if (profile && profile.defaultPassword) {
+      return await login(profile.username, profile.defaultPassword);
+    }
+    return { success: false, error: 'Profile not found' };
+  };
+
   const logout = () => {
     localStorage.removeItem('portpulse-token');
+    localStorage.removeItem('portpulse-role');
     setToken(null);
-    setRoleState('shift_supervisor');
-    localStorage.setItem('portpulse-role', 'shift_supervisor');
   };
 
   const switchRole = async (newRole: UserRole) => {
@@ -171,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated: !!token,
         login,
+        quickLogin,
         logout,
         switchRole,
       }}

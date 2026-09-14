@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { Sun, Moon, Anchor, RefreshCw, Database, Compass, UserCheck, Shield } from 'lucide-react';
+import { Sun, Moon, Anchor, RefreshCw, Database, Compass, UserCheck, Shield, LogOut } from 'lucide-react';
 
 export interface NavTabItem {
   id: string;
@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleAutoRefresh,
 }) => {
   const { theme, toggleTheme } = useTheme();
-  const { role, user } = useAuth();
+  const { role, user, logout } = useAuth();
 
   return (
     <header className="no-print border-b border-surface-border bg-surface-card sticky top-0 z-30 transition-colors shadow-sm">
@@ -124,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenLogin}
             className="flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 text-xs rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition shadow-sm"
-            title="Click to authenticate or switch operational profile"
+            title="Click to switch operational profile or view credentials"
           >
             <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
             <div className="flex items-center space-x-1.5">
@@ -133,6 +133,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {user.displayName.split(' ')[0]}
               </span>
             </div>
+          </button>
+
+          {/* Sign Out Button */}
+          <button
+            onClick={logout}
+            className="flex items-center space-x-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-surface-border bg-surface-bg hover:bg-red-500/10 hover:border-red-500/30 text-content-secondary hover:text-red-500 transition shadow-sm"
+            title="Sign Out of Operations Cockpit"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Sign Out</span>
           </button>
 
           {/* Refresh Action & Live Sync Indicator */}

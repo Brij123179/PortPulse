@@ -165,7 +165,8 @@ export interface ApiError {
   details?: any;
 }
 
-const API_BASE = '/api/v1';
+const viteApiUrl = (import.meta as any).env?.VITE_API_URL;
+const API_BASE = (viteApiUrl ? String(viteApiUrl).replace(/\/+$/, '') : '') + '/api/v1';
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const currentRole = localStorage.getItem('portpulse-role') || 'shift_supervisor';

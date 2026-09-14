@@ -38,3 +38,24 @@ def test_correlation_id_tracing_header(client):
     assert response.status_code == 200
     assert response.headers.get("X-Correlation-ID") == custom_corr
     assert response.json()["correlation_id"] == custom_corr
+
+
+def test_admin_can_register_user_and_anonymous_cannot(client, admin_headers):
+    """Verify admin can provision users, while unauthenticated users get 401/403."""
+    payload = {
+        "username": "junior_planner",
+        "email": "junior@portpulse.com",
+        "password": "juniorpass123",
+        "role": "vessel_planner"
+    }
+    # Unauthenticated request rejected
+    res_anon = client.post("/api/v1/auth/register", json=payload)
+    assert res_anon.status_code in (401, 403)
+    
+    # Admin request accepted
+    res_admin = client.post("/api/v1/auth/register", json=payload, headers=admin_headers)
+    assert res_admin.status_code == 200
+    data = res_admin.json()
+    assert data["username"] == "junior_planner"
+    assert data["role"] == "vessel_planner"
+
