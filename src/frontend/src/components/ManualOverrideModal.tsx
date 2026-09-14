@@ -12,7 +12,12 @@ import {
   X,
   ShieldAlert,
   Clock,
-  Zap
+  Zap,
+  Maximize2,
+  Minimize2,
+  Calendar,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 interface ManualOverrideModalProps {
@@ -39,6 +44,8 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<OverrideValidationResult | null>(null);
   const [clientWarning, setClientWarning] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [modalTab, setModalTab] = useState<'FORM' | 'RESOLUTIONS'>('FORM');
 
   useEffect(() => {
     if (initialVesselId) {
@@ -77,13 +84,20 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
         );
       } else if (occupyingVessel) {
         setClientWarning(
-          `BERTH OCCUPANCY WARNING: '${berth.name}' is currently occupied by '${occupyingVessel.name}'. Reassigning during this window will trigger a collision rejection. Choose an available berth below or adjust docking time.`
+          `BERTH OCCUPANCY WARNING: '${berth.name}' is occupied by '${occupyingVessel.name}'. Direct assignment collides with current docking.`
         );
       } else {
         setClientWarning(null);
       }
     }
   }, [selectedVesselId, targetBerthId, vessels, berths]);
+
+  // If backend returns conflict resolutions, auto-switch to RESOLUTIONS tab
+  useEffect(() => {
+    if (result && !result.is_valid && result.suggested_resolutions && result.suggested_resolutions.length > 0) {
+      setModalTab('RESOLUTIONS');
+    }
+  }, [result]);
 
   if (!isOpen) return null;
 
@@ -104,6 +118,8 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
       }
     }
     setClientWarning(null);
+    setResult(null);
+    setModalTab('FORM');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,34 +160,105 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
     }
   };
 
+  const resolutions = result?.suggested_resolutions || [];
+  const hasResolutions = !!(result && !result.is_valid && resolutions.length > 0);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-surface-card border border-surface-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-surface-border">
-          <div className="flex items-center space-x-2">
-            <ShieldAlert className="w-5 h-5 text-brand-500" />
-            <h3 className="font-bold text-sm text-content-primary">
-              Manual Supervisor Override &amp; Physical Guardrails
-            </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+      <div 
+        className={`bg-slate-900 text-slate-100 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col transition-all duration-200 ${
+          isFullscreen 
+            ? 'w-full h-full max-w-none max-h-none rounded-none sm:rounded-2xl' 
+            : 'w-full max-w-3xl max-h-[92vh]'
+        }`}
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60 rounded-t-2xl">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold shadow-sm">
+              <ShieldAlert className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight flex items-center space-x-2">
+                <span>Manual Supervisor Override &amp; Safety Guardrails</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/40 uppercase">
+                  MILP Guardrails Active
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Safe vessel reassignment with automated collision checking and physical draft/length guardrails
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center space-x-1.5">
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title={isFullscreen ? 'Restore Window Size' : 'Maximize Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Close Dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Modal Navigation Sub-Tabs */}
+        <div className="flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900/90 text-xs">
+          <div className="flex items-center space-x-2 py-2.5">
+            <button
+              type="button"
+              onClick={() => setModalTab('FORM')}
+              className={`px-3.5 py-1.5 rounded-lg font-bold transition-all flex items-center space-x-2 ${
+                modalTab === 'FORM'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>🎯 Reassignment Parameters</span>
+            </button>
+
+            {hasResolutions && (
+              <button
+                type="button"
+                onClick={() => setModalTab('RESOLUTIONS')}
+                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all flex items-center space-x-2 ${
+                  modalTab === 'RESOLUTIONS'
+                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
+                    : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 animate-pulse'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>⚡ AI Conflict Resolutions ({resolutions.length})</span>
+              </button>
+            )}
+          </div>
+
+          <div className="text-[11px] text-slate-400 hidden sm:block">
+            {isFullscreen ? 'Expanded Fullscreen Mode' : 'Standard Dialog View'}
+          </div>
+        </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Real-time Constraint Violation Warning Banner */}
           {clientWarning && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs flex items-start space-x-2.5">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="p-4 rounded-xl bg-rose-950/70 border border-rose-500/80 text-rose-200 text-xs flex items-start space-x-3 shadow-lg shadow-rose-950/40">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 text-rose-400 mt-0.5" />
               <div>
-                <strong className="font-semibold block">Safety Guardrail Alert (Sev-1):</strong>
-                <span>{clientWarning}</span>
+                <strong className="font-bold text-white text-xs block uppercase tracking-wide">
+                  Safety Guardrail Warning (Sev-1):
+                </strong>
+                <span className="text-rose-200 mt-0.5 block leading-relaxed">{clientWarning}</span>
               </div>
             </div>
           )}
@@ -179,22 +266,36 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
           {/* Backend Result Banner */}
           {result && (
             <div
-              className={`p-3.5 rounded-xl border text-xs flex items-start space-x-2.5 ${
+              className={`p-4 rounded-xl border text-xs flex items-start space-x-3 shadow-lg ${
                 result.is_valid
-                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-rose-500/10 border-rose-500/40 text-rose-700 dark:text-rose-300'
+                  ? 'bg-emerald-950/70 border-emerald-500 text-emerald-200'
+                  : 'bg-rose-950/70 border-rose-500 text-rose-200'
               }`}
             >
               {result.is_valid ? (
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-500" />
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-400" />
               ) : (
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
+                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-400" />
               )}
-              <div>
-                <strong className="font-semibold block">{result.status}</strong>
-                <span>{result.message}</span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <strong className="font-extrabold text-white text-xs tracking-wider">
+                    {result.status}
+                  </strong>
+                  {hasResolutions && modalTab === 'FORM' && (
+                    <button
+                      type="button"
+                      onClick={() => setModalTab('RESOLUTIONS')}
+                      className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition shadow-sm flex items-center space-x-1"
+                    >
+                      <span>View {resolutions.length} AI Safe Solutions</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                <span className="text-slate-300 mt-1 block leading-relaxed">{result.message}</span>
                 {result.constraint_violations.length > 0 && (
-                  <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                  <ul className="list-disc pl-4 mt-2 space-y-1 text-rose-300 font-mono text-[11px]">
                     {result.constraint_violations.map((v, i) => (
                       <li key={i}>{v}</li>
                     ))}
@@ -204,184 +305,206 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
             </div>
           )}
 
-          {/* Intelligent Collision Resolution Suggestions (Auto-computed by Optimizer) */}
-          {result && !result.is_valid && result.suggested_resolutions && result.suggested_resolutions.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 space-y-2.5">
-              <div className="flex items-center space-x-2 text-blue-500 font-bold text-xs">
-                <Zap className="w-4 h-4 flex-shrink-0" />
-                <span>Collision Resolution Suggestions (Safe Alternatives)</span>
+          {/* TAB 1: FORM */}
+          {modalTab === 'FORM' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Vessel Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  1. Select Vessel to Reassign
+                </label>
+                <select
+                  value={selectedVesselId}
+                  onChange={(e) => setSelectedVesselId(e.target.value)}
+                  className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-medium focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                >
+                  {vessels.map((v) => (
+                    <option key={v.id} value={v.id} className="bg-slate-900 text-white">
+                      {v.name} ({v.id}) — {v.length_m}m LOA · {v.draft_m}m Draft · Class: {v.vessel_class}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <p className="text-[11px] text-content-secondary">
-                The solver evaluated quay capacity, vessel draft, and berth occupancy to find available options:
-              </p>
-              <div className="space-y-2">
-                {result.suggested_resolutions.map((res, idx) => (
+
+              {/* Target Berth Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  2. Target Reallocated Berth
+                </label>
+                <select
+                  value={targetBerthId}
+                  onChange={(e) => setTargetBerthId(e.target.value)}
+                  className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-medium focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                >
+                  {berths.map((b) => {
+                    const berthed = vessels.find(
+                      (v) => v.assigned_berth_id === b.id && v.status === 'BERTHED' && v.id !== selectedVesselId
+                    );
+                    return (
+                      <option key={b.id} value={b.id} className="bg-slate-900 text-white">
+                        {berthed ? `[OCCUPIED by ${berthed.name}]` : '[AVAILABLE ✓]'} {b.name} ({b.id}) — Max {b.length_m}m L · {b.draft_limit_m}m Draft · {b.crane_slots} STS Cranes
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Quick Available Alternative Pills */}
+                {(() => {
+                  const selectedVessel = vessels.find((v) => v.id === selectedVesselId);
+                  const availableBerths = berths.filter((b) => {
+                    const isOccupied = vessels.some(
+                      (v) => v.assigned_berth_id === b.id && v.status === 'BERTHED' && v.id !== selectedVesselId
+                    );
+                    const fitsDraft = selectedVessel ? selectedVessel.draft_m <= b.draft_limit_m : true;
+                    const fitsLength = selectedVessel ? selectedVessel.length_m <= b.length_m : true;
+                    return !isOccupied && fitsDraft && fitsLength;
+                  });
+
+                  if (availableBerths.length === 0) return null;
+
+                  return (
+                    <div className="mt-2.5 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60">
+                      <span className="text-[11px] font-semibold text-slate-300 flex items-center space-x-1 mb-2">
+                        <Sparkles className="w-3 h-3 text-cyan-400" />
+                        <span>Suggested Free &amp; Dimension-Compatible Berths (Safe to Select):</span>
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {availableBerths.slice(0, 5).map((ab) => (
+                          <button
+                            key={ab.id}
+                            type="button"
+                            onClick={() => setTargetBerthId(ab.id)}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition shadow-sm ${
+                              targetBerthId === ab.id
+                                ? 'bg-blue-600 text-white border-blue-400 ring-2 ring-blue-500/40'
+                                : 'bg-emerald-950/50 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60'
+                            }`}
+                          >
+                            ✓ {ab.name} ({ab.id}) · {ab.draft_limit_m}m D
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Start Time & Reason in 2 Columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    3. Revised Docking Start Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newStartTime}
+                    onChange={(e) => setNewStartTime(e.target.value)}
+                    className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    4. Operational Justification
+                  </label>
+                  <input
+                    type="text"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    required
+                    placeholder="e.g. Quay rebalancing for mega-ship draft"
+                    className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting || !!clientWarning}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-extrabold shadow-lg shadow-blue-600/30 transition-all flex items-center space-x-2"
+                >
+                  {submitting ? (
+                    <Clock className="w-4 h-4 animate-spin text-white" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  )}
+                  <span>Verify &amp; Execute Override</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 2: AI RESOLUTIONS */}
+          {modalTab === 'RESOLUTIONS' && hasResolutions && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-500/40">
+                <div className="flex items-center space-x-2 text-blue-400 font-extrabold text-sm mb-1">
+                  <Zap className="w-4 h-4" />
+                  <span>HiGHS Constraint Solver Solutions ({resolutions.length} Evaluated)</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  The optimizer evaluated current vessel draft, quayside length, crane capacity, and downstream scheduled calls. Select any resolution below to automatically apply it:
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {resolutions.map((res, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-lg bg-surface-card border border-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 shadow-sm"
+                    className="p-4 rounded-xl bg-slate-800/90 border border-slate-700/80 hover:border-blue-400/80 transition shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-1.5 flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-xs text-content-primary">
+                        <span className="font-bold text-sm text-white">
                           {res.description}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-mono uppercase">
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-mono font-bold border border-blue-500/30 uppercase">
                           {res.resolution_type.replace('_', ' ')}
                         </span>
                       </div>
-                      <p className="text-[11px] text-content-muted">{res.reasoning}</p>
+                      <p className="text-xs text-slate-300 leading-relaxed">{res.reasoning}</p>
                       {res.recommended_start_time && (
-                        <p className="text-[10px] font-mono text-emerald-500 flex items-center space-x-1">
-                          <Clock className="w-3 h-3 inline mr-1" />
+                        <p className="text-xs font-mono text-emerald-400 flex items-center space-x-1 font-semibold">
+                          <Clock className="w-3.5 h-3.5 inline mr-1" />
                           <span>Suggested Window: {new Date(res.recommended_start_time).toLocaleString()}</span>
                         </p>
                       )}
                     </div>
+
                     <button
                       type="button"
                       onClick={() => applyResolution(res)}
-                      className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center space-x-1 shadow-sm whitespace-nowrap"
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition flex items-center justify-center space-x-2 shadow-md shadow-blue-600/25 whitespace-nowrap self-stretch sm:self-center"
                     >
-                      <Zap className="w-3 h-3" />
-                      <span>Apply Resolution</span>
+                      <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Apply Safe Alternative</span>
                     </button>
                   </div>
                 ))}
               </div>
+
+              <div className="pt-3 border-t border-slate-800 flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('FORM')}
+                  className="px-3.5 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition flex items-center space-x-1.5"
+                >
+                  <span>← Return to Manual Form</span>
+                </button>
+              </div>
             </div>
           )}
-
-          {/* Vessel Selector */}
-          <div>
-            <label className="block text-xs font-semibold text-content-secondary mb-1">
-              Select Vessel to Reassign
-            </label>
-            <select
-              value={selectedVesselId}
-              onChange={(e) => setSelectedVesselId(e.target.value)}
-              className="w-full bg-surface-bg border border-surface-border rounded-lg px-3 py-2 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              {vessels.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} ({v.id}) — {v.length_m}m · {v.draft_m}m Draft
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Target Berth Selector */}
-          <div>
-            <label className="block text-xs font-semibold text-content-secondary mb-1">
-              Target Reallocated Berth
-            </label>
-            <select
-              value={targetBerthId}
-              onChange={(e) => setTargetBerthId(e.target.value)}
-              className="w-full bg-surface-bg border border-surface-border rounded-lg px-3 py-2 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              {berths.map((b) => {
-                const berthed = vessels.find(
-                  (v) => v.assigned_berth_id === b.id && v.status === 'BERTHED' && v.id !== selectedVesselId
-                );
-                return (
-                  <option key={b.id} value={b.id}>
-                    {berthed ? `[OCCUPIED by ${berthed.name}]` : '[AVAILABLE ✓]'} {b.name} ({b.id}) — Max {b.length_m}m L · {b.draft_limit_m}m D · {b.crane_slots} Cranes
-                  </option>
-                );
-              })}
-            </select>
-
-            {/* Quick Available Alternative Pills */}
-            {(() => {
-              const selectedVessel = vessels.find((v) => v.id === selectedVesselId);
-              const availableBerths = berths.filter((b) => {
-                const isOccupied = vessels.some(
-                  (v) => v.assigned_berth_id === b.id && v.status === 'BERTHED' && v.id !== selectedVesselId
-                );
-                const fitsDraft = selectedVessel ? selectedVessel.draft_m <= b.draft_limit_m : true;
-                const fitsLength = selectedVessel ? selectedVessel.length_m <= b.length_m : true;
-                return !isOccupied && fitsDraft && fitsLength;
-              });
-
-              if (availableBerths.length === 0) return null;
-
-              return (
-                <div className="mt-2 text-xs">
-                  <span className="text-[11px] text-content-muted block mb-1">
-                    💡 Suggested Free &amp; Compatible Berths (Safe to Assign):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {availableBerths.slice(0, 5).map((ab) => (
-                      <button
-                        key={ab.id}
-                        type="button"
-                        onClick={() => setTargetBerthId(ab.id)}
-                        className={`px-2 py-1 rounded text-[11px] font-semibold border transition ${
-                          targetBerthId === ab.id
-                            ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                            : 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                        }`}
-                      >
-                        ✓ {ab.name} ({ab.id})
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Start Time */}
-          <div>
-            <label className="block text-xs font-semibold text-content-secondary mb-1">
-              Revised Docking Start Time
-            </label>
-            <input
-              type="datetime-local"
-              value={newStartTime}
-              onChange={(e) => setNewStartTime(e.target.value)}
-              className="w-full bg-surface-bg border border-surface-border rounded-lg px-3 py-2 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          {/* Reason */}
-          <div>
-            <label className="block text-xs font-semibold text-content-secondary mb-1">
-              Operational Justification (Mandatory Audit Trail)
-            </label>
-            <input
-              type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-              className="w-full bg-surface-bg border border-surface-border rounded-lg px-3 py-2 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          {/* Footer Actions */}
-          <div className="pt-3 border-t border-surface-border flex items-center justify-end space-x-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-surface-border hover:bg-surface-hover text-xs font-semibold text-content-secondary"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={submitting || !!clientWarning}
-              className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5"
-            >
-              {submitting ? (
-                <Clock className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              )}
-              <span>Verify & Execute Override</span>
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
