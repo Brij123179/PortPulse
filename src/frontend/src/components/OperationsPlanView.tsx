@@ -12,8 +12,16 @@ import {
   TrendingDown,
   RefreshCw,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MapPin,
+  Zap,
+  AlertTriangle,
+  Brain,
+  LayoutGrid,
+  List
 } from 'lucide-react';
+import { QuaysideSpatialMap } from './QuaysideSpatialMap';
+import { PredictionExplainabilityModal } from './PredictionExplainabilityModal';
 
 interface OperationsPlanViewProps {
   optimisationData: OptimisationRunResponse | null;
@@ -21,6 +29,7 @@ interface OperationsPlanViewProps {
   onRefresh: () => void;
   onOpenOverrideModal: (vesselId?: string) => void;
   userRole: string;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
@@ -29,11 +38,47 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   onRefresh,
   onOpenOverrideModal,
   userRole,
+  onNavigateTab,
 }) => {
   const [selectedShift, setSelectedShift] = useState<number | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [viewMode, setViewMode] = useState<'SPLIT' | 'MAP' | 'MANIFEST'>('SPLIT');
+  const [explainModalOpen, setExplainModalOpen] = useState(false);
+  const [shockLoading, setShockLoading] = useState(false);
+  const [shockNotification, setShockNotification] = useState<string | null>(null);
+
+  const handleInjectShock = async (eventType: 'mega_ship_surge' | 'crane_outage' | 'tidal_restriction') => {
+    setShockLoading(true);
+    setShockNotification(null);
+    try {
+      const res = await api.injectShockEvent(eventType);
+      setShockNotification(`⚡ Congestion Event Injected: ${res.message || eventType}. Recalculating arrivals and quayside queue...`);
+      onRefresh();
+      setTimeout(() => setShockNotification(null), 7000);
+    } catch (err: any) {
+      setShockNotification(`Failed to inject shock event: ${err.message || err.detail}`);
+    } finally {
+      setShockLoading(false);
+    }
+  };
+
+  const handleResetBaseline = async () => {
+    setShockLoading(true);
+    setShockNotification(null);
+    try {
+      await api.generateSyntheticData(50, 10, 42);
+      setShockNotification(`🔄 Traffic Reset: 50 vessels and 10 berths restored to nominal operating baseline.`);
+      onRefresh();
+      setTimeout(() => setShockNotification(null), 7000);
+    } catch (err: any) {
+      setShockNotification(`Failed to reset baseline: ${err.message || err.detail}`);
+    } finally {
+      setShockLoading(false);
+    }
+  };
+
 
   // 72 hours divided into 6 x 12-hour shifts
   const shiftDefinitions = [
@@ -307,6 +352,150 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
         </div>
       )}
 
+
+      {/* Shock Event Notification Toast */}
+      {shockNotification && (
+        <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs flex items-center justify-between shadow-sm animate-in fade-in">
+          <div className="flex items-center space-x-2">
+            <span className="text-base">⚡</span>
+            <span className="font-semibold">{shockNotification}</span>
+          </div>
+          <button 
+            onClick={() => setShockNotification(null)}
+            className="text-xs text-content-muted hover:text-content-primary px-2 py-0.5"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Congestion Testing & Scenario Lab Toolbar */}
+      <div className="no-print bg-surface-card border border-surface-border p-4 rounded-xl shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 font-bold">🧪</span>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-content-primary">
+                Operational Congestion Testing &amp; Shock Lab
+              </h3>
+              <p className="text-[11px] text-content-secondary">
+                Inject synthetic shock events to test how our machine learning models detect and predict quayside congestion
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+            <button
+              onClick={() => handleInjectShock('mega_ship_surge')}
+              disabled={shockLoading || loading}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+              title="Cluster 3 Mega-Ships into a 3-hour arrival window to overload berths"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>{shockLoading ? 'Injecting...' : '⚡ Inject Mega-Ship Surge'}</span>
+            </button>
+
+            <button
+              onClick={() => handleInjectShock('crane_outage')}
+              disabled={shockLoading || loading}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+              title="Breakdown STS Crane on Berth 02 cutting throughput by 50%"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>⚠️ Inject Crane Breakdown</span>
+            </button>
+
+            <button
+              onClick={() => handleInjectShock('tidal_restriction')}
+              disabled={shockLoading || loading}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+              title="Simulate Spring Low Tide restricting drafts by 2.5m"
+            >
+              <span>🌊</span>
+              <span>Inject Low Tide Anomaly</span>
+            </button>
+
+            <button
+              onClick={handleResetBaseline}
+              disabled={shockLoading || loading}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition disabled:opacity-50"
+              title="Restore clean baseline of 50 vessels and 10 berths"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Reset Baseline</span>
+            </button>
+
+            <button
+              onClick={() => setExplainModalOpen(true)}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition flex items-center space-x-1.5 shadow-sm"
+              title="Learn how machine learning models forecast congestion and where to view predictions"
+            >
+              <Brain className="w-3.5 h-3.5" />
+              <span>🧠 How Predictions Work &amp; Where to See Them</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* View Mode Switcher (Spatial Map vs Manifest Table vs Split View) */}
+      <div className="no-print flex items-center justify-between pb-1">
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-content-secondary">
+            Display Layout:
+          </span>
+          <div className="inline-flex rounded-lg border border-surface-border bg-surface-card p-0.5 text-xs font-semibold shadow-sm">
+            <button
+              onClick={() => setViewMode('SPLIT')}
+              className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
+                viewMode === 'SPLIT'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>⊞ Split View (Map + Table)</span>
+            </button>
+            <button
+              onClick={() => setViewMode('MAP')}
+              className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
+                viewMode === 'MAP'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>🗺️ Quayside Spatial Map</span>
+            </button>
+            <button
+              onClick={() => setViewMode('MANIFEST')}
+              className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
+                viewMode === 'MANIFEST'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>📋 Berthing Manifest Table</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="text-xs text-content-muted hidden sm:block">
+          Showing <strong>{filteredAssignments.length}</strong> planned vessel dockings across <strong>10</strong> quays
+        </div>
+      </div>
+
+      {/* Quayside Spatial Map Section */}
+      {(viewMode === 'MAP' || viewMode === 'SPLIT') && (
+        <div className="no-print animate-in fade-in">
+          <QuaysideSpatialMap
+            assignments={filteredAssignments}
+            selectedShift={selectedShift}
+            onOpenOverrideModal={onOpenOverrideModal}
+          />
+        </div>
+      )}
+
       {/* Shift Filter Navigation & Search */}
       <div className="no-print flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-card border border-surface-border p-3 rounded-xl">
         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
@@ -428,12 +617,16 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                         </td>
 
                         <td className="p-3 text-content-primary">
-                          <div className="font-medium text-[11px]">
-                            {startDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
+                          <div className="font-semibold text-[11px] text-content-primary">
+                            {startDate.toLocaleDateString([], { month: 'short', day: 'numeric' })},{' '}
                             {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
-                          <div className="text-[11px] text-content-muted">
-                            to {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          <div className="text-[11px] text-content-muted flex items-center space-x-1 mt-0.5">
+                            <span className="text-blue-500 font-bold">→</span>
+                            <span>
+                              {endDate.toLocaleDateString([], { month: 'short', day: 'numeric' })},{' '}
+                              {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
                         </td>
 
@@ -623,6 +816,13 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           </>
         )}
       </div>
+
+      {/* Congestion Prediction Explainability Modal */}
+      <PredictionExplainabilityModal
+        isOpen={explainModalOpen}
+        onClose={() => setExplainModalOpen(false)}
+        onNavigateTab={onNavigateTab}
+      />
     </div>
   );
 };

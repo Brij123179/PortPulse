@@ -438,9 +438,18 @@ export const App: React.FC = () => {
           <OperationsPlanView
             optimisationData={optimisationData}
             loading={prescriptiveLoading}
-            onRefresh={fetchPrescriptiveData}
+            onRefresh={() => {
+              fetchLiveStatus();
+              fetchPrescriptiveData();
+            }}
             onOpenOverrideModal={handleOpenOverride}
             userRole={role}
+            onNavigateTab={(t) => {
+              const allowed = roleAllowedTabs[role] || roleAllowedTabs.admin;
+              if (allowed.includes(t as any)) {
+                setActiveTab(t as any);
+              }
+            }}
           />
         )}
 
