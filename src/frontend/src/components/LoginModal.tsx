@@ -6,11 +6,12 @@ import { Shield, UserPlus, Users, CheckCircle, RefreshCw, AlertTriangle } from '
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'AUTH' | 'USERS';
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'AUTH' }) => {
   const { role, user, isAuthenticated, login, logout, switchRole } = useAuth();
-  const [activeTab, setActiveTab] = useState<'AUTH' | 'USERS'>('AUTH');
+  const [activeTab, setActiveTab] = useState<'AUTH' | 'USERS'>(initialTab);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -26,7 +27,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [userCreationMsg, setUserCreationMsg] = useState<string | null>(null);
   const [userCreationError, setUserCreationError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +107,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       setUsersLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">

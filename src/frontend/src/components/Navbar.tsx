@@ -13,7 +13,7 @@ export interface NavTabItem {
 interface NavbarProps {
   onOpenMasterData: () => void;
   onOpenTour: () => void;
-  onOpenLogin: () => void;
+  onOpenLogin: (tab?: 'AUTH' | 'USERS') => void;
   onOpenChat: () => void;
   isBackendConnected: boolean;
   onRefresh: () => void;
@@ -111,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Admin User Management Shortcut */}
           {role === 'admin' && (
             <button
-              onClick={onOpenLogin}
+              onClick={() => onOpenLogin('USERS')}
               className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition-all shadow-sm"
               title="Manage Operators & Role Assignments"
             >
@@ -122,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Authenticated Operator Badge & Sign In Trigger */}
           <button
-            onClick={onOpenLogin}
+            onClick={() => onOpenLogin('AUTH')}
             className="flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 text-xs rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition shadow-sm"
             title="Click to switch operational profile or view credentials"
           >

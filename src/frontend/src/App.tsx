@@ -104,6 +104,7 @@ export const App: React.FC = () => {
   const [masterDataOpen, setMasterDataOpen] = useState(false);
   const [tourModalOpen, setTourModalOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginModalTab, setLoginModalTab] = useState<'AUTH' | 'USERS'>('AUTH');
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
 
   // Auto-refresh config (default 60s)
@@ -227,7 +228,10 @@ export const App: React.FC = () => {
       <Navbar
         onOpenMasterData={() => setMasterDataOpen(true)}
         onOpenTour={() => setTourModalOpen(true)}
-        onOpenLogin={() => setLoginModalOpen(true)}
+        onOpenLogin={(tab = 'AUTH') => {
+          setLoginModalTab(tab);
+          setLoginModalOpen(true);
+        }}
         onOpenChat={() => setChatDrawerOpen(true)}
         isBackendConnected={isBackendConnected}
         onRefresh={() => {
@@ -558,6 +562,7 @@ export const App: React.FC = () => {
       {/* Login & Role Switcher Modal */}
       <LoginModal
         isOpen={loginModalOpen}
+        initialTab={loginModalTab}
         onClose={() => setLoginModalOpen(false)}
       />
 
