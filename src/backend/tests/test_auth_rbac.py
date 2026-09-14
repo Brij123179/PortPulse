@@ -59,3 +59,27 @@ def test_admin_can_register_user_and_anonymous_cannot(client, admin_headers):
     assert data["username"] == "junior_planner"
     assert data["role"] == "vessel_planner"
 
+
+def test_register_invalid_role_rejected(client, admin_headers):
+    """Verify registration rejects invalid/arbitrary role strings (Bug H-9)."""
+    payload = {
+        "username": "rogue_user",
+        "email": "rogue@portpulse.com",
+        "password": "roguepass123",
+        "role": "super_admin_unauthorized"
+    }
+    response = client.post("/api/v1/auth/register", json=payload, headers=admin_headers)
+    assert response.status_code == 422
+
+
+def test_anonymous_without_headers_rejected(client):
+    """Verify endpoints reject completely unauthenticated requests when dev bypass is off (Bug C-1)."""
+    from app.config import settings
+    prev = settings.PORTPULSE_DEV_AUTH_BYPASS
+    settings.PORTPULSE_DEV_AUTH_BYPASS = False
+    try:
+        response = client.get("/api/v1/status/table")
+        assert response.status_code == 401
+    finally:
+        settings.PORTPULSE_DEV_AUTH_BYPASS = prev
+

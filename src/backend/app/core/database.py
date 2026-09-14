@@ -10,7 +10,7 @@ if settings.PORTPULSE_DB_URL.startswith("sqlite"):
 engine = create_engine(
     settings.PORTPULSE_DB_URL,
     connect_args=connect_args,
-    echo=False
+    echo=settings.PORTPULSE_DB_ECHO
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

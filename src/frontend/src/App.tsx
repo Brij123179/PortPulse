@@ -60,10 +60,10 @@ export type TabType =
   | 'ml_metrics';
 
 export const roleAllowedTabs: Record<string, TabType[]> = {
-  shift_supervisor: ['plan', 'recommendations', 'live', 'map'],
-  vessel_planner: ['optimiser', 'plan', 'live', 'map'],
-  terminal_manager: ['plan', 'heatmap', 'recommendations', 'optimiser', 'live', 'audit', 'ml_metrics'],
-  admin: ['plan', 'live', 'heatmap', 'recommendations', 'optimiser', 'audit', 'ml_metrics'],
+  shift_supervisor: ['plan', 'recommendations', 'live', 'map', 'cascade'],
+  vessel_planner: ['optimiser', 'plan', 'live', 'map', 'cascade'],
+  terminal_manager: ['plan', 'heatmap', 'recommendations', 'optimiser', 'map', 'live', 'cascade', 'audit', 'ml_metrics'],
+  admin: ['plan', 'live', 'heatmap', 'recommendations', 'optimiser', 'map', 'cascade', 'audit', 'ml_metrics'],
 };
 
 export const App: React.FC = () => {
@@ -147,12 +147,20 @@ export const App: React.FC = () => {
   const fetchPrescriptiveData = useCallback(async () => {
     try {
       setPrescriptiveLoading(true);
-      const [recData, optData] = await Promise.all([
+      const [recResult, optResult] = await Promise.allSettled([
         api.getRecommendations(72),
         api.getOptimisationPlan(72),
       ]);
-      setRecommendationsData(recData);
-      setOptimisationData(optData);
+      if (recResult.status === 'fulfilled') {
+        setRecommendationsData(recResult.value);
+      } else {
+        console.error('Failed to fetch recommendations:', recResult.reason);
+      }
+      if (optResult.status === 'fulfilled') {
+        setOptimisationData(optResult.value);
+      } else {
+        console.error('Failed to fetch optimisation plan:', optResult.reason);
+      }
     } catch (err: any) {
       console.error('Failed to fetch prescriptive optimization data:', err);
     } finally {

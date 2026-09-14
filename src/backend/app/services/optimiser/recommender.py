@@ -25,6 +25,8 @@ from app.core.logging import logger, correlation_id_ctx
 
 
 def to_aware_utc(dt: datetime) -> datetime:
+    if dt is None:
+        return None
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
@@ -84,7 +86,8 @@ class PrescriptiveRecommender:
                 if candidates:
                     target_b = candidates[0]
                     rec_id = f"REC-DIV-{v.id}-{target_b.id}"
-                    saved_queue_hours = 8.5
+                    pred_delay = float(getattr(v, "predicted_delay_hours", 0.0) or 0.0)
+                    saved_queue_hours = round(max(3.5, min(14.0, pred_delay if pred_delay > 0 else 7.5)), 1)
                     impact = cost_engine.estimate_diversion_impact(
                         hours_saved=saved_queue_hours,
                         vessel_class=getattr(v, "vessel_class", "PANAMAX"),
@@ -205,6 +208,9 @@ class PrescriptiveRecommender:
         if not recommendations and vessels:
             first_v = vessels[0]
             first_b = berths[0] if berths else None
+            second_b = berths[1] if len(berths) > 1 else first_b
+            target_b_id = second_b.id if second_b else "B-02"
+            target_b_name = second_b.name if second_b else "Berth 02 Quay"
             rec_id = f"REC-OPT-{first_v.id}"
             impact = cost_engine.estimate_diversion_impact(hours_saved=3.0)
             v_orig_eta = to_aware_utc(first_v.corrected_eta or first_v.carrier_eta or now)
@@ -216,9 +222,9 @@ class PrescriptiveRecommender:
                 carrier=getattr(first_v, "carrier", "Carrier"),
                 source_berth_id=first_b.id if first_b else "B-01",
                 source_berth_name=first_b.name if first_b else "Berth 01 Quay",
-                target_berth_id=berths[1].id if len(berths) > 1 else first_b.id,
-                target_berth_name=berths[1].name if len(berths) > 1 else "Berth 02 Quay",
-                action_summary=f"Proactive berth balance: Assign {first_v.name} to {berths[1].name if len(berths) > 1 else 'Berth 02'}",
+                target_berth_id=target_b_id,
+                target_berth_name=target_b_name,
+                action_summary=f"Proactive berth balance: Assign {first_v.name} to {target_b_name}",
                 rationale="Proactive crane workload re-balancing minimizes turnaround queue.",
                 speed_adjustment_knots=None,
                 original_eta=v_orig_eta,

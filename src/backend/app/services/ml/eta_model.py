@@ -68,9 +68,10 @@ class ETACorrectionModel:
 
         # Naive baseline comparison
         baseline_eval = NaiveBaselinesEvaluator.evaluate_eta_baseline(records)
-
-        improvement_mae = max(0.0, ((baseline_eval["mae"] - mae) / baseline_eval["mae"]) * 100.0)
-        improvement_rmse = max(0.0, ((baseline_eval["rmse"] - rmse) / baseline_eval["rmse"]) * 100.0)
+        b_mae = baseline_eval.get("mae", 0.0)
+        b_rmse = baseline_eval.get("rmse", 0.0)
+        improvement_mae = max(0.0, ((b_mae - mae) / b_mae) * 100.0) if b_mae > 0 else 0.0
+        improvement_rmse = max(0.0, ((b_rmse - rmse) / b_rmse) * 100.0) if b_rmse > 0 else 0.0
 
         self.evaluation_metrics = {
             "model_name": "GradientBoosting-ETA-v1",
@@ -133,6 +134,7 @@ class ETACorrectionModel:
             x = np.array([[cls_idx, hour, weekday, dwell_approx, crane_outage, weather_outage]])
             base_pred = max(0.0, float(self.model.predict(x)[0]))
         else:
+            logger.warning("ETACorrectionModel.predict called before fitting; using baseline heuristic fallback")
             base_pred = 0.8 if cls_idx == 3 else 0.2
 
         # Add operational dynamic factors:
@@ -161,7 +163,8 @@ class ETACorrectionModel:
         else:
             pred_offset = round(max(0.0, min(18.0, total_offset)), 1)
 
-        corrected_eta = vessel.carrier_eta + timedelta(hours=pred_offset)
+        base_eta = vessel.carrier_eta or datetime.now(timezone.utc)
+        corrected_eta = base_eta + timedelta(hours=pred_offset)
 
         # Calibrated Confidence Interval (80% interval)
         margin = round(1.28 * self.residual_std, 2)

@@ -17,6 +17,8 @@ from app.core.logging import logger, correlation_id_ctx
 
 
 def to_aware_utc(dt: datetime) -> datetime:
+    if dt is None:
+        return None
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)

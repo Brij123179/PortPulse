@@ -252,7 +252,7 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
 
                     return (
                       <button
-                        key={cellIdx}
+                        key={`${b.berth_id}-h${item.hour_offset}`}
                         onClick={() => setSelectedCell({ berth: b, item })}
                         aria-label={`${b.berth_name} hour +${item.hour_offset}h: ${isRed ? 'High' : isAmber ? 'Medium' : 'Low'} Risk, ${Math.round(item.occupancy_probability * 100)}% occupancy`}
                         className={`h-9 rounded flex flex-col items-center justify-center transition-all relative group focus:outline-none focus:ring-2 focus:ring-brand-500 ${

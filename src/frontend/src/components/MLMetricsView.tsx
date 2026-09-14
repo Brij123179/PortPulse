@@ -55,9 +55,9 @@ export const MLMetricsView: React.FC = () => {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {metricsData.models.map((m, idx) => (
+        {metricsData.models.map((m) => (
           <div
-            key={idx}
+            key={`${m.task}-${m.metric_name}`}
             className="p-4 rounded-xl border border-surface-border bg-surface-bg space-y-3"
           >
             <div>

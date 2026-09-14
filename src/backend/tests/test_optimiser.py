@@ -226,3 +226,43 @@ def test_rbac_optimiser_and_recommendations_matrix(client, planner_headers, supe
     action_payload = {"action": "REJECT", "notes": "No capacity"}
     res_planner_action = client.post("/api/v1/recommendations/REC-TEST/action", json=action_payload, headers=planner_headers)
     assert res_planner_action.status_code == 403
+
+
+def test_solver_crane_allocation_scales_with_vessel_class(db_session):
+    """Verify that ULCV and Post-Panamax vessels receive proper crane allocations (Bug C-3)."""
+    from app.services.optimiser.solver import berth_optimiser
+    res = berth_optimiser.solve(db_session, horizon_hours=72)
+    assert res.solver_status == "OPTIMAL"
+    
+    # Check that at least one ULCV or Post-Panamax assignment has >= 3 cranes allocated
+    large_assignments = [
+        a for a in res.assignments 
+        if str(a.vessel_class).upper().replace("-", "_") in ("ULCV", "ULTRA_LARGE", "POST_PANAMAX")
+    ]
+    if large_assignments:
+        crane_counts = [a.allocated_cranes for a in large_assignments]
+        assert any(c >= 3 for c in crane_counts), f"Expected >= 3 cranes for large vessels, got: {crane_counts}"
+
+
+def test_null_eta_safety_in_predictions(db_session):
+    """Verify that vessels with null carrier_eta do not crash prediction engine (Bug C-4)."""
+    from app.services.ml.eta_model import ETACorrectionModel
+    from app.services.ml.feature_store import FeatureStore
+    from app.models.entities import Vessel
+    
+    v = Vessel(
+        id="V-NULL-ETA",
+        name="Null ETA Explorer",
+        vessel_class="Panamax",
+        cargo_volume=2500,
+        carrier_eta=None,
+        length_m=280.0,
+        draft_m=12.0,
+        status="SCHEDULED"
+    )
+    port_context = FeatureStore.get_port_context(db_session)
+    model = ETACorrectionModel()
+    # Should safely compute without AttributeError / TypeError
+    pred_eta, offset, c_low, c_high, factors = model.predict_vessel_eta(v, port_context)
+    assert pred_eta is not None
+    assert offset >= 0.0

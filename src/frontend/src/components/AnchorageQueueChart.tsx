@@ -57,14 +57,14 @@ export const AnchorageQueueChart: React.FC<AnchorageQueueChartProps> = ({
         </div>
 
         <div className="grid grid-cols-24 gap-1 h-20 items-end bg-surface-bg p-2 rounded-lg border border-surface-border">
-          {sampledTimeline.map((pt, idx) => {
+          {sampledTimeline.map((pt) => {
             const maxScale = Math.max(15, peak_predicted_queue + 2);
             const heightPct = Math.min(100, Math.max(10, (pt.predicted_queue / maxScale) * 100));
             const isHigh = pt.predicted_queue >= 6;
 
             return (
               <div
-                key={idx}
+                key={`queue-h${pt.hour_offset}`}
                 className="h-full flex flex-col justify-end items-center group relative"
               >
                 {/* Bar */}

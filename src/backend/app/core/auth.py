@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel
 import bcrypt
+import secrets
 from app.config import settings
 
 security_bearer = HTTPBearer(auto_error=False)
@@ -37,7 +38,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
-        return plain_password == hashed_password
+        return secrets.compare_digest(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
@@ -91,8 +92,9 @@ def get_current_user(
         except JWTError:
             raise credentials_exception
 
-    # Fallback for dev / integration tests via header if configured
-    if x_user_role:
+    # Dev / test header bypass (only permitted in non-production environments when enabled)
+    allow_bypass = settings.PORTPULSE_DEV_AUTH_BYPASS and (settings.PORTPULSE_ENV in ("development", "test"))
+    if allow_bypass and x_user_role:
         try:
             role = UserRole(x_user_role.lower())
             return CurrentUser(
@@ -107,13 +109,8 @@ def get_current_user(
                 detail=f"Invalid role in X-User-Role: {x_user_role}"
             )
 
-    # Default fallback to shift_supervisor in local dev mode if completely unauthenticated
-    return CurrentUser(
-        id=1,
-        username="default_supervisor",
-        email="supervisor@portpulse.local",
-        role=UserRole.SHIFT_SUPERVISOR
-    )
+    # In production or when unauthenticated without valid token/headers:
+    raise credentials_exception
 
 
 def require_roles(*allowed_roles_args):

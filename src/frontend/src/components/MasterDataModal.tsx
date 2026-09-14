@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -61,7 +61,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
 
   const isAdmin = role === 'admin';
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -79,13 +79,13 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [newVesselBerth]);
 
   useEffect(() => {
     if (isOpen) {
       loadData();
     }
-  }, [isOpen]);
+  }, [isOpen, loadData]);
 
   // Create Berth
   const handleCreateBerth = async (e: React.FormEvent) => {

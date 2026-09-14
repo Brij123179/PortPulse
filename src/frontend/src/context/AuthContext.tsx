@@ -147,13 +147,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res.access_token) {
           localStorage.setItem('portpulse-token', res.access_token);
           setToken(res.access_token);
+          setRoleState(newRole);
+          localStorage.setItem('portpulse-role', newRole);
+        } else {
+          throw new Error('Authentication token was not returned');
         }
       } catch (err) {
-        console.warn('Silent role-switch token login warning:', err);
+        console.error('Role-switch token authentication failed:', err);
+        throw err;
       }
+    } else {
+      setRoleState(newRole);
+      localStorage.setItem('portpulse-role', newRole);
     }
-    setRoleState(newRole);
-    localStorage.setItem('portpulse-role', newRole);
   };
 
   return (

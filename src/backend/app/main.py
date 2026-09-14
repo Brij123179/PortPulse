@@ -63,14 +63,14 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json"
 )
 
-# CORS Middleware (Supports local dev and Vercel cloud deployments)
+# CORS Middleware (Supports local dev and verified portpulse deployments)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://(portpulse|ibm-hackathon)[a-zA-Z0-9_-]*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "X-Correlation-ID", "X-User-Role", "X-User-Id", "X-User-Name", "Accept"],
 )
 
 

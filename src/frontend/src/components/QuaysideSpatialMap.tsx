@@ -16,6 +16,20 @@ interface QuaysideSpatialMapProps {
   onOpenOverrideModal: (vesselId?: string) => void;
 }
 
+// 10 Standard Berths configuration
+const BERTHS_CONFIG = [
+  { id: 'B-01', name: 'Berth 01 Quay', maxDraft: 16.5, length: 420, suitableFor: 'ULCV / Mega-Ships' },
+  { id: 'B-02', name: 'Berth 02 Quay', maxDraft: 16.0, length: 400, suitableFor: 'ULCV / Post-Panamax' },
+  { id: 'B-03', name: 'Berth 03 Quay', maxDraft: 15.5, length: 380, suitableFor: 'ULCV / Post-Panamax' },
+  { id: 'B-04', name: 'Berth 04 Quay', maxDraft: 14.5, length: 350, suitableFor: 'Post-Panamax / Panamax' },
+  { id: 'B-05', name: 'Berth 05 Quay', maxDraft: 14.0, length: 320, suitableFor: 'Panamax' },
+  { id: 'B-06', name: 'Berth 06 Quay', maxDraft: 13.5, length: 300, suitableFor: 'Panamax / Feeder' },
+  { id: 'B-07', name: 'Berth 07 Quay', maxDraft: 13.0, length: 280, suitableFor: 'Panamax / Feeder' },
+  { id: 'B-08', name: 'Berth 08 Quay', maxDraft: 12.0, length: 240, suitableFor: 'Feeder' },
+  { id: 'B-09', name: 'Berth 09 Quay', maxDraft: 11.5, length: 220, suitableFor: 'Feeder' },
+  { id: 'B-10', name: 'Berth 10 Quay', maxDraft: 11.0, length: 200, suitableFor: 'Feeder' },
+];
+
 export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
   assignments,
   selectedShift,
@@ -24,20 +38,7 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
   const [anchoragePage, setAnchoragePage] = useState<number>(1);
   const ANCHORAGE_PER_PAGE = 4;
-
-  // 10 Standard Berths
-  const berthsConfig = [
-    { id: 'B-01', name: 'Berth 01 Quay', maxDraft: 16.5, length: 420, suitableFor: 'ULCV / Mega-Ships' },
-    { id: 'B-02', name: 'Berth 02 Quay', maxDraft: 16.0, length: 400, suitableFor: 'ULCV / Post-Panamax' },
-    { id: 'B-03', name: 'Berth 03 Quay', maxDraft: 15.5, length: 380, suitableFor: 'ULCV / Post-Panamax' },
-    { id: 'B-04', name: 'Berth 04 Quay', maxDraft: 14.5, length: 350, suitableFor: 'Post-Panamax / Panamax' },
-    { id: 'B-05', name: 'Berth 05 Quay', maxDraft: 14.0, length: 320, suitableFor: 'Panamax' },
-    { id: 'B-06', name: 'Berth 06 Quay', maxDraft: 13.5, length: 300, suitableFor: 'Panamax / Feeder' },
-    { id: 'B-07', name: 'Berth 07 Quay', maxDraft: 13.0, length: 280, suitableFor: 'Panamax / Feeder' },
-    { id: 'B-08', name: 'Berth 08 Quay', maxDraft: 12.0, length: 240, suitableFor: 'Feeder' },
-    { id: 'B-09', name: 'Berth 09 Quay', maxDraft: 11.5, length: 220, suitableFor: 'Feeder' },
-    { id: 'B-10', name: 'Berth 10 Quay', maxDraft: 11.0, length: 200, suitableFor: 'Feeder' },
-  ];
+  const berthsConfig = BERTHS_CONFIG;
 
   // Map assignments to berths
   const berthMap = useMemo(() => {

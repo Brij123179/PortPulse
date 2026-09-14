@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api, AuditLogEntryItem } from '../api/client';
 
 export const ActivityLogView: React.FC = () => {
@@ -10,7 +10,7 @@ export const ActivityLogView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedLog, setSelectedLog] = useState<AuditLogEntryItem | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -27,13 +27,13 @@ export const ActivityLogView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedEntity]);
 
   useEffect(() => {
     fetchLogs();
     const interval = setInterval(fetchLogs, 15000);
     return () => clearInterval(interval);
-  }, [selectedEntity]);
+  }, [fetchLogs]);
 
   const filteredLogs = logs.filter((log) => {
     if (!searchTerm) return true;

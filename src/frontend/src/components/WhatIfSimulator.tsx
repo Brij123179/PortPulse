@@ -32,6 +32,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
   );
   const [speedReduction, setSpeedReduction] = useState<number>(3.5);
   const [simulating, setSimulating] = useState<boolean>(false);
+  const [simError, setSimError] = useState<string | null>(null);
   const [simulationResult, setSimulationResult] = useState<WhatIfResponse | null>(null);
 
   const formatMetricVal = (val: number, unit: string) => {
@@ -57,6 +58,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
 
     try {
       setSimulating(true);
+      setSimError(null);
       const res = await api.runWhatIf({
         scenario_name: scenarioName,
         interventions: [
@@ -74,7 +76,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
       });
       setSimulationResult(res);
     } catch (err: any) {
-      alert(`Simulation failed: ${err.message || 'Server error'}`);
+      setSimError(`Simulation failed: ${err.message || 'Server error'}`);
     } finally {
       setSimulating(false);
     }
@@ -203,6 +205,13 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
         </div>
       </form>
 
+      {simError && (
+        <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-semibold flex items-center justify-between">
+          <span>{simError}</span>
+          <button onClick={() => setSimError(null)} className="text-xs hover:underline">Dismiss</button>
+        </div>
+      )}
+
       {/* Simulation Results View */}
       {simulationResult && (
         <div className="space-y-4 pt-4 border-t border-surface-border animate-in slide-in-from-top-2 duration-150">
@@ -228,10 +237,10 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
 
           {/* Side-by-Side Comparison Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {simulationResult.comparisons.map((c, idx) => {
+            {simulationResult.comparisons.map((c) => {
               return (
                 <div
-                  key={idx}
+                  key={c.metric_name}
                   className="bg-surface-bg p-3.5 rounded-xl border border-surface-border space-y-2"
                 >
                   <span className="text-[11px] font-semibold text-content-muted block truncate">

@@ -44,7 +44,7 @@ def export_berths_csv(
     ])
 
     for b in berths:
-        operational_cranes = db.query(Crane).filter(Crane.berth_id == b.id, Crane.status == "OPERATIONAL").count()
+        operational_cranes = sum(1 for c in b.cranes if getattr(c, "status", "OPERATIONAL") == "OPERATIONAL")
         writer.writerow([
             b.id,
             b.name,
@@ -152,6 +152,9 @@ def export_operations_plan_csv(
 # 2. IMPORT ENDPOINTS
 # =========================================================================
 
+MAX_CSV_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit (L-10)
+
+
 async def extract_csv_text(request: Request) -> str:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" in content_type:
@@ -160,11 +163,15 @@ async def extract_csv_text(request: Request) -> str:
             field = form.get(field_name)
             if field and hasattr(field, "read"):
                 raw = await field.read()
+                if len(raw) > MAX_CSV_SIZE_BYTES:
+                    raise HTTPException(status_code=413, detail="CSV file exceeds maximum allowed size of 10MB")
                 return raw.decode("utf-8")
         # Fallback to any file in form
         for v in form.values():
             if hasattr(v, "read"):
                 raw = await v.read()
+                if len(raw) > MAX_CSV_SIZE_BYTES:
+                    raise HTTPException(status_code=413, detail="CSV file exceeds maximum allowed size of 10MB")
                 return raw.decode("utf-8")
         if "csv_content" in form:
             return str(form["csv_content"])
@@ -174,6 +181,8 @@ async def extract_csv_text(request: Request) -> str:
             return data.get("csv_content", "")
     else:
         body = await request.body()
+        if len(body) > MAX_CSV_SIZE_BYTES:
+            raise HTTPException(status_code=413, detail="CSV payload exceeds maximum allowed size of 10MB")
         return body.decode("utf-8")
     return ""
 
@@ -208,56 +217,57 @@ async def import_berths_csv(
 
     for idx, row in enumerate(rows, start=1):
         try:
-            b_id = row.get("id", "").strip()
-            name = row.get("name", "").strip() or f"Berth {b_id}"
-            length_m = float(row.get("length_m", 0))
-            draft_limit_m = float(row.get("draft_limit_m", 0))
-            crane_slots = int(row.get("crane_slots", 2))
-            rules = row.get("contractual_priority_rules", "STANDARD").strip()
-            status_val = row.get("status", "AVAILABLE").strip().upper()
+            with db.begin_nested():
+                b_id = row.get("id", "").strip()
+                name = row.get("name", "").strip() or f"Berth {b_id}"
+                length_m = float(row.get("length_m", 0))
+                draft_limit_m = float(row.get("draft_limit_m", 0))
+                crane_slots = int(row.get("crane_slots", 2))
+                rules = row.get("contractual_priority_rules", "STANDARD").strip()
+                status_val = row.get("status", "AVAILABLE").strip().upper()
 
-            if not b_id:
-                errors.append(f"Row {idx}: Missing berth ID.")
-                continue
-            if length_m < 50.0 or length_m > 600.0:
-                errors.append(f"Row {idx} ({b_id}): Length {length_m}m out of realistic bounds [50m - 600m].")
-                continue
-            if draft_limit_m < 3.0 or draft_limit_m > 25.0:
-                errors.append(f"Row {idx} ({b_id}): Draft limit {draft_limit_m}m out of bounds [3m - 25m].")
-                continue
+                if not b_id:
+                    errors.append(f"Row {idx}: Missing berth ID.")
+                    continue
+                if length_m < 50.0 or length_m > 600.0:
+                    errors.append(f"Row {idx} ({b_id}): Length {length_m}m out of realistic bounds [50m - 600m].")
+                    continue
+                if draft_limit_m < 3.0 or draft_limit_m > 25.0:
+                    errors.append(f"Row {idx} ({b_id}): Draft limit {draft_limit_m}m out of bounds [3m - 25m].")
+                    continue
 
-            existing = db.query(Berth).filter(Berth.id == b_id).first()
-            if existing:
-                existing.name = name
-                existing.length_m = length_m
-                existing.draft_limit_m = draft_limit_m
-                existing.crane_slots = crane_slots
-                existing.contractual_priority_rules = rules
-                existing.status = status_val
-                updated += 1
-            else:
-                new_berth = Berth(
-                    id=b_id,
-                    name=name,
-                    length_m=length_m,
-                    draft_limit_m=draft_limit_m,
-                    crane_slots=crane_slots,
-                    contractual_priority_rules=rules,
-                    status=status_val
-                )
-                db.add(new_berth)
-                db.flush()
-
-                # Automatically provision crane slots for new berth
-                for c_idx in range(1, crane_slots + 1):
-                    crane = Crane(
-                        id=f"CR-{b_id}-{c_idx:02d}",
-                        berth_id=b_id,
-                        name=f"STS Crane {b_id}-{c_idx:02d}",
-                        status="OPERATIONAL"
+                existing = db.query(Berth).filter(Berth.id == b_id).first()
+                if existing:
+                    existing.name = name
+                    existing.length_m = length_m
+                    existing.draft_limit_m = draft_limit_m
+                    existing.crane_slots = crane_slots
+                    existing.contractual_priority_rules = rules
+                    existing.status = status_val
+                    updated += 1
+                else:
+                    new_berth = Berth(
+                        id=b_id,
+                        name=name,
+                        length_m=length_m,
+                        draft_limit_m=draft_limit_m,
+                        crane_slots=crane_slots,
+                        contractual_priority_rules=rules,
+                        status=status_val
                     )
-                    db.add(crane)
-                imported += 1
+                    db.add(new_berth)
+                    db.flush()
+
+                    # Automatically provision crane slots for new berth
+                    for c_idx in range(1, crane_slots + 1):
+                        crane = Crane(
+                            id=f"CR-{b_id}-{c_idx:02d}",
+                            berth_id=b_id,
+                            name=f"STS Crane {b_id}-{c_idx:02d}",
+                            status="OPERATIONAL"
+                        )
+                        db.add(crane)
+                    imported += 1
 
         except Exception as e:
             errors.append(f"Row {idx}: Error processing row: {str(e)}")
@@ -306,69 +316,70 @@ async def import_vessels_csv(
 
     for idx, row in enumerate(rows, start=1):
         try:
-            v_id = row.get("id", "").strip()
-            name = row.get("name", "").strip() or f"Vessel {v_id}"
-            v_class = row.get("vessel_class", "POST_PANAMAX").strip().upper()
-            cargo_teu = int(float(row.get("cargo_volume_teu", row.get("cargo_volume", 4000))))
-            draft_m = float(row.get("draft_m", 11.5))
-            length_m = float(row.get("length_m", 250.0))
-            eta_raw = row.get("carrier_eta", "").strip()
-            priority_flag = str(row.get("priority_flag", "false")).strip().lower() in ["true", "1", "yes"]
-            assigned_berth_id = row.get("assigned_berth_id", "").strip() or None
-            status_val = row.get("status", "SCHEDULED").strip().upper()
+            with db.begin_nested():
+                v_id = row.get("id", "").strip()
+                name = row.get("name", "").strip() or f"Vessel {v_id}"
+                v_class = row.get("vessel_class", "POST_PANAMAX").strip().upper()
+                cargo_teu = int(float(row.get("cargo_volume_teu", row.get("cargo_volume", 4000))))
+                draft_m = float(row.get("draft_m", 11.5))
+                length_m = float(row.get("length_m", 250.0))
+                eta_raw = row.get("carrier_eta", "").strip()
+                priority_flag = str(row.get("priority_flag", "false")).strip().lower() in ["true", "1", "yes"]
+                assigned_berth_id = row.get("assigned_berth_id", "").strip() or None
+                status_val = row.get("status", "SCHEDULED").strip().upper()
 
-            if not v_id:
-                errors.append(f"Row {idx}: Missing vessel ID.")
-                continue
-
-            # Parse ETA
-            try:
-                eta_dt = datetime.fromisoformat(eta_raw.replace("Z", "+00:00")) if eta_raw else datetime.now(timezone.utc)
-            except Exception:
-                eta_dt = datetime.now(timezone.utc)
-
-            # Check assigned berth constraints
-            if assigned_berth_id:
-                berth = db.query(Berth).filter(Berth.id == assigned_berth_id).first()
-                if not berth:
-                    errors.append(f"Row {idx} ({v_id}): Target berth '{assigned_berth_id}' does not exist.")
-                    continue
-                if length_m > berth.length_m:
-                    errors.append(f"Row {idx} ({v_id}): Length ({length_m}m) exceeds berth '{assigned_berth_id}' length ({berth.length_m}m).")
-                    continue
-                if draft_m > berth.draft_limit_m:
-                    errors.append(f"Row {idx} ({v_id}): Draft ({draft_m}m) exceeds berth '{assigned_berth_id}' limit ({berth.draft_limit_m}m).")
+                if not v_id:
+                    errors.append(f"Row {idx}: Missing vessel ID.")
                     continue
 
-            existing = db.query(Vessel).filter(Vessel.id == v_id).first()
-            if existing:
-                existing.name = name
-                existing.vessel_class = v_class
-                existing.cargo_volume = cargo_teu
-                existing.draft_m = draft_m
-                existing.length_m = length_m
-                existing.carrier_eta = eta_dt
-                existing.corrected_eta = eta_dt
-                existing.priority_flag = priority_flag
-                existing.assigned_berth_id = assigned_berth_id
-                existing.status = status_val
-                updated += 1
-            else:
-                new_vessel = Vessel(
-                    id=v_id,
-                    name=name,
-                    vessel_class=v_class,
-                    cargo_volume=cargo_teu,
-                    draft_m=draft_m,
-                    length_m=length_m,
-                    carrier_eta=eta_dt,
-                    corrected_eta=eta_dt,
-                    priority_flag=priority_flag,
-                    assigned_berth_id=assigned_berth_id,
-                    status=status_val
-                )
-                db.add(new_vessel)
-                imported += 1
+                # Parse ETA
+                try:
+                    eta_dt = datetime.fromisoformat(eta_raw.replace("Z", "+00:00")) if eta_raw else datetime.now(timezone.utc)
+                except Exception:
+                    eta_dt = datetime.now(timezone.utc)
+
+                # Check assigned berth constraints
+                if assigned_berth_id:
+                    berth = db.query(Berth).filter(Berth.id == assigned_berth_id).first()
+                    if not berth:
+                        errors.append(f"Row {idx} ({v_id}): Target berth '{assigned_berth_id}' does not exist.")
+                        continue
+                    if length_m > berth.length_m:
+                        errors.append(f"Row {idx} ({v_id}): Length ({length_m}m) exceeds berth '{assigned_berth_id}' length ({berth.length_m}m).")
+                        continue
+                    if draft_m > berth.draft_limit_m:
+                        errors.append(f"Row {idx} ({v_id}): Draft ({draft_m}m) exceeds berth '{assigned_berth_id}' limit ({berth.draft_limit_m}m).")
+                        continue
+
+                existing = db.query(Vessel).filter(Vessel.id == v_id).first()
+                if existing:
+                    existing.name = name
+                    existing.vessel_class = v_class
+                    existing.cargo_volume = cargo_teu
+                    existing.draft_m = draft_m
+                    existing.length_m = length_m
+                    existing.carrier_eta = eta_dt
+                    existing.corrected_eta = eta_dt
+                    existing.priority_flag = priority_flag
+                    existing.assigned_berth_id = assigned_berth_id
+                    existing.status = status_val
+                    updated += 1
+                else:
+                    new_vessel = Vessel(
+                        id=v_id,
+                        name=name,
+                        vessel_class=v_class,
+                        cargo_volume=cargo_teu,
+                        draft_m=draft_m,
+                        length_m=length_m,
+                        carrier_eta=eta_dt,
+                        corrected_eta=eta_dt,
+                        priority_flag=priority_flag,
+                        assigned_berth_id=assigned_berth_id,
+                        status=status_val
+                    )
+                    db.add(new_vessel)
+                    imported += 1
 
         except Exception as e:
             errors.append(f"Row {idx}: Error processing vessel row: {str(e)}")
