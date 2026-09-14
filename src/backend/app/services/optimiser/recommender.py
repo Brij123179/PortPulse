@@ -86,7 +86,8 @@ class PrescriptiveRecommender:
                 if candidates:
                     target_b = candidates[0]
                     rec_id = f"REC-DIV-{v.id}-{target_b.id}"
-                    saved_queue_hours = 8.5
+                    pred_delay = float(getattr(v, "predicted_delay_hours", 0.0) or 0.0)
+                    saved_queue_hours = round(max(3.5, min(14.0, pred_delay if pred_delay > 0 else 7.5)), 1)
                     impact = cost_engine.estimate_diversion_impact(
                         hours_saved=saved_queue_hours,
                         vessel_class=getattr(v, "vessel_class", "PANAMAX"),

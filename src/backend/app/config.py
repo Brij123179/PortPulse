@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     
     # SQLite local dev file
     PORTPULSE_DB_URL: str = "sqlite:///./portpulse.db"
+    PORTPULSE_DB_ECHO: bool = False
     
     # Security
     PORTPULSE_SECRET_KEY: str = "portpulse-super-secret-key-for-local-dev-2026"

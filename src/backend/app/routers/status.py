@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.auth import CurrentUser, get_current_user
@@ -158,10 +159,15 @@ def get_status_summary(
     """
     Returns aggregated port operations status for dashboard counters.
     """
-    total_vessels = db.query(Vessel).count()
-    scheduled = db.query(Vessel).filter(Vessel.status == "SCHEDULED").count()
-    anchored = db.query(Vessel).filter(Vessel.status == "ANCHORED").count()
-    berthed = db.query(Vessel).filter(Vessel.status == "BERTHED").count()
+    status_counts = dict(
+        db.query(Vessel.status, func.count(Vessel.id))
+        .group_by(Vessel.status)
+        .all()
+    )
+    scheduled = status_counts.get("SCHEDULED", 0)
+    anchored = status_counts.get("ANCHORED", 0)
+    berthed = status_counts.get("BERTHED", 0)
+    total_vessels = sum(status_counts.values())
 
     berths = db.query(Berth).all()
     total_berths = len(berths)

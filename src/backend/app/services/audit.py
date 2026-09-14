@@ -3,7 +3,7 @@ import uuid
 from typing import Optional, List, Tuple, Any, Dict
 from sqlalchemy.orm import Session
 from app.models.entities import AuditLogEntry
-from app.core.logging import correlation_id_ctx
+from app.core.logging import logger, correlation_id_ctx
 
 
 class AuditService:

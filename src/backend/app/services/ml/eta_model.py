@@ -134,6 +134,7 @@ class ETACorrectionModel:
             x = np.array([[cls_idx, hour, weekday, dwell_approx, crane_outage, weather_outage]])
             base_pred = max(0.0, float(self.model.predict(x)[0]))
         else:
+            logger.warning("ETACorrectionModel.predict called before fitting; using baseline heuristic fallback")
             base_pred = 0.8 if cls_idx == 3 else 0.2
 
         # Add operational dynamic factors:

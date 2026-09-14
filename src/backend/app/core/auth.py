@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel
 import bcrypt
+import secrets
 from app.config import settings
 
 security_bearer = HTTPBearer(auto_error=False)
@@ -37,7 +38,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
-        return plain_password == hashed_password
+        return secrets.compare_digest(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:

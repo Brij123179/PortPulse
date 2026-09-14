@@ -1,4 +1,6 @@
-from typing import Optional
+from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -9,6 +11,27 @@ from app.schemas.common import SuccessResponse
 from app.core.logging import correlation_id_ctx
 
 router = APIRouter(prefix="/api/v1/ingestion", tags=["Data Ingestion & Synthetic Generator"])
+
+
+class TurnaroundRecordItem(BaseModel):
+    id: int
+    vessel_id: str
+    vessel_class: str
+    berth_id: str
+    arrival_time: datetime
+    departure_time: datetime
+    actual_dwell_hours: float
+    scheduled_dwell_hours: float
+    delay_cause: Optional[str] = None
+    delay_minutes: float
+    shift_id: str
+
+
+class TurnaroundHistoryResponse(BaseModel):
+    correlation_id: Optional[str] = None
+    total_count: int
+    returned_count: int
+    records: List[TurnaroundRecordItem]
 
 
 @router.post("/generate", response_model=SuccessResponse)
@@ -65,7 +88,7 @@ def inject_shock(
     )
 
 
-@router.get("/history")
+@router.get("/history", response_model=TurnaroundHistoryResponse)
 def get_historical_records(
     limit: int = Query(50, ge=1, le=500),
     vessel_class: Optional[str] = None,
