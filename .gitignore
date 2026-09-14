@@ -43,6 +43,10 @@ dist-ssr/
 .env
 .env.*
 !.env.example
+*CREDENTIALS*
+*credentials*
+PORTPULSE_CREDENTIALS_AND_SYSTEM_REPORT.md
+*SYSTEM_REPORT*
 
 # SQLite & local runtime
 *.db

@@ -3,7 +3,6 @@ import { Navbar } from './components/Navbar';
 import { LiveStatusTable } from './components/LiveStatusTable';
 import { MasterDataModal } from './components/MasterDataModal';
 import { CongestionHeatmap } from './components/CongestionHeatmap';
-import { AnchorageQueueChart } from './components/AnchorageQueueChart';
 import { CascadeDelaySimulator } from './components/CascadeDelaySimulator';
 import { MLMetricsView } from './components/MLMetricsView';
 import { RecommendationFeed } from './components/RecommendationFeed';
@@ -529,12 +528,9 @@ export const App: React.FC = () => {
         {/* Tab 6: Operational Activity & Audit Log */}
         {!loading && activeTab === 'audit' && <ActivityLogView />}
 
-        {/* Tab 7: Anchorage Queue & Cascade Simulator */}
+        {/* Tab 7: Cascading Delay Simulation */}
         {!loading && activeTab === 'cascade' && (
-          <div className="space-y-6">
-            <AnchorageQueueChart anchorageData={anchorageData} loading={heatmapLoading} />
-            <CascadeDelaySimulator vessels={vessels} />
-          </div>
+          <CascadeDelaySimulator vessels={vessels} />
         )}
 
         {/* Tab 8: Predictive Forecast Accuracy & Baselines */}
