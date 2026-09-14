@@ -23,6 +23,7 @@ from app.services.optimiser.solver import berth_optimiser
 from app.services.optimiser.override_guard import override_guard
 from app.services.optimiser.whatif_simulator import whatif_simulator
 from app.services.audit import AuditService
+from app.services.ml.feedback import feedback_tracker
 
 router = APIRouter(prefix="/api/v1", tags=["Prescriptive Layer & Optimisation"])
 
@@ -66,6 +67,13 @@ def act_on_recommendation(
         entity_type="RECOMMENDATION",
         entity_id=recommendation_id,
         payload_snapshot={"action": payload.action, "notes": payload.notes, "modified_berth_id": payload.modified_berth_id}
+    )
+    feedback_tracker.record_feedback(
+        recommendation_id=recommendation_id,
+        rec_type="PRESCRIPTIVE",
+        action=payload.action.upper(),
+        actor=user.username,
+        reason=payload.notes
     )
     return res
 

@@ -15,6 +15,7 @@ import { ActivityLogView } from './components/ActivityLogView';
 import { GuidedTourModal } from './components/GuidedTourModal';
 import { LoginModal } from './components/LoginModal';
 import { OperationsPlanView } from './components/OperationsPlanView';
+import { ChatAssistantDrawer } from './components/ChatAssistantDrawer';
 import { useAuth } from './context/AuthContext';
 import {
   api,
@@ -102,6 +103,7 @@ export const App: React.FC = () => {
   const [masterDataOpen, setMasterDataOpen] = useState(false);
   const [tourModalOpen, setTourModalOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
 
   // Auto-refresh config (default 60s)
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -212,6 +214,7 @@ export const App: React.FC = () => {
         onOpenMasterData={() => setMasterDataOpen(true)}
         onOpenTour={() => setTourModalOpen(true)}
         onOpenLogin={() => setLoginModalOpen(true)}
+        onOpenChat={() => setChatDrawerOpen(true)}
         isBackendConnected={isBackendConnected}
         onRefresh={() => {
           fetchLiveStatus(false);
@@ -533,6 +536,12 @@ export const App: React.FC = () => {
       <LoginModal
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
+      />
+
+      {/* PortPulse AI Copilot Drawer (F-406) */}
+      <ChatAssistantDrawer
+        isOpen={chatDrawerOpen}
+        onClose={() => setChatDrawerOpen(false)}
       />
 
       {/* Footer */}

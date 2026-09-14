@@ -14,6 +14,7 @@ interface NavbarProps {
   onOpenMasterData: () => void;
   onOpenTour: () => void;
   onOpenLogin: () => void;
+  onOpenChat: () => void;
   isBackendConnected: boolean;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -28,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMasterData,
   onOpenTour,
   onOpenLogin,
+  onOpenChat,
   isBackendConnected,
   onRefresh,
   isRefreshing,
@@ -76,6 +78,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center space-x-2 sm:space-x-2.5">
+          {/* PortPulse AI Copilot Trigger (F-406) */}
+          <button
+            onClick={onOpenChat}
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-all shadow-sm"
+            title="Open Grounded AI Operational Copilot (IBM watsonx.ai RAG)"
+          >
+            <span className="text-xs">🤖</span>
+            <span className="hidden sm:inline">Ask AI</span>
+          </button>
+
           {/* Guided Tour Trigger */}
           <button
             onClick={onOpenTour}

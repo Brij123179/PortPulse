@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OptimisationRunResponse, api } from '../api/client';
+import { OptimisationRunResponse, api, apiClient, ShiftBriefingResponse } from '../api/client';
 import {
   CalendarDays,
   Download,
@@ -91,6 +91,25 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
     window.print();
   };
 
+  const [aiBriefing, setAiBriefing] = useState<ShiftBriefingResponse | null>(null);
+  const [briefingLoading, setBriefingLoading] = useState(false);
+
+  const handleGenerateAiBriefing = async () => {
+    setBriefingLoading(true);
+    try {
+      const shiftLabel =
+        selectedShift === 'ALL'
+          ? '72-Hour Full Operations Window'
+          : `Shift ${selectedShift} (12-Hour Operational Window)`;
+      const res = await apiClient.generateAiShiftBriefing(shiftLabel);
+      setAiBriefing(res);
+    } catch (err: any) {
+      console.error('Failed to generate AI briefing:', err);
+    } finally {
+      setBriefingLoading(false);
+    }
+  };
+
   const handleExportCsv = () => {
     const csvUrl = api.getExportOperationsPlanUrl();
     window.open(csvUrl, '_blank');
@@ -168,6 +187,16 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-500' : ''}`} />
             <span className="hidden sm:inline">Sync Plan</span>
+          </button>
+
+          <button
+            onClick={handleGenerateAiBriefing}
+            disabled={briefingLoading}
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition shadow-sm"
+            title="Generate AI Handover Briefing synthesized by IBM watsonx.ai"
+          >
+            <span>🤖</span>
+            <span>{briefingLoading ? 'Synthesizing...' : 'AI Shift Briefing'}</span>
           </button>
 
           <button
@@ -253,6 +282,30 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           </span>
         </div>
       </div>
+
+      {/* AI Shift Briefing Manifest (F-401) */}
+      {aiBriefing && (
+        <div className="no-print bg-zinc-900 text-zinc-100 dark:bg-zinc-950 p-5 rounded-xl border border-zinc-800 shadow-md animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-base">📋</span>
+              <h3 className="font-bold text-sm tracking-tight text-white">{aiBriefing.title}</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
+                IBM watsonx.ai Synthesized
+              </span>
+            </div>
+            <button
+              onClick={() => setAiBriefing(null)}
+              className="text-zinc-400 hover:text-white text-xs px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 transition"
+            >
+              ✕ Dismiss
+            </button>
+          </div>
+          <div className="text-xs whitespace-pre-wrap leading-relaxed text-zinc-300 font-mono bg-black/40 p-4 rounded-lg border border-zinc-800/80">
+            {aiBriefing.briefing_markdown}
+          </div>
+        </div>
+      )}
 
       {/* Shift Filter Navigation & Search */}
       <div className="no-print flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-card border border-surface-border p-3 rounded-xl">

@@ -94,10 +94,16 @@ class OverrideGuardrail:
             Vessel.status.in_(["BERTHED", "SCHEDULED", "APPROACHING"])
         ).all()
 
+        now_utc = datetime.now(timezone.utc)
         for ov in other_vessels:
             ov_eta = to_aware_utc(ov.corrected_eta or ov.carrier_eta or req_start)
             ov_dwell = max(8.0, float(getattr(ov, "dwell_hours", 24.0) or 24.0))
             ov_end = ov_eta + timedelta(hours=ov_dwell)
+            if ov.status == "BERTHED":
+                if ov_end <= now_utc:
+                    ov_end = now_utc + timedelta(hours=8.0)
+                if ov_eta >= now_utc:
+                    ov_eta = now_utc - timedelta(hours=2.0)
 
             # Check overlap between [req_start, req_end] and [ov_eta, ov_end]
             if not (req_end <= ov_eta or req_start >= ov_end):
@@ -140,6 +146,11 @@ class OverrideGuardrail:
                     bv_eta = to_aware_utc(bv.corrected_eta or bv.carrier_eta or req_start)
                     bv_dwell = max(8.0, float(getattr(bv, "dwell_hours", 24.0) or 24.0))
                     bv_end = bv_eta + timedelta(hours=bv_dwell)
+                    if bv.status == "BERTHED":
+                        if bv_end <= now_utc:
+                            bv_end = now_utc + timedelta(hours=8.0)
+                        if bv_eta >= now_utc:
+                            bv_eta = now_utc - timedelta(hours=2.0)
                     if not (req_end <= bv_eta or req_start >= bv_end):
                         has_conflict = True
                         break

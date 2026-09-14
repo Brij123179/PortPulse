@@ -365,7 +365,37 @@ export const api = {
     const qs = searchParams.toString();
     return apiFetch<AuditLogListResponse>(`/audit/logs${qs ? `?${qs}` : ''}`);
   },
+
+  // Increment 4: GenAI Chat Assistant & Briefing (F-401, F-406)
+  queryChatAssistant: (query: string) =>
+    apiFetch<ChatQueryResponse>('/chat/query', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }),
+
+  generateAiShiftBriefing: (shiftLabel = 'Upcoming 12h Shift') =>
+    apiFetch<ShiftBriefingResponse>('/chat/briefing', {
+      method: 'POST',
+      body: JSON.stringify({ shift_label: shiftLabel }),
+    }),
+
+  // Increment 5: Feedback Loop & MLOps Tracking (F-502)
+  getFeedbackSummary: () =>
+    apiFetch<FeedbackSummaryResponse>('/ml/feedback/summary'),
+
+  recordRecommendationFeedback: (recommendationId: string, recType: string, action: string, reason?: string) =>
+    apiFetch<any>('/ml/feedback/record', {
+      method: 'POST',
+      body: JSON.stringify({
+        recommendation_id: recommendationId,
+        recommendation_type: recType,
+        action,
+        reason,
+      }),
+    }),
 };
+
+export const apiClient = api;
 
 export interface AuditLogEntryItem {
   id: number;
@@ -523,4 +553,41 @@ export interface WhatIfResponse {
   red_tier_berth_hours_before: number;
   red_tier_berth_hours_after: number;
   total_demurrage_saved_usd: number;
+}
+
+export interface ChatQueryResponse {
+  query: string;
+  answer: string;
+  model: string;
+  timestamp: string;
+  citations: string[];
+  grounding_summary: {
+    total_berths: number;
+    total_vessels: number;
+    delayed_vessels_count: number;
+    active_cranes: number;
+    recommendations_count: number;
+  };
+}
+
+export interface ShiftBriefingResponse {
+  title: string;
+  generated_at: string;
+  briefing_markdown: string;
+  metrics: {
+    vessels_active: number;
+    delayed_count: number;
+    demurrage_saved_usd: number;
+    co2_saved_mt: number;
+    active_cranes: number;
+  };
+}
+
+export interface FeedbackSummaryResponse {
+  total_reviewed: number;
+  overall_acceptance_rate_pct: number;
+  breakdown_by_type: Record<string, { accepted: number; rejected: number; rate_pct: number }>;
+  calibration_status: 'CALIBRATED' | 'DRIFT_DETECTED';
+  retraining_recommended: boolean;
+  last_evaluated?: string;
 }

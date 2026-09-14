@@ -11,7 +11,7 @@ from app.core.logging import logger, correlation_id_ctx
 from app.core.database import engine, Base, SessionLocal
 from app.models.entities import User, Berth
 from app.services.ingestion import PortDataGenerator
-from app.routers import auth, ingestion, master_data, status as status_router, forecast, optimiser, audit, csv_data, compat_api
+from app.routers import auth, ingestion, master_data, status as status_router, forecast, optimiser, audit, csv_data, compat_api, chat
 
 
 @asynccontextmanager
@@ -177,3 +177,4 @@ app.include_router(optimiser.router)
 app.include_router(audit.router)
 app.include_router(csv_data.router)
 app.include_router(compat_api.router)
+app.include_router(chat.router)
