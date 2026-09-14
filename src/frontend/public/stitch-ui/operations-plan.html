@@ -1,0 +1,761 @@
+﻿<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "error": "#ffb4ab", "border-subtle": "#1e3252", "status-critical-bg": "rgba(239, 68, 68, 0.15)", "on-error": "#690005", "on-tertiary-fixed-variant": "#2f2ebe", "surface-container-high": "#222a3a", "surface-container": "#18202f", "tertiary-container": "#8d90ff", "text-primary": "#f1f5f9", "status-safe": "#10b981", "surface-tint": "#89ceff", "on-surface": "#dbe2f8", "secondary-container": "#00a6e0", "surface-dim": "#0b1322", "inverse-surface": "#dbe2f8", "primary-fixed": "#c9e6ff", "surface-variant": "#2d3545", "inverse-on-surface": "#293041", "surface-card-hover": "#16253e", "status-critical": "#ef4444", "background": "#0b1322", "surface-card": "#0f1b2e", "vessel-maintenance": "#475569", "inverse-primary": "#006591", "outline": "#88929b", "surface-recessed": "#080d18", "surface-elevated": "#1a2a44", "status-safe-bg": "rgba(16, 185, 129, 0.12)", "on-secondary-container": "#00374d", "on-error-container": "#ffdad6", "outline-variant": "#3e4850", "primary-container": "#0ea5e9", "secondary-fixed": "#c4e7ff", "on-primary-fixed": "#001e2f", "tertiary-fixed-dim": "#c0c1ff", "error-container": "#93000a", "status-warning-bg": "rgba(245, 158, 11, 0.12)", "vessel-priority": "#a855f7", "on-surface-variant": "#bec8d2", "text-secondary": "#94a3b8", "on-tertiary-fixed": "#07006c", "on-secondary-fixed-variant": "#004c69", "secondary-fixed-dim": "#7bd0ff", "status-warning": "#f59e0b", "tertiary-fixed": "#e1e0ff", "on-secondary-fixed": "#001e2c", "surface-container-highest": "#2d3545", "on-tertiary": "#1000a9", "primary": "#89ceff", "tertiary": "#c0c1ff", "on-secondary": "#00354a", "border-hairline": "rgba(255, 255, 255, 0.07)", "on-background": "#dbe2f8", "text-muted": "#64748b", "surface-container-low": "#141c2b", "canvas-base": "#060a12", "secondary": "#7bd0ff", "on-primary-fixed-variant": "#004c6e", "on-primary-container": "#003751", "on-primary": "#00344d", "primary-fixed-dim": "#89ceff", "on-tertiary-container": "#1407ad", "surface-bright": "#32394a", "border-focus": "#2563eb", "surface-container-lowest": "#060e1d", "surface": "#0b1322" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem", "margin-compact": "1rem", "margin": "1.5rem", "gutter-sm": "0.75rem", "space-lg": "1.5rem", "space-md": "1rem" }, "fontFamily": { "touch-field": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"], "mono-badge": ["JetBrains Mono"], "display-hero": ["Inter"], "mono-data": ["JetBrains Mono"], "mono-kpi": ["JetBrains Mono"], "body-md": ["Inter"], "body-sm": ["Inter"] }, "fontSize": { "touch-field": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "headline-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "mono-badge": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }], "display-hero": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "mono-data": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }], "mono-kpi": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } };</script></head><body class="bg-canvas-base text-text-primary antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface-dim/95 backdrop-blur-md border-b border-border-subtle"><div class="h-14 w-full px-space-md flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><img alt="PortPulse Radar Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VzuF-qVybHS94ulWJMy4yeCFE4cmqi2kv3bkZ0gE-we9ttNo4ZItcE-sOHbVHPjwy_88VtNvQtuClnNv2J1iDrixZ1uyUmV6PfWV9iTjjwO5cu1r9dJ0ctc4haqUAkStF_HgMbT8P1ymMrPYU4xq-RyDh7ZBSEDMFDdwbAF7KLIfHrrmEdQdHcjIFMSJY7kPUHw8jykjSEY16Cmbh4qOlsenvymInfQuKda9YhlfevqF4cQ69aSUk8Mg"/><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-text-primary leading-none">PortPulse</span><span class="font-mono-badge text-mono-badge text-primary uppercase leading-tight">Maritime OS</span></div></div><div class="h-5 w-[1px] bg-border-subtle"></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-secondary transition-colors"><span class="material-symbols-outlined text-sm text-primary">anchor</span><span class="font-body-sm text-body-sm font-medium text-text-primary">Port of Los Angeles (Pier 400)</span><span class="material-symbols-outlined text-sm">expand_more</span></button></div><div class="hidden xl:flex items-center gap-space-md bg-surface-recessed border border-border-subtle rounded-lg px-space-md py-1 shrink-0"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-base">schedule</span><div class="flex flex-col"><span class="font-mono-data text-mono-data text-primary font-bold">15 OCT 2025 â€¢ 14:30 UTC</span><span class="font-mono-badge text-mono-badge text-text-muted">Local: 07:30 PDT</span></div></div><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-1"><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">-30m</button><button class="h-7 w-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded hover:opacity-90"><span class="material-symbols-outlined text-base">play_arrow</span></button><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">+30m</button></div><div class="flex items-center bg-surface-container border border-border-subtle rounded p-0.5"><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">1x</button><button class="px-1.5 py-0.5 bg-primary-container text-on-primary-container font-mono-badge text-mono-badge font-bold rounded-sm">2x</button><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">5x</button></div><div class="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden relative"><div class="h-full bg-primary w-3/5"></div><div class="absolute top-0 bottom-0 left-3/5 w-1 bg-status-critical"></div></div></div><div class="flex items-center gap-space-sm shrink-0"><div class="hidden lg:flex items-center gap-space-xs px-space-sm py-1 bg-status-safe-bg border border-status-safe/30 rounded-full"><span class="w-2 h-2 rounded-full bg-status-safe animate-pulse"></span><span class="font-mono-badge text-mono-badge text-status-safe">LIVE ML Engine (38ms â€¢ v2.4)</span></div><div class="hidden md:flex items-center gap-1 px-space-sm py-1 bg-surface-recessed border border-border-subtle rounded-lg text-text-secondary font-body-sm text-body-sm"><span class="material-symbols-outlined text-sm text-vessel-priority">shield_person</span><span>Shift Supervisor</span></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-muted transition-colors"><span class="material-symbols-outlined text-sm">search</span><span class="font-mono-badge text-mono-badge text-text-muted">âŒ˜K</span></button><button class="relative p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-status-critical text-text-primary rounded-full flex items-center justify-center font-mono-badge text-mono-badge">3</span></button><button class="flex items-center gap-space-xs px-space-sm py-1 bg-gradient-to-r from-vessel-priority/20 to-primary-container/20 border border-primary-container/40 rounded-full text-text-primary hover:border-primary-container transition-all"><span class="font-body-sm text-body-sm font-semibold text-primary">Ask Copilot</span><span class="font-mono-badge text-mono-badge text-secondary">âœ¨</span></button><div class="h-6 w-[1px] bg-border-subtle"></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-border-subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyBf3fWtUh7rQt3IStjeC9MjRbRcS5CKtuEP8jbutyp85Tv4lub40CESm1dECM220UFngbkh7MGNG8Siz0H_iSMtJgj0tJ329kxS3mXg5dM5TMdYw6XGXeiH6sknYcl9GayOetx67f4F_WpyUmh-Vi5lm-0G_Rq7hd3xi8RZdfFAPfUxKZIKzA2eOn6G2eZ-T26loOt8FSWsJ8eGojvM18_j2vOxKVJlm5GWYnZTBiTGctA4jIPo2-"/></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-60 bg-surface-dim border-r border-border-subtle z-40 flex flex-col justify-between overflow-y-auto"><div class="p-space-sm"><div class="px-space-sm py-space-xs mb-space-xs"><span class="font-mono-badge text-mono-badge text-text-muted uppercase tracking-wider">Operational Units</span></div><nav class="space-y-1" data-active-classes="bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]"><a aria-current="page" class="flex items-center justify-between px-space-sm py-2 rounded transition-colors bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]" data-path="operations-plan" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">calendar_month</span><span class="font-body-sm text-body-sm">Operations Plan</span></div><span class="px-1.5 py-0.5 bg-status-safe-bg text-status-safe border border-status-safe/30 rounded font-mono-badge text-mono-badge">LIVE</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="terminal-vessel-map" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">explore</span><span class="font-body-sm text-body-sm">Terminal Vessel Map</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">12 Active</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="72h-congestion-heatmap" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bar_chart</span><span class="font-body-sm text-body-sm">72h Congestion</span></div><span class="px-1.5 py-0.5 bg-status-warning-bg text-status-warning border border-status-warning/30 rounded font-mono-badge text-mono-badge">Peak 18h</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="prescriptive-actions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bolt</span><span class="font-body-sm text-body-sm">Prescriptive Actions</span></div><span class="px-1.5 py-0.5 bg-status-critical-bg text-status-critical border border-status-critical/30 rounded font-mono-badge text-mono-badge">3 Pending</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="what-if-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">tune</span><span class="font-body-sm text-body-sm">What-If Simulator</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="live-vessel-queue" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">anchor</span><span class="font-body-sm text-body-sm">Live Vessel Queue</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">7 Waiting</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="cascade-delay-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">account_tree</span><span class="font-body-sm text-body-sm">Cascade Delays</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="activity-log-audit" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">description</span><span class="font-body-sm text-body-sm">Activity &amp; Audit</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="forecast-ml-metrics" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">memory</span><span class="font-body-sm text-body-sm">Forecast &amp; ML Metrics</span></div></a></nav></div><div class="p-space-sm border-t border-border-subtle bg-surface-recessed/60 space-y-space-sm"><div class="p-space-xs bg-surface-card border border-border-subtle rounded"><div class="flex items-center justify-between mb-1"><span class="font-mono-badge text-mono-badge text-text-muted">APM PIER 400</span><span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span></div><div class="flex justify-between items-center text-text-secondary font-mono-badge text-mono-badge"><span>CRANES: 14/16</span><span>BERTHS: 88%</span></div></div><div class="flex items-center justify-between gap-space-xs"><button class="w-full flex items-center justify-center gap-1.5 py-1.5 px-space-sm bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-primary font-body-sm text-body-sm transition-colors"><span class="material-symbols-outlined text-sm text-primary">ios_share</span><span>Shift Briefing</span></button><button class="p-1.5 bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-secondary hover:text-primary transition-colors" title="Zen Deck (Z)"><span class="material-symbols-outlined text-base">fullscreen</span></button></div></div></aside><div class="pl-60"><main class="w-full min-h-screen pt-14 bg-canvas-base"><div class="flex flex-col w-full text-text-primary">
+<!-- Top Operational Context Strip -->
+<div class="w-full bg-surface-container-low px-space-md py-space-xs flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-status-critical animate-ping"></span>
+<span class="font-mono-badge text-mono-badge text-status-critical uppercase">DEFCON 2 CONGESTION STATE</span>
+</div>
+<span class="font-mono-data text-mono-data text-text-muted">|</span>
+<div class="flex items-center gap-1 font-mono-data text-mono-data text-text-secondary">
+<span class="material-symbols-outlined text-sm text-primary">sensors</span>
+<span>AIS POLLING: <span class="text-text-primary font-bold">100% REAL-TIME</span> (94 VESSELS IN RADAR CONE)</span>
+</div>
+<span class="font-mono-data text-mono-data text-text-muted">|</span>
+<div class="flex items-center gap-1 font-mono-data text-mono-data text-text-secondary">
+<span class="material-symbols-outlined text-sm text-status-warning">air</span>
+<span>CHANNEL TIDE: <span class="text-text-primary font-bold">+1.82m HW (16:10 UTC)</span> â€¢ SWELL: 0.9m NW</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono-badge text-mono-badge text-primary-fixed">PLANNING HORIZON: T+72H</span>
+<button class="px-2.5 py-1 rounded bg-surface-card hover:bg-surface-elevated text-text-secondary hover:text-text-primary font-mono-badge text-mono-badge flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-sm">tune</span>
+<span>RE-OPTIMIZE SOLVER</span>
+</button>
+</div>
+</div>
+<div class="p-space-md space-y-space-md">
+<!-- 1. Top Executive KPI Ribbon -->
+<section aria-label="Executive KPI Telemetry" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-gutter">
+<!-- Card 1: Port Congestion Score -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-md flex flex-col justify-between relative overflow-hidden group hover:bg-surface-card-hover transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-text-secondary uppercase tracking-wider">PORT CONGESTION SCORE</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-mono-kpi text-mono-kpi text-status-critical font-bold">0.74</span>
+<span class="font-mono-data text-mono-data text-text-muted">/ 1.00</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-status-critical-bg text-status-critical font-mono-badge text-mono-badge">RED ALERT</span>
+</div>
+<div class="mt-4 space-y-2">
+<!-- Progress bar -->
+<div class="w-full h-2 bg-surface-recessed rounded-full overflow-hidden relative">
+<div class="h-full bg-status-critical rounded-full" style="width: 74%"></div>
+<div class="absolute top-0 bottom-0 left-[85%] w-0.5 bg-status-warning opacity-75" title="Threshold Target"></div>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-mono-badge">
+<span class="text-status-critical font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-xs">arrow_upward</span> +0.12 vs last shift
+            </span>
+<span class="text-status-warning">HIGH PEAK IN 14H</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Berth Utilization -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-md flex flex-col justify-between relative overflow-hidden group hover:bg-surface-card-hover transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-text-secondary uppercase tracking-wider">BERTH UTILIZATION</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-mono-kpi text-mono-kpi text-primary font-bold">83.3%</span>
+<span class="font-mono-data text-mono-data text-text-secondary">5 / 6 Berths Active</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-primary-container/20 text-primary font-mono-badge text-mono-badge">HIGH DEMAND</span>
+</div>
+<div class="mt-4">
+<div class="grid grid-cols-6 gap-1.5 pt-1">
+<div class="flex flex-col items-center gap-1">
+<span class="w-full h-2 rounded-sm bg-status-safe"></span>
+<span class="font-mono-badge text-[10px] text-text-secondary">B1</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="w-full h-2 rounded-sm bg-status-critical animate-pulse"></span>
+<span class="font-mono-badge text-[10px] text-status-critical font-bold">B2!</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="w-full h-2 rounded-sm bg-vessel-maintenance"></span>
+<span class="font-mono-badge text-[10px] text-text-muted">B3</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="w-full h-2 rounded-sm bg-status-safe"></span>
+<span class="font-mono-badge text-[10px] text-text-secondary">B4</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="w-full h-2 rounded-sm bg-status-safe"></span>
+<span class="font-mono-badge text-[10px] text-text-secondary">B5</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="w-full h-2 rounded-sm bg-status-safe"></span>
+<span class="font-mono-badge text-[10px] text-text-secondary">B6</span>
+</div>
+</div>
+<div class="mt-2 flex items-center justify-between font-mono-badge text-mono-badge text-text-muted">
+<span>QUAY FOOTPRINT: 1,840m / 2,200m</span>
+<span class="text-status-critical">1 Overlap</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Anchorage Queue Depth -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-md flex flex-col justify-between relative overflow-hidden group hover:bg-surface-card-hover transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-text-secondary uppercase tracking-wider">ANCHORAGE QUEUE DEPTH</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-mono-kpi text-mono-kpi text-text-primary font-bold">7</span>
+<span class="font-mono-data text-mono-data text-text-secondary">Vessels Waiting</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-status-warning-bg text-status-warning font-mono-badge text-mono-badge">ELEVATED</span>
+</div>
+<div class="mt-4 bg-surface-recessed p-2 rounded">
+<div class="flex items-center justify-between font-mono-data text-mono-data">
+<span class="text-text-muted">Avg Wait:</span>
+<span class="text-status-warning font-bold">8.4 hrs</span>
+</div>
+<div class="flex items-center justify-between font-mono-data text-mono-data mt-1">
+<span class="text-text-muted">Demurrage Risk:</span>
+<span class="text-status-critical font-bold font-mono-data">$142,000</span>
+</div>
+</div>
+</div>
+<!-- Card 4: 72h Turnaround Efficiency -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-md flex flex-col justify-between relative overflow-hidden group hover:bg-surface-card-hover transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-text-secondary uppercase tracking-wider">72H TURNAROUND EFFICIENCY</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-mono-kpi text-mono-kpi text-text-primary font-bold">26.4</span>
+<span class="font-mono-data text-mono-data text-text-secondary">hrs / vessel</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-text-secondary font-mono-badge text-mono-badge">SUB-OPTIMAL</span>
+</div>
+<div class="mt-4">
+<div class="flex items-center justify-between font-mono-badge text-mono-badge text-text-muted mb-1.5">
+<span>Goal: &lt; 24.0 hrs</span>
+<span class="text-status-critical font-bold">+2.4h Variance</span>
+</div>
+<div class="px-2.5 py-1.5 rounded bg-status-warning-bg/60 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-status-warning">warning</span>
+<span class="font-mono-badge text-mono-badge text-status-warning font-bold">3 SCHEDULE CLASHES DETECTED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Main Operational Cockpit Split (70% Left Gantt / 30% Right AI Dispatch Feed) -->
+<section class="grid grid-cols-1 xl:grid-cols-10 gap-space-md items-start">
+<!-- 70% Sector: Interactive 72-Hour Berth Schedule Gantt Chart -->
+<div class="xl:col-span-7 bg-surface-card rounded-lg shadow-xl overflow-hidden flex flex-col">
+<!-- Gantt Controls Bar -->
+<div class="px-space-md py-space-sm bg-surface-container flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base text-primary">table_chart</span>
+<h2 class="font-headline-md text-headline-md text-text-primary">Berth Window Timeline</h2>
+</div>
+<span class="font-mono-badge text-mono-badge px-2 py-0.5 rounded bg-surface-elevated text-text-secondary">ESTUARY MODEL v4</span>
+</div>
+<div class="flex items-center flex-wrap gap-space-sm">
+<!-- Horizon zoom toggles -->
+<div class="flex items-center bg-surface-recessed p-0.5 rounded">
+<button class="px-2 py-1 font-mono-badge text-mono-badge text-text-muted hover:text-text-primary rounded">12h</button>
+<button class="px-2 py-1 font-mono-badge text-mono-badge text-text-muted hover:text-text-primary rounded">24h</button>
+<button class="px-2 py-1 font-mono-badge text-mono-badge text-text-muted hover:text-text-primary rounded">48h</button>
+<button class="px-2 py-1 font-mono-badge text-mono-badge bg-primary-container text-on-primary-container font-bold rounded shadow-sm">72h</button>
+</div>
+<!-- Berth filter -->
+<div class="relative">
+<select class="appearance-none bg-surface-recessed text-text-primary font-body-sm text-body-sm py-1 pl-2.5 pr-7 rounded cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary">
+<option>All Berths (B1 - B6)</option>
+<option>Main Channel (B1 - B3)</option>
+<option>North Basin (B4 - B6)</option>
+<option>Deep-Water Only (&gt;16m)</option>
+</select>
+<span class="material-symbols-outlined absolute right-1.5 top-1.5 text-sm pointer-events-none text-text-muted">expand_more</span>
+</div>
+<!-- Toggles -->
+<label class="flex items-center gap-1.5 text-text-secondary hover:text-text-primary text-body-sm cursor-pointer select-none">
+<input checked="" class="w-3.5 h-3.5 accent-primary-container rounded" type="checkbox"/>
+<span class="font-mono-badge text-mono-badge">Tide Windows</span>
+</label>
+<label class="flex items-center gap-1.5 text-text-secondary hover:text-text-primary text-body-sm cursor-pointer select-none">
+<input checked="" class="w-3.5 h-3.5 accent-primary-container rounded" type="checkbox"/>
+<span class="font-mono-badge text-mono-badge">Crane Outages</span>
+</label>
+<!-- Reset scrub -->
+<button class="p-1 rounded bg-surface-recessed text-text-secondary hover:text-primary transition-colors" title="Recenter playhead">
+<span class="material-symbols-outlined text-sm">my_location</span>
+</button>
+</div>
+</div>
+<!-- Schedule Visual Canvas Container -->
+<div class="relative w-full overflow-x-auto select-none bg-canvas-base">
+<div class="min-w-[980px] relative pb-4">
+<!-- Timeline Header / Ruler -->
+<div class="grid grid-cols-12 bg-surface-dim sticky top-0 z-20">
+<!-- Berth Label Column Header -->
+<div class="col-span-2 p-2.5 bg-surface-dim font-mono-badge text-mono-badge text-text-muted uppercase flex items-center justify-between">
+<span>BERTH FACILITY</span>
+<span class="text-[9px]">MAX LOA</span>
+</div>
+<!-- 72h Days Header (10 columns split: Day 1 (15 Oct), Day 2 (16 Oct), Day 3 (17 Oct), Day 4 (18 Oct partial)) -->
+<div class="col-span-10 grid grid-cols-4 bg-surface-container-low font-mono-badge text-mono-badge text-text-secondary">
+<div class="py-2 px-3 flex items-center justify-between">
+<span class="text-primary font-bold">TODAY â€¢ 15 OCT</span>
+<span class="text-text-muted font-mono-data text-[10px]">00:00 - 24:00</span>
+</div>
+<div class="py-2 px-3 flex items-center justify-between">
+<span class="text-text-primary font-semibold">TOMORROW â€¢ 16 OCT</span>
+<span class="text-text-muted font-mono-data text-[10px]">00:00 - 24:00</span>
+</div>
+<div class="py-2 px-3 flex items-center justify-between">
+<span class="text-text-primary font-semibold">THU â€¢ 17 OCT</span>
+<span class="text-text-muted font-mono-data text-[10px]">00:00 - 24:00</span>
+</div>
+<div class="py-2 px-3 flex items-center justify-between">
+<span class="text-text-primary font-semibold">FRI â€¢ 18 OCT</span>
+<span class="text-text-muted font-mono-data text-[10px]">00:00 - 14:30</span>
+</div>
+</div>
+</div>
+<!-- Hour Sub-ticks strip -->
+<div class="grid grid-cols-12 bg-surface-recessed/90">
+<div class="col-span-2 py-1 px-3 text-[10px] font-mono-badge text-text-muted">SLOT CRITICALITY</div>
+<div class="col-span-10 grid grid-cols-12 text-[10px] font-mono-data text-text-muted text-center py-1">
+<span>06:00</span>
+<span class="text-primary font-bold bg-primary/10">14:30</span>
+<span>20:00</span>
+<span>02:00</span>
+<span>08:00</span>
+<span>14:00</span>
+<span>20:00</span>
+<span>02:00</span>
+<span>08:00</span>
+<span>14:00</span>
+<span>20:00</span>
+<span>08:00</span>
+</div>
+</div>
+<!-- Gantt Body Rows -->
+<div class="relative divide-y-0 space-y-1 py-1">
+<!-- Red "NOW" Playhead Guideline (14:30 UTC position calculated approx 13.8% across the 72h window) -->
+<div class="absolute top-0 bottom-0 left-[29.8%] w-[2px] bg-status-critical z-30 pointer-events-none shadow-[0_0_8px_#ef4444]">
+<div class="absolute -top-1 -left-2 bg-status-critical text-on-error px-1 py-0.5 rounded text-[9px] font-mono-badge font-bold tracking-tighter">
+                  NOW 14:30
+                </div>
+</div>
+<!-- BERTH 1 -->
+<div class="grid grid-cols-12 items-center bg-surface-card/60 hover:bg-surface-card transition-colors py-2 px-1">
+<div class="col-span-2 px-2.5 flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span>
+<span class="font-mono-data text-mono-data font-bold text-text-primary">BERTH 1</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">LOA 366m â€¢ D 16.5m</span>
+</div>
+<div class="col-span-10 h-14 relative bg-surface-recessed/40 rounded overflow-hidden">
+<!-- Gantt Block: EVER GIVEN (08:00 to 22:00 Today ~ 2% to 19% of 72h) -->
+<div class="absolute top-1.5 bottom-1.5 left-[2%] w-[18%] bg-surface-elevated rounded p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:bg-surface-card-hover transition-all">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-status-safe"></span>
+<span class="font-headline-md text-[12px] font-bold text-text-primary truncate">EVER GIVEN</span>
+</div>
+<span class="font-mono-badge text-[9px] text-primary px-1 bg-surface-container rounded">4 CRN</span>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-[10px] text-text-secondary">
+<span>EVERGREEN â€¢ 20,124 TEU</span>
+<span class="text-status-safe font-bold">ON-SCHEDULE</span>
+</div>
+</div>
+<!-- Next Vessel B1: CMA CGM TITAN (Tomorrow 08:00 to 22:00) -->
+<div class="absolute top-1.5 bottom-1.5 left-[34%] w-[16%] bg-surface-card rounded p-1.5 flex flex-col justify-between hover:bg-surface-elevated transition-all opacity-85">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-[11px] font-bold text-text-secondary truncate">CMA CGM TITAN</span>
+<span class="font-mono-badge text-[9px] text-text-muted">3 CRN</span>
+</div>
+<div class="font-mono-badge text-[9px] text-text-muted truncate">ETA: 16 OCT 08:00</div>
+</div>
+</div>
+</div>
+<!-- BERTH 2 (CRITICAL CLASH WARNING) -->
+<div class="grid grid-cols-12 items-center bg-status-critical-bg/20 py-2 px-1 rounded transition-colors relative">
+<div class="col-span-2 px-2.5 flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-status-critical animate-ping"></span>
+<span class="font-mono-data text-mono-data font-bold text-status-critical">BERTH 2</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">LOA 400m â€¢ D 17.0m</span>
+</div>
+<div class="col-span-10 h-14 relative bg-surface-recessed/60 rounded overflow-hidden">
+<!-- Block 1: MSC OSCAR (Occupying Berth until 17:00 Today ~ up to 18%) -->
+<div class="absolute top-1.5 bottom-1.5 left-[1%] w-[17%] bg-surface-elevated rounded p-1.5 flex flex-col justify-between shadow-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-[11px] font-bold text-text-primary truncate">MSC OSCAR</span>
+<span class="font-mono-badge text-[9px] text-primary px-1 bg-surface-container rounded">3 CRN</span>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-[10px] text-text-secondary">
+<span>19,224 TEU</span>
+<span class="text-status-warning font-bold">DEP: 17:00</span>
+</div>
+</div>
+<!-- Block 2: CMA CGM ANTOINE (Overlapping! ETA 16:00, +2h delay, clash window 16:00-17:00) -->
+<div class="absolute top-1 bottom-1 left-[14.5%] w-[21%] bg-status-critical-bg rounded p-1.5 flex flex-col justify-between shadow-lg cursor-pointer animate-pulse z-10">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-status-critical">error</span>
+<span class="font-headline-md text-[12px] font-bold text-error truncate">CMA CGM ANTOINE</span>
+</div>
+<span class="font-mono-badge text-[9px] bg-status-critical text-on-error px-1 rounded font-bold">CLASH 60m</span>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-[10px]">
+<span class="text-text-primary">ETA: 16:00 (+2h Delay)</span>
+<span class="text-status-critical font-bold uppercase">BERTH CLASH</span>
+</div>
+</div>
+<!-- Ghost marker indicating delayed departure risk -->
+<div class="absolute top-0 bottom-0 left-[14.5%] w-[3.5%] bg-status-critical/30 pointer-events-none flex items-center justify-center">
+<span class="font-mono-badge text-[8px] text-on-error font-bold rotate-90">OVERLAP</span>
+</div>
+</div>
+</div>
+<!-- BERTH 3 (OUTAGE / MAINTENANCE) -->
+<div class="grid grid-cols-12 items-center bg-surface-card/60 hover:bg-surface-card transition-colors py-2 px-1">
+<div class="col-span-2 px-2.5 flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-vessel-maintenance"></span>
+<span class="font-mono-data text-mono-data font-bold text-text-secondary">BERTH 3</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">LOA 350m â€¢ D 15.0m</span>
+</div>
+<div class="col-span-10 h-14 relative bg-surface-recessed/40 rounded overflow-hidden">
+<!-- Maintenance Hatching: Spanning from NOW until 17 Oct 06:00 (~60% of total bar) -->
+<div class="absolute top-1.5 bottom-1.5 left-0 w-[58%] rounded p-2 flex items-center justify-center relative overflow-hidden bg-surface-recessed opacity-95">
+<!-- Inline SVG diagonal stripes pattern background -->
+<svg class="absolute inset-0 w-full h-full opacity-25 text-border-subtle" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="12" id="diagonalHatch" patterntransform="rotate(45 0 0)" patternunits="userSpaceOnUse" width="12">
+<line stroke="currentColor" stroke-width="3" x1="0" x2="0" y1="0" y2="12"></line>
+</pattern>
+</defs>
+<rect fill="url(#diagonalHatch)" height="100%" width="100%"></rect>
+</svg>
+<div class="relative z-10 flex items-center gap-2 px-3 py-1 bg-canvas-base/90 rounded text-center">
+<span class="material-symbols-outlined text-sm text-status-warning">construction</span>
+<span class="font-mono-badge text-mono-badge text-text-secondary font-semibold uppercase tracking-wider">
+                        CRANE 3 OVERHAUL &amp; DREDGING WINDOW (CLOSED UNTIL 17 OCT 06:00 UTC)
+                      </span>
+</div>
+</div>
+<!-- Available post-maintenance slot -->
+<div class="absolute top-1.5 bottom-1.5 left-[60%] w-[38%] rounded p-1.5 flex items-center justify-between text-text-muted">
+<span class="font-mono-badge text-mono-badge">OPEN WINDOW (17 OCT 06:00+)</span>
+<span class="font-mono-badge text-[10px] text-primary">RESERVED FOR FEEDER REROUTE</span>
+</div>
+</div>
+</div>
+<!-- BERTH 4 (AVAILABLE RECOMMENDED SLOT) -->
+<div class="grid grid-cols-12 items-center bg-surface-card/60 hover:bg-surface-card transition-colors py-2 px-1">
+<div class="col-span-2 px-2.5 flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span>
+<span class="font-mono-data text-mono-data font-bold text-text-primary">BERTH 4</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">LOA 300m â€¢ D 14.5m</span>
+</div>
+<div class="col-span-10 h-14 relative bg-surface-recessed/40 rounded overflow-hidden">
+<!-- Free Slot Highlighted as AI Target (From 14:00 Today to Tomorrow 10:00 ~ 13% to 38%) -->
+<div class="absolute top-1.5 bottom-1.5 left-[13%] w-[25%] bg-primary-container/10 rounded p-2 flex items-center justify-between cursor-pointer group hover:bg-primary-container/20 transition-all shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-primary animate-pulse">auto_awesome</span>
+<div class="flex flex-col">
+<span class="font-headline-md text-[11px] text-primary font-bold uppercase tracking-wide">RECOMMENDED DESTINATION</span>
+<span class="font-mono-badge text-[10px] text-text-secondary">Depth 14.5m â€¢ 2 STS Cranes Ready</span>
+</div>
+</div>
+<button class="px-2 py-1 bg-primary-container text-on-primary-container font-mono-badge text-mono-badge font-bold rounded shadow group-hover:scale-105 transition-transform">
+                      SLOT ANTOINE
+                    </button>
+</div>
+<!-- Subsequent Vessel: ONE APUS (16 Oct 14:00 to 17 Oct 12:00) -->
+<div class="absolute top-1.5 bottom-1.5 left-[42%] w-[24%] bg-surface-card rounded p-1.5 flex flex-col justify-between opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-[11px] font-bold text-text-primary">ONE APUS</span>
+<span class="font-mono-badge text-[9px] text-text-muted">14,052 TEU</span>
+</div>
+<div class="font-mono-badge text-[9px] text-text-secondary">ETA: 16 OCT 14:00 â€¢ GANG CONFIRMED</div>
+</div>
+</div>
+</div>
+<!-- BERTH 5 -->
+<div class="grid grid-cols-12 items-center bg-surface-card/60 hover:bg-surface-card transition-colors py-2 px-1">
+<div class="col-span-2 px-2.5 flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-warning"></span>
+<span class="font-mono-data text-mono-data font-bold text-text-primary">BERTH 5</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">LOA 350m â€¢ D 16.0m</span>
+</div>
+<div class="col-span-10 h-14 relative bg-surface-recessed/40 rounded overflow-hidden">
+<!-- MAERSK MC-KINNEY (Today 02:00 to 16 Oct 04:00 ~ 2% to 28%) -->
+<div class="absolute top-1.5 bottom-1.5 left-[2%] w-[26%] bg-surface-elevated rounded p-1.5 flex flex-col justify-between shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1">
+<span class="font-headline-md text-[12px] font-bold text-text-primary truncate">MAERSK MC-KINNEY</span>
+<span class="px-1.5 py-0.2 rounded bg-status-warning-bg text-status-warning font-mono-badge text-[9px]">CRANE RESTRICTION</span>
+</div>
+<span class="font-mono-badge text-[9px] text-primary px-1 bg-surface-container rounded">3 CRN</span>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-[10px] text-text-secondary">
+<span>18,270 TEU â€¢ 2,410 MOVES REMAINING</span>
+<span class="text-status-warning font-mono-data">DEP: 16 OCT 04:00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- BERTH 6 -->
+<div class="grid grid-cols-12 items-center bg-surface-card/60 hover:bg-surface-card transition-colors py-2 px-1">
+<div class="col-span-2 px-2.5 flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span>
+<span class="font-mono-data text-mono-data font-bold text-text-primary">BERTH 6</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">LOA 400m â€¢ D 17.5m</span>
+</div>
+<div class="col-span-10 h-14 relative bg-surface-recessed/40 rounded overflow-hidden">
+<!-- COSCO SHIPPING TAURUS (Tomorrow 02:00 to 20:00 ~ 27% to 48%) -->
+<div class="absolute top-1.5 bottom-1.5 left-[27%] w-[21%] bg-surface-elevated rounded p-1.5 flex flex-col justify-between shadow-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-[12px] font-bold text-text-primary truncate">COSCO SHIPPING TAURUS</span>
+<span class="font-mono-badge text-[9px] text-primary px-1 bg-surface-container rounded">4 CRN</span>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-[10px] text-text-secondary">
+<span>20,119 TEU â€¢ INBOUND CHANNEL</span>
+<span class="text-status-safe font-mono-data">ETA: 02:00</span>
+</div>
+</div>
+<!-- Idle period leading in -->
+<div class="absolute top-1.5 bottom-1.5 left-0 w-[26%] flex items-center justify-center font-mono-badge text-[10px] text-text-muted">
+                    VACANT UNTIL TAURUS ARRIVAL
+                  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Footer Legend -->
+<div class="px-space-md py-2 bg-surface-container-low flex flex-wrap items-center justify-between text-mono-badge font-mono-badge text-text-muted gap-space-sm">
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-surface-elevated"></span> Active Operation</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-status-critical"></span> Critical Conflict</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-vessel-maintenance"></span> Dredging / Crane Maintenance</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-primary-container"></span> AI Optimal Insertion</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-text-secondary">HOTKEY:</span>
+<kbd class="px-1 py-0.5 bg-surface-container rounded text-text-primary text-[10px]">SPACE</kbd> Scrub Timeline
+            <kbd class="px-1 py-0.5 bg-surface-container rounded text-text-primary text-[10px]">W</kbd> What-If Mode
+          </div>
+</div>
+</div>
+<!-- 30% Sector: Live Prescriptive AI Dispatch Feed -->
+<div class="xl:col-span-3 space-y-space-md flex flex-col">
+<!-- Header Ribbon -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-md flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">bolt</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-text-primary">AI Prescriptive Dispatch</h2>
+<span class="font-mono-badge text-mono-badge text-text-muted">SHAP SOLVER ENGINE v2.4</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-status-critical-bg text-status-critical font-mono-badge text-mono-badge font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-status-critical"></span>
+            2 URGENT
+          </span>
+</div>
+<!-- ACTION CARD 1: URGENT CONFLICT -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-xl relative overflow-hidden transition-all duration-300">
+<div class="space-y-3">
+<!-- Alert Chip -->
+<div class="flex items-center justify-between">
+<span class="px-2 py-1 rounded bg-status-critical-bg text-status-critical font-mono-badge text-mono-badge font-bold flex items-center gap-1">
+<span>âš¡ CRITICAL CONFLICT</span>
+<span class="text-text-muted">â€¢</span>
+<span>EXEC BEFORE 15:30 UTC</span>
+</span>
+<span class="font-mono-badge text-mono-badge text-status-critical font-bold">T-58m</span>
+</div>
+<!-- Title & Context -->
+<div>
+<h3 class="font-headline-lg text-headline-lg text-text-primary">Berth 2 Conflict: CMA CGM Antoine</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">
+                Antoine arrives at <span class="text-text-primary font-bold">16:00 UTC</span> (+2h channel fog delay), creating a severe 60-minute spatial clash with <span class="text-text-primary font-bold">MSC Oscar</span>'s trailing stern envelope.
+              </p>
+</div>
+<!-- Prescriptive Solution Box -->
+<div class="bg-surface-recessed p-3 rounded space-y-1.5">
+<div class="flex items-center gap-1.5 font-mono-badge text-mono-badge text-primary uppercase font-bold">
+<span class="material-symbols-outlined text-sm">auto_fix_high</span>
+<span>PRESCRIPTIVE RECOMMENDATION</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-primary font-medium">
+                1. Divert <span class="text-primary font-bold">CMA CGM Antoine</span> to <span class="text-status-safe font-bold">Berth 4</span> (vacant from 14:00).<br/>
+                2. Mobilize Crane Gang #4 from maintenance standby to preserve 120 moves/hr target.
+              </p>
+</div>
+<!-- Impact Metrics -->
+<div class="p-2.5 rounded bg-status-safe-bg space-y-1">
+<div class="font-mono-badge text-mono-badge text-status-safe font-bold uppercase tracking-wider">PROJECTED RESOLUTION DELTA</div>
+<div class="grid grid-cols-3 gap-1 font-mono-data text-mono-data text-center pt-1">
+<div class="bg-surface-card/60 p-1 rounded">
+<span class="text-text-muted block text-[10px]">QUEUE AVOID</span>
+<span class="text-status-safe font-bold">â–² 4.2h</span>
+</div>
+<div class="bg-surface-card/60 p-1 rounded">
+<span class="text-text-muted block text-[10px]">DEMURRAGE</span>
+<span class="text-status-safe font-bold">-$48,500</span>
+</div>
+<div class="bg-surface-card/60 p-1 rounded">
+<span class="text-text-muted block text-[10px]">CONGESTION</span>
+<span class="text-status-safe font-bold">-0.14 pt</span>
+</div>
+</div>
+</div>
+<!-- Action Trigger CTAs -->
+<div class="space-y-2 pt-1">
+<button class="w-full py-2.5 px-space-md bg-primary-container hover:bg-inverse-primary text-on-primary-container font-headline-md text-headline-md rounded font-bold shadow flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined text-base font-bold">check_circle</span>
+<span>Accept &amp; Dispatch Order</span>
+</button>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 px-space-sm bg-surface-container hover:bg-surface-elevated text-text-primary font-body-sm text-body-sm rounded flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-sm text-primary">alt_route</span>
+<span>What-If Sim</span>
+</button>
+<button class="py-2 px-space-sm bg-surface-container hover:bg-error-container/30 text-text-secondary hover:text-error font-body-sm text-body-sm rounded flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+<span>Dismiss</span>
+</button>
+</div>
+</div>
+<!-- SHAP Diagnostics Drawer link -->
+<div class="pt-1 flex items-center justify-between text-mono-badge font-mono-badge">
+<a class="text-text-muted hover:text-primary flex items-center gap-1 transition-colors" href="#">
+<span class="material-symbols-outlined text-xs">analytics</span>
+<span>Explain Why (SHAP Feature Weight)</span>
+</a>
+<span class="text-text-muted">CONFIDENCE: 96.4%</span>
+</div>
+</div>
+</div>
+<!-- ACTION CARD 2: SPEED REDUCTION ADVISORY -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-md hover:bg-surface-card-hover transition-all">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-mono-badge text-mono-badge font-bold flex items-center gap-1">
+<span>âš¡ OPTIMIZATION ADVISORY</span>
+</span>
+<span class="font-mono-badge text-mono-badge text-text-muted">FUEL / JIT</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-text-primary">Speed Reduction (JIT): Hapag-Lloyd Berlin</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">
+                Vessel cruising at 16.0 kts into congested outer anchorage. Slow-steaming eliminates holding anchor turn while saving bunker emissions.
+              </p>
+</div>
+<div class="bg-surface-recessed p-2.5 rounded font-mono-data text-mono-data text-text-secondary space-y-1">
+<div class="flex justify-between">
+<span>Speed Target:</span>
+<span class="text-primary font-bold">16.0 kts â†’ 12.5 kts</span>
+</div>
+<div class="flex justify-between">
+<span>Bunker Savings:</span>
+<span class="text-status-safe font-bold">14T Fuel ($8,400)</span>
+</div>
+<div class="flex justify-between">
+<span>Queue Idle:</span>
+<span class="text-status-safe font-bold">0.0 hrs at anchorage</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-1">
+<button class="flex-1 py-2 px-space-sm bg-surface-container hover:bg-surface-elevated text-primary font-body-sm text-body-sm font-semibold rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">podcasts</span>
+<span>Send Pilot Notice</span>
+</button>
+<button class="py-2 px-space-sm bg-surface-container hover:bg-surface-elevated text-text-muted hover:text-text-primary rounded text-body-sm transition-colors">
+                Dismiss
+              </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. Bottom Section: Quayside Spatial Footprint & Crane Topology -->
+<section aria-label="Quayside Spatial Footprint" class="bg-surface-card rounded-lg p-space-md shadow-xl">
+<div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-base">straighten</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-text-primary">Pier 400 Physical Berth Topology &amp; STS Crane Allocation</h2>
+<span class="font-mono-badge text-mono-badge text-text-muted">LINEAR GEOMETRIC SCALE (0m TO 2,200m QUAY WALL)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-md font-mono-badge text-mono-badge text-text-secondary">
+<div class="flex items-center gap-1">
+<span class="w-3 h-1.5 bg-primary-container rounded-sm"></span>
+<span>STS Crane Active</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-3 h-1.5 bg-vessel-maintenance rounded-sm"></span>
+<span>Crane Out of Service</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-status-safe"></span>
+<span>Safe Mooring Margin &gt; 35m</span>
+</div>
+</div>
+</div>
+<!-- Linear Diagrammatic Visual Scale Canvas -->
+<div class="w-full bg-canvas-base rounded-lg p-space-md overflow-x-auto">
+<div class="min-w-[1000px] space-y-3">
+<!-- Distance Markings Tape -->
+<div class="relative w-full h-5 font-mono-data text-[10px] text-text-muted flex justify-between select-none">
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 0m (South Bollard)</span>
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 400m</span>
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 800m</span>
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 1,200m</span>
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 1,600m</span>
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 2,000m</span>
+<span class="flex items-center gap-1"><span class="w-1 h-2 bg-text-muted inline-block"></span> 2,200m (North Boundary)</span>
+</div>
+<!-- The Pier Edge Line & Cranes Track -->
+<div class="relative w-full h-8 bg-surface-container rounded-sm flex items-center">
+<span class="absolute left-2 font-mono-badge text-[9px] text-text-muted uppercase tracking-widest z-10 pointer-events-none">STS CRANE RAILWAY AXIS</span>
+<!-- Crane Markers (Positions along quay 0-2200m) -->
+<!-- Crane 1 to 4 at Berth 1 (approx 5% to 18%) -->
+<div class="absolute left-[5%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #1: 34 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C01: 34/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<div class="absolute left-[9%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #2: 36 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C02: 36/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<div class="absolute left-[13%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #3: 31 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C03: 31/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<div class="absolute left-[17%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #4: 29 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C04: 29/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<!-- Crane 5 & 6 at Berth 2 (approx 24% to 34%) -->
+<div class="absolute left-[24%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #05: 22 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C05: 22/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<div class="absolute left-[31%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #06: 25 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C06: 25/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<!-- Crane 7 (Maintenance at Berth 3 ~ 42%) -->
+<div class="absolute left-[42%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #07: OUT OF SERVICE">
+<span class="px-1 py-0.5 rounded bg-vessel-maintenance text-text-primary font-mono-badge text-[9px]">C07: OFFLINE</span>
+<div class="w-1.5 h-3 bg-vessel-maintenance rounded-sm mt-0.5"></div>
+</div>
+<!-- Crane 8 to 10 at Berth 5 (approx 68% to 80%) -->
+<div class="absolute left-[68%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #11: 30 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C11: 30/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<div class="absolute left-[73%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #12: 32 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C12: 32/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+<div class="absolute left-[78%] -top-2 flex flex-col items-center group cursor-pointer" title="Crane #13: 28 moves/hr">
+<span class="px-1 py-0.5 rounded bg-primary-container text-on-primary-container font-mono-badge text-[9px] font-bold">C13: 28/h</span>
+<div class="w-1.5 h-3 bg-primary-container rounded-sm mt-0.5 shadow-sm"></div>
+</div>
+</div>
+<!-- Water Basin: Vessel Hull Outlines Moored alongside Pier -->
+<div class="relative w-full h-24 bg-surface-recessed rounded-lg overflow-hidden flex items-center p-2">
+<span class="absolute right-3 bottom-2 font-mono-badge text-[10px] text-text-muted uppercase">PACIFIC DEEP CHANNEL DRAFT 17.5m</span>
+<!-- Moored Hull: EVER GIVEN at Berth 1 (LOA 400m ~ 18.1% length of 2200m) -->
+<div class="absolute left-[3%] w-[18%] h-16 rounded-r-3xl bg-surface-elevated flex flex-col justify-between p-2 shadow-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-headline-md text-text-primary font-bold truncate">EVER GIVEN</span>
+<span class="font-mono-badge text-[10px] text-status-safe font-bold">BERTH 1</span>
+</div>
+<div class="flex items-center justify-between font-mono-data text-mono-data text-text-muted">
+<span>LOA 400m â€¢ BEAM 59m</span>
+<span class="text-primary font-bold">4 CRANES ON HULL</span>
+</div>
+<!-- Simulated container bay blocks -->
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden flex gap-0.5">
+<div class="h-full bg-primary flex-1"></div>
+<div class="h-full bg-primary flex-1"></div>
+<div class="h-full bg-primary flex-1"></div>
+<div class="h-full bg-status-safe flex-1"></div>
+</div>
+</div>
+<!-- Moored Hull: MSC OSCAR at Berth 2 (LOA 395m ~ 17.9% length) -->
+<div class="absolute left-[23%] w-[17.5%] h-16 rounded-r-3xl bg-surface-elevated flex flex-col justify-between p-2 shadow-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-headline-md text-text-primary font-bold truncate">MSC OSCAR</span>
+<span class="font-mono-badge text-[10px] text-status-warning font-bold">BERTH 2</span>
+</div>
+<div class="flex items-center justify-between font-mono-data text-mono-data text-text-muted">
+<span>LOA 395m â€¢ BEAM 59m</span>
+<span class="text-status-warning font-bold">UNMOORING 17:00</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden flex gap-0.5">
+<div class="h-full bg-status-warning flex-1"></div>
+<div class="h-full bg-status-warning flex-1"></div>
+<div class="h-full bg-status-safe flex-1"></div>
+</div>
+</div>
+<!-- Berth 3 & 4: Clear Waterway (Ghost slot indicator) -->
+<div class="absolute left-[43%] w-[22%] h-14 rounded-lg bg-surface-dim/40 flex flex-col items-center justify-center text-center p-2">
+<span class="font-mono-badge text-mono-badge text-primary font-bold uppercase">BERTH 4 CLEAR APPROACH ZONE (300m)</span>
+<span class="font-mono-data text-[10px] text-text-secondary">RECOMMENDED FOR CMA CGM ANTOINE DOCKING</span>
+</div>
+<!-- Moored Hull: MAERSK MC-KINNEY at Berth 5 (LOA 399m ~ 18%) -->
+<div class="absolute left-[67%] w-[18%] h-16 rounded-r-3xl bg-surface-elevated flex flex-col justify-between p-2 shadow-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-md text-headline-md text-text-primary font-bold truncate">MAERSK MC-KINNEY</span>
+<span class="font-mono-badge text-[10px] text-primary font-bold">BERTH 5</span>
+</div>
+<div class="flex items-center justify-between font-mono-data text-mono-data text-text-muted">
+<span>LOA 399m â€¢ BEAM 59m</span>
+<span class="text-primary font-bold">3 CRANES ACTIVE</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden flex gap-0.5">
+<div class="h-full bg-primary flex-1"></div>
+<div class="h-full bg-primary flex-1"></div>
+<div class="h-full bg-surface-variant flex-1"></div>
+</div>
+</div>
+<!-- Berth 6: Cleared Waiting Space -->
+<div class="absolute left-[87%] w-[12%] h-14 rounded-lg flex items-center justify-center text-center p-1 font-mono-badge text-mono-badge text-text-muted">
+              BERTH 6 VACANT
+            </div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div></main></div></body></html>
+
+

@@ -1,0 +1,544 @@
+﻿<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "error": "#ffb4ab", "border-subtle": "#1e3252", "status-critical-bg": "rgba(239, 68, 68, 0.15)", "on-error": "#690005", "on-tertiary-fixed-variant": "#2f2ebe", "surface-container-high": "#222a3a", "surface-container": "#18202f", "tertiary-container": "#8d90ff", "text-primary": "#f1f5f9", "status-safe": "#10b981", "surface-tint": "#89ceff", "on-surface": "#dbe2f8", "secondary-container": "#00a6e0", "surface-dim": "#0b1322", "inverse-surface": "#dbe2f8", "primary-fixed": "#c9e6ff", "surface-variant": "#2d3545", "inverse-on-surface": "#293041", "surface-card-hover": "#16253e", "status-critical": "#ef4444", "background": "#0b1322", "surface-card": "#0f1b2e", "vessel-maintenance": "#475569", "inverse-primary": "#006591", "outline": "#88929b", "surface-recessed": "#080d18", "surface-elevated": "#1a2a44", "status-safe-bg": "rgba(16, 185, 129, 0.12)", "on-secondary-container": "#00374d", "on-error-container": "#ffdad6", "outline-variant": "#3e4850", "primary-container": "#0ea5e9", "secondary-fixed": "#c4e7ff", "on-primary-fixed": "#001e2f", "tertiary-fixed-dim": "#c0c1ff", "error-container": "#93000a", "status-warning-bg": "rgba(245, 158, 11, 0.12)", "vessel-priority": "#a855f7", "on-surface-variant": "#bec8d2", "text-secondary": "#94a3b8", "on-tertiary-fixed": "#07006c", "on-secondary-fixed-variant": "#004c69", "secondary-fixed-dim": "#7bd0ff", "status-warning": "#f59e0b", "tertiary-fixed": "#e1e0ff", "on-secondary-fixed": "#001e2c", "surface-container-highest": "#2d3545", "on-tertiary": "#1000a9", "primary": "#89ceff", "tertiary": "#c0c1ff", "on-secondary": "#00354a", "border-hairline": "rgba(255, 255, 255, 0.07)", "on-background": "#dbe2f8", "text-muted": "#64748b", "surface-container-low": "#141c2b", "canvas-base": "#060a12", "secondary": "#7bd0ff", "on-primary-fixed-variant": "#004c6e", "on-primary-container": "#003751", "on-primary": "#00344d", "primary-fixed-dim": "#89ceff", "on-tertiary-container": "#1407ad", "surface-bright": "#32394a", "border-focus": "#2563eb", "surface-container-lowest": "#060e1d", "surface": "#0b1322" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem", "margin-compact": "1rem", "margin": "1.5rem", "gutter-sm": "0.75rem", "space-lg": "1.5rem", "space-md": "1rem" }, "fontFamily": { "touch-field": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"], "mono-badge": ["JetBrains Mono"], "display-hero": ["Inter"], "mono-data": ["JetBrains Mono"], "mono-kpi": ["JetBrains Mono"], "body-md": ["Inter"], "body-sm": ["Inter"] }, "fontSize": { "touch-field": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "headline-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "mono-badge": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }], "display-hero": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "mono-data": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }], "mono-kpi": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } };</script></head><body class="bg-canvas-base text-text-primary antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface-dim/95 backdrop-blur-md border-b border-border-subtle"><div class="h-14 w-full px-space-md flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><img alt="PortPulse Radar Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VzuF-qVybHS94ulWJMy4yeCFE4cmqi2kv3bkZ0gE-we9ttNo4ZItcE-sOHbVHPjwy_88VtNvQtuClnNv2J1iDrixZ1uyUmV6PfWV9iTjjwO5cu1r9dJ0ctc4haqUAkStF_HgMbT8P1ymMrPYU4xq-RyDh7ZBSEDMFDdwbAF7KLIfHrrmEdQdHcjIFMSJY7kPUHw8jykjSEY16Cmbh4qOlsenvymInfQuKda9YhlfevqF4cQ69aSUk8Mg"/><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-text-primary leading-none">PortPulse</span><span class="font-mono-badge text-mono-badge text-primary uppercase leading-tight">Maritime OS</span></div></div><div class="h-5 w-[1px] bg-border-subtle"></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-secondary transition-colors"><span class="material-symbols-outlined text-sm text-primary">anchor</span><span class="font-body-sm text-body-sm font-medium text-text-primary">Port of Los Angeles (Pier 400)</span><span class="material-symbols-outlined text-sm">expand_more</span></button></div><div class="hidden xl:flex items-center gap-space-md bg-surface-recessed border border-border-subtle rounded-lg px-space-md py-1 shrink-0"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-base">schedule</span><div class="flex flex-col"><span class="font-mono-data text-mono-data text-primary font-bold">15 OCT 2025 â€¢ 14:30 UTC</span><span class="font-mono-badge text-mono-badge text-text-muted">Local: 07:30 PDT</span></div></div><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-1"><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">-30m</button><button class="h-7 w-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded hover:opacity-90"><span class="material-symbols-outlined text-base">play_arrow</span></button><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">+30m</button></div><div class="flex items-center bg-surface-container border border-border-subtle rounded p-0.5"><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">1x</button><button class="px-1.5 py-0.5 bg-primary-container text-on-primary-container font-mono-badge text-mono-badge font-bold rounded-sm">2x</button><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">5x</button></div><div class="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden relative"><div class="h-full bg-primary w-3/5"></div><div class="absolute top-0 bottom-0 left-3/5 w-1 bg-status-critical"></div></div></div><div class="flex items-center gap-space-sm shrink-0"><div class="hidden lg:flex items-center gap-space-xs px-space-sm py-1 bg-status-safe-bg border border-status-safe/30 rounded-full"><span class="w-2 h-2 rounded-full bg-status-safe animate-pulse"></span><span class="font-mono-badge text-mono-badge text-status-safe">LIVE ML Engine (38ms â€¢ v2.4)</span></div><div class="hidden md:flex items-center gap-1 px-space-sm py-1 bg-surface-recessed border border-border-subtle rounded-lg text-text-secondary font-body-sm text-body-sm"><span class="material-symbols-outlined text-sm text-vessel-priority">shield_person</span><span>Shift Supervisor</span></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-muted transition-colors"><span class="material-symbols-outlined text-sm">search</span><span class="font-mono-badge text-mono-badge text-text-muted">âŒ˜K</span></button><button class="relative p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-status-critical text-text-primary rounded-full flex items-center justify-center font-mono-badge text-mono-badge">3</span></button><button class="flex items-center gap-space-xs px-space-sm py-1 bg-gradient-to-r from-vessel-priority/20 to-primary-container/20 border border-primary-container/40 rounded-full text-text-primary hover:border-primary-container transition-all"><span class="font-body-sm text-body-sm font-semibold text-primary">Ask Copilot</span><span class="font-mono-badge text-mono-badge text-secondary">âœ¨</span></button><div class="h-6 w-[1px] bg-border-subtle"></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-border-subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyBf3fWtUh7rQt3IStjeC9MjRbRcS5CKtuEP8jbutyp85Tv4lub40CESm1dECM220UFngbkh7MGNG8Siz0H_iSMtJgj0tJ329kxS3mXg5dM5TMdYw6XGXeiH6sknYcl9GayOetx67f4F_WpyUmh-Vi5lm-0G_Rq7hd3xi8RZdfFAPfUxKZIKzA2eOn6G2eZ-T26loOt8FSWsJ8eGojvM18_j2vOxKVJlm5GWYnZTBiTGctA4jIPo2-"/></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-60 bg-surface-dim border-r border-border-subtle z-40 flex flex-col justify-between overflow-y-auto"><div class="p-space-sm"><div class="px-space-sm py-space-xs mb-space-xs"><span class="font-mono-badge text-mono-badge text-text-muted uppercase tracking-wider">Operational Units</span></div><nav class="space-y-1" data-active-classes="bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]"><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="operations-plan" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">calendar_month</span><span class="font-body-sm text-body-sm">Operations Plan</span></div><span class="px-1.5 py-0.5 bg-status-safe-bg text-status-safe border border-status-safe/30 rounded font-mono-badge text-mono-badge">LIVE</span></a><a aria-current="page" class="flex items-center justify-between px-space-sm py-2 rounded transition-colors bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]" data-path="terminal-vessel-map" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">explore</span><span class="font-body-sm text-body-sm">Terminal Vessel Map</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">12 Active</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="72h-congestion-heatmap" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bar_chart</span><span class="font-body-sm text-body-sm">72h Congestion</span></div><span class="px-1.5 py-0.5 bg-status-warning-bg text-status-warning border border-status-warning/30 rounded font-mono-badge text-mono-badge">Peak 18h</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="prescriptive-actions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bolt</span><span class="font-body-sm text-body-sm">Prescriptive Actions</span></div><span class="px-1.5 py-0.5 bg-status-critical-bg text-status-critical border border-status-critical/30 rounded font-mono-badge text-mono-badge">3 Pending</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="what-if-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">tune</span><span class="font-body-sm text-body-sm">What-If Simulator</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="live-vessel-queue" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">anchor</span><span class="font-body-sm text-body-sm">Live Vessel Queue</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">7 Waiting</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="cascade-delay-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">account_tree</span><span class="font-body-sm text-body-sm">Cascade Delays</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="activity-log-audit" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">description</span><span class="font-body-sm text-body-sm">Activity &amp; Audit</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="forecast-ml-metrics" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">memory</span><span class="font-body-sm text-body-sm">Forecast &amp; ML Metrics</span></div></a></nav></div><div class="p-space-sm border-t border-border-subtle bg-surface-recessed/60 space-y-space-sm"><div class="p-space-xs bg-surface-card border border-border-subtle rounded"><div class="flex items-center justify-between mb-1"><span class="font-mono-badge text-mono-badge text-text-muted">APM PIER 400</span><span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span></div><div class="flex justify-between items-center text-text-secondary font-mono-badge text-mono-badge"><span>CRANES: 14/16</span><span>BERTHS: 88%</span></div></div><div class="flex items-center justify-between gap-space-xs"><button class="w-full flex items-center justify-center gap-1.5 py-1.5 px-space-sm bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-primary font-body-sm text-body-sm transition-colors"><span class="material-symbols-outlined text-sm text-primary">ios_share</span><span>Shift Briefing</span></button><button class="p-1.5 bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-secondary hover:text-primary transition-colors" title="Zen Deck (Z)"><span class="material-symbols-outlined text-base">fullscreen</span></button></div></div></aside><div class="pl-60"><main class="w-full min-h-screen pt-14 bg-canvas-base"><div class="flex flex-col w-full">
+<div class="relative w-full h-[calc(100vh-3.5rem)] overflow-hidden bg-canvas-base select-none">
+<!-- MASTER TACTICAL GIS RADAR CANVAS -->
+<div class="absolute inset-0 bg-canvas-base cursor-crosshair" id="gis-radar-viewport">
+<svg class="w-full h-full" preserveaspectratio="xMidYMid slice" viewbox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<!-- Nautical Grid Pattern -->
+<pattern height="80" id="nautical-grid" patternunits="userSpaceOnUse" width="80">
+<path d="M 80 0 L 0 0 0 80" fill="none" opacity="0.35" stroke="#1e3252" stroke-width="0.5"></path>
+<circle cx="80" cy="80" fill="#89ceff" opacity="0.4" r="1"></circle>
+</pattern>
+<pattern height="16" id="radar-microgrid" patternunits="userSpaceOnUse" width="16">
+<path d="M 16 0 L 0 0 0 16" fill="none" opacity="0.1" stroke="#0ea5e9" stroke-width="0.25"></path>
+</pattern>
+<!-- Gradients -->
+<radialgradient cx="50%" cy="50%" id="radar-sweep-glow" r="50%">
+<stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.16"></stop>
+<stop offset="40%" stop-color="#00a6e0" stop-opacity="0.06"></stop>
+<stop offset="100%" stop-color="#060a12" stop-opacity="0"></stop>
+</radialgradient>
+<!-- Turning Basin Heatmap Gradient -->
+<radialgradient cx="45%" cy="50%" id="congestion-heatmap-grad" r="50%">
+<stop offset="0%" stop-color="#ef4444" stop-opacity="0.55"></stop>
+<stop offset="35%" stop-color="#f59e0b" stop-opacity="0.35"></stop>
+<stop offset="70%" stop-color="#0ea5e9" stop-opacity="0.15"></stop>
+<stop offset="100%" stop-color="#060a12" stop-opacity="0"></stop>
+</radialgradient>
+<!-- Motion Trail Glow -->
+<filter height="140%" id="glow-cyan" width="140%" x="-20%" y="-20%">
+<fegaussianblur result="blur" stddeviation="3"></fegaussianblur>
+<fecomposite in="SourceGraphic" in2="blur" operator="over"></fecomposite>
+</filter>
+<filter height="160%" id="glow-critical" width="160%" x="-30%" y="-30%">
+<fegaussianblur result="blur" stddeviation="4"></fegaussianblur>
+<fecomposite in="SourceGraphic" in2="blur" operator="over"></fecomposite>
+</filter>
+<!-- Diagonal Hatch for Maintenance Zone -->
+<pattern height="10" id="hatch-maintenance" patterntransform="rotate(45 0 0)" patternunits="userSpaceOnUse" width="10">
+<line opacity="0.5" stroke="#475569" stroke-width="2.5" x1="0" x2="0" y1="0" y2="10"></line>
+</pattern>
+</defs>
+<!-- Base Depth Water & Bathymetry Layer -->
+<rect fill="#060a12" height="900" width="1600"></rect>
+<path d="M 0,0 L 480,0 L 480,220 L 520,380 L 710,430 L 760,540 L 680,680 L 610,900 L 0,900 Z" fill="#0b1322" opacity="0.95"></path>
+<!-- Deep Channel Contour Polygons (Bathymetry lines) -->
+<path d="M 680,900 Q 820,680 940,540 T 1340,320 L 1600,320 L 1600,900 Z" fill="#080d18" opacity="0.75"></path>
+<path d="M 850,900 Q 980,720 1080,590 T 1420,410 L 1600,410 L 1600,900 Z" fill="#060e1d" opacity="0.9"></path>
+<!-- Depth Contour Lines (Isobars) -->
+<path d="M 520,380 Q 750,440 920,530 T 1320,330 L 1600,320" fill="none" opacity="0.6" stroke="#1e3252" stroke-dasharray="6,6" stroke-width="1"></path>
+<path d="M 680,680 Q 860,620 1040,570 T 1480,380" fill="none" opacity="0.4" stroke="#1e3252" stroke-dasharray="4,8" stroke-width="1"></path>
+<text fill="#64748b" font-family="JetBrains Mono" font-size="9" letter-spacing="1" x="960" y="580">-18.5m CD</text>
+<text fill="#64748b" font-family="JetBrains Mono" font-size="9" letter-spacing="1" x="1120" y="470">-22.0m SOUNDING</text>
+<!-- Technical Coordinate Grid -->
+<rect fill="url(#radar-microgrid)" height="900" width="1600"></rect>
+<rect fill="url(#nautical-grid)" height="900" width="1600"></rect>
+<!-- Pier 400 Main Terminal Landmass Polygon -->
+<polygon fill="#0f1b2e" points="120,40 560,40 560,260 520,310 440,310 440,680 260,780 120,780" stroke="#1e3252" stroke-width="2"></polygon>
+<text fill="#64748b" font-family="JetBrains Mono" font-size="12" font-weight="700" letter-spacing="3" opacity="0.6" x="210" y="110">APM TERMINALS â€¢ PIER 400</text>
+<text fill="#3e4850" font-family="JetBrains Mono" font-size="9" letter-spacing="1.5" x="210" y="128">33Â°43'22"N 118Â°14'48"W â€¢ ELEV 4.2m</text>
+<!-- Terminal Container Stacks Representation -->
+<g fill="#18202f" opacity="0.8" stroke="#1e3252" stroke-width="0.5">
+<rect height="18" width="80" x="150" y="160"></rect>
+<rect height="18" width="80" x="240" y="160"></rect>
+<rect height="18" width="80" x="330" y="160"></rect>
+<rect height="18" width="80" x="150" y="190"></rect>
+<rect height="18" width="80" x="240" y="190"></rect>
+<rect height="18" width="80" x="330" y="190"></rect>
+<rect height="18" width="80" x="150" y="220"></rect>
+<rect height="18" width="80" x="240" y="220"></rect>
+<rect height="18" width="80" x="330" y="220"></rect>
+<!-- Southern Yard -->
+<rect height="22" width="90" x="180" y="420"></rect>
+<rect height="22" width="90" x="180" y="455"></rect>
+<rect height="22" width="90" x="180" y="490"></rect>
+<rect height="22" width="90" x="180" y="525"></rect>
+<rect height="22" width="110" x="290" y="420"></rect>
+<rect height="22" width="110" x="290" y="455"></rect>
+<rect height="22" width="110" x="290" y="490"></rect>
+</g>
+<!-- Outer Breakwater Structure -->
+<path d="M 880,90 L 1260,90 L 1320,130" fill="none" stroke="#2d3545" stroke-linecap="round" stroke-width="10"></path>
+<path d="M 880,90 L 1260,90 L 1320,130" fill="none" stroke="#88929b" stroke-linecap="round" stroke-width="2"></path>
+<text fill="#94a3b8" font-family="JetBrains Mono" font-size="10" letter-spacing="2" x="1010" y="78">SAN PEDRO BREAKWATER (EAST)</text>
+<!-- Navigational Fairway Channel Lines -->
+<g opacity="0.65" stroke="#0ea5e9" stroke-dasharray="12,12" stroke-width="1.5">
+<line x1="1550" x2="880" y1="460" y2="520"></line>
+<line x1="1550" x2="960" y1="620" y2="680"></line>
+</g>
+<path d="M 880,520 Q 720,530 620,480" fill="none" opacity="0.5" stroke="#0ea5e9" stroke-dasharray="8,8" stroke-width="1.5"></path>
+<path d="M 960,680 Q 780,690 620,540" fill="none" opacity="0.5" stroke="#0ea5e9" stroke-dasharray="8,8" stroke-width="1.5"></path>
+<!-- Navigational Buoys with Pulsing Radars -->
+<g transform="translate(1380, 450)">
+<circle class="animate-ping" cx="0" cy="0" fill="none" opacity="0.4" r="12" stroke="#10b981" stroke-width="0.75"></circle>
+<polygon fill="#10b981" points="0,-7 6,4 -6,4"></polygon>
+<circle cx="0" cy="0" fill="#dbe2f8" r="2"></circle>
+<text fill="#10b981" font-family="JetBrains Mono" font-size="9" font-weight="600" x="10" y="4">G "1" FL.G.4s</text>
+</g>
+<g transform="translate(1420, 630)">
+<circle class="animate-ping" cx="0" cy="0" fill="none" opacity="0.4" r="12" stroke="#ef4444" stroke-width="0.75" style="animation-delay: 1s;"></circle>
+<polygon fill="#ef4444" points="0,7 6,-4 -6,-4"></polygon>
+<circle cx="0" cy="0" fill="#dbe2f8" r="2"></circle>
+<text fill="#ef4444" font-family="JetBrains Mono" font-size="9" font-weight="600" x="10" y="4">R "2" FL.R.4s</text>
+</g>
+<g transform="translate(980, 500)">
+<polygon fill="#10b981" points="0,-7 6,4 -6,4"></polygon>
+<text fill="#10b981" font-family="JetBrains Mono" font-size="9" x="10" y="4">G "3" BELL</text>
+</g>
+<!-- PORT TURNING BASIN DYNAMIC HEATMAP OVERLAY (Toggleable via Layer Controls) -->
+<g id="layer-congestion-heatmap">
+<ellipse cx="660" cy="490" fill="url(#congestion-heatmap-grad)" rx="170" ry="120"></ellipse>
+<ellipse cx="650" cy="480" fill="#ef4444" opacity="0.22" rx="90" ry="60"></ellipse>
+<circle cx="650" cy="480" fill="#ef4444" opacity="0.8" r="6"></circle>
+<line stroke="#ef4444" stroke-width="1" x1="650" x2="690" y1="480" y2="430"></line>
+<rect fill="#080d18" height="24" rx="2" stroke="#ef4444" stroke-width="1" width="136" x="690" y="416"></rect>
+<text fill="#ffdad6" font-family="JetBrains Mono" font-size="10" font-weight="700" x="698" y="432">PEAK DWELL BASIN: 94%</text>
+</g>
+<!-- QUAYSIDE PIER 400 BERTH POLYGONS (B1 to B6) -->
+<!-- Berth 1: EVER GIVEN (Emerald Green - Moored on-time) -->
+<g class="cursor-pointer group" id="berth-b1">
+<rect fill="#10b981" fill-opacity="0.18" height="68" stroke="#10b981" stroke-width="2" width="22" x="442" y="320"></rect>
+<text fill="#10b981" font-family="JetBrains Mono" font-size="11" font-weight="700" x="418" y="358">B1</text>
+<!-- Moored Vessel Body -->
+<rect fill="#10b981" height="60" rx="3" width="14" x="448" y="324"></rect>
+<line stroke="#00344d" stroke-width="1.5" x1="455" x2="455" y1="324" y2="384"></line>
+<text fill="#f1f5f9" font-family="Inter" font-size="11" font-weight="600" x="475" y="350">EVER GIVEN</text>
+<text fill="#10b981" font-family="JetBrains Mono" font-size="9" x="475" y="364">MOORED â€¢ 88 GANG HRS</text>
+</g>
+<!-- Berth 2: CRITICAL CONFLICT ALERT (Coral Red pulsating beacon) -->
+<g class="cursor-pointer group" id="berth-b2">
+<!-- Pulsing Beacon rings -->
+<circle class="animate-ping" cx="453" cy="425" fill="none" opacity="0.3" r="32" stroke="#ef4444" stroke-width="1.5"></circle>
+<rect fill="#ef4444" fill-opacity="0.25" filter="url(#glow-critical)" height="68" stroke="#ef4444" stroke-width="2.5" width="22" x="442" y="394"></rect>
+<text fill="#ef4444" font-family="JetBrains Mono" font-size="11" font-weight="700" x="418" y="432">B2</text>
+<!-- Moored Vessel Occupant causing conflict -->
+<rect fill="#ef4444" height="60" rx="3" width="14" x="448" y="398"></rect>
+<!-- Conflict Flag Callout -->
+<rect fill="#080d18" height="34" rx="3" stroke="#ef4444" stroke-width="1" width="168" x="475" y="410"></rect>
+<text fill="#ffb4ab" font-family="Inter" font-size="11" font-weight="700" x="483" y="424">MSC OSCAR (OVERDWELL)</text>
+<text fill="#ef4444" font-family="JetBrains Mono" font-size="9" font-weight="600" x="483" y="438">âš¡ CLASH: MAERSK MC-KINNEY</text>
+</g>
+<!-- Berth 3: Sky Blue Dashed (Available ready for berthing) -->
+<g class="cursor-pointer group" id="berth-b3">
+<rect fill="#00a6e0" fill-opacity="0.08" height="68" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="2" width="22" x="442" y="468"></rect>
+<text fill="#7bd0ff" font-family="JetBrains Mono" font-size="11" font-weight="700" x="418" y="506">B3</text>
+<text fill="#7bd0ff" font-family="Inter" font-size="11" font-weight="600" x="475" y="498">BERTH 03 â€¢ READY</text>
+<text fill="#64748b" font-family="JetBrains Mono" font-size="9" x="475" y="512">MAX LOA 366m â€¢ DRAFT 14.8m</text>
+</g>
+<!-- Berth 4: Emerald Green (Available deep draft slot - Proposed target) -->
+<g class="cursor-pointer group" id="berth-b4">
+<rect fill="#10b981" fill-opacity="0.12" height="68" stroke="#10b981" stroke-width="2" width="22" x="442" y="542"></rect>
+<text fill="#10b981" font-family="JetBrains Mono" font-size="11" font-weight="700" x="418" y="580">B4</text>
+<text fill="#10b981" font-family="Inter" font-size="11" font-weight="600" x="475" y="572">BERTH 04 â€¢ DEEP DRAFT READY</text>
+<text fill="#94a3b8" font-family="JetBrains Mono" font-size="9" x="475" y="586">MAX LOA 400m â€¢ DRAFT 16.5m (OPEN)</text>
+</g>
+<!-- Berth 5: Amber (High turnaround dwell) -->
+<g class="cursor-pointer group" id="berth-b5">
+<rect fill="#f59e0b" fill-opacity="0.2" height="68" stroke="#f59e0b" stroke-width="2" width="22" x="442" y="616"></rect>
+<text fill="#f59e0b" font-family="JetBrains Mono" font-size="11" font-weight="700" x="418" y="654">B5</text>
+<rect fill="#f59e0b" height="60" rx="3" width="14" x="448" y="620"></rect>
+<text fill="#f59e0b" font-family="Inter" font-size="11" font-weight="600" x="475" y="644">CMA CGM BENJAMIN FRANKLIN</text>
+<text fill="#bec8d2" font-family="JetBrains Mono" font-size="9" x="475" y="658">DWELL 26.4H (+4.1H DELAY)</text>
+</g>
+<!-- Berth 6: Slate Muted (Preparing for incoming) -->
+<g class="cursor-pointer group" id="berth-b6">
+<rect fill="#475569" fill-opacity="0.25" height="68" stroke="#475569" stroke-width="1.5" width="22" x="442" y="690"></rect>
+<text fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="700" x="418" y="728">B6</text>
+<text fill="#94a3b8" font-family="Inter" font-size="11" font-weight="500" x="475" y="722">BERTH 06 â€¢ GANG STANDBY</text>
+<text fill="#64748b" font-family="JetBrains Mono" font-size="9" x="475" y="736">ETA 21:00 UTC â€¢ ONE STORK</text>
+</g>
+<!-- Gantry Crane Rails Visual Tracks along Pier -->
+<line opacity="0.4" stroke="#88929b" stroke-dasharray="3,3" stroke-width="2" x1="436" x2="436" y1="310" y2="760"></line>
+<g fill="#0ea5e9" opacity="0.9">
+<!-- Active STS Cranes -->
+<rect height="6" rx="1" width="10" x="431" y="340"></rect>
+<rect height="6" rx="1" width="10" x="431" y="360"></rect>
+<rect fill="#ef4444" height="6" rx="1" width="10" x="431" y="405"></rect>
+<rect height="6" rx="1" width="10" x="431" y="630"></rect>
+<rect height="6" rx="1" width="10" x="431" y="650"></rect>
+</g>
+<!-- OUTER ANCHORAGE ZONE POLYGON & CLUSTER -->
+<g id="layer-anchorage-zone">
+<polygon fill="#f59e0b" fill-opacity="0.05" points="1120,70 1560,70 1560,280 1180,280 1100,210" stroke="#f59e0b" stroke-dasharray="8,6" stroke-width="1.5"></polygon>
+<text fill="#f59e0b" font-family="JetBrains Mono" font-size="10" font-weight="700" letter-spacing="1.5" x="1130" y="95">SAN PEDRO ANCHORAGE BRAVO (DRAFT &gt; 14m)</text>
+<!-- Clustered Anchored Ships Marker -->
+<g class="cursor-pointer group" transform="translate(1320, 160)">
+<rect fill="#0f1b2e" filter="url(#glow-cyan)" height="36" rx="18" stroke="#f59e0b" stroke-width="1.5" width="170" x="-85" y="-18"></rect>
+<text fill="#f1f5f9" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle" x="0" y="5">âš“ 5 VESSELS ANCHORED</text>
+<!-- Anchored vessels miniature blips around -->
+<circle cx="-50" cy="-35" fill="#94a3b8" r="3"></circle>
+<circle cx="65" cy="-25" fill="#94a3b8" r="3"></circle>
+<circle cx="75" cy="40" fill="#94a3b8" r="3"></circle>
+<circle cx="-40" cy="45" fill="#94a3b8" r="3"></circle>
+</g>
+</g>
+<!-- DYNAMIC AIS RADAR MOTION TRAILS & APPROACHING VESSELS -->
+<g id="layer-motion-trails">
+<!-- Trail for Inbound Target Ship: MAERSK MC-KINNEY MOLLER -->
+<!-- Polyline Motion Breadcrumbs with Cyan Glow -->
+<polyline fill="none" filter="url(#glow-cyan)" points="1520,580 1440,575 1360,568 1270,555 1180,538 1090,520 1000,505 915,492" stroke="#0ea5e9" stroke-dasharray="8,6" stroke-width="3"></polyline>
+<!-- Breadcrumb dots -->
+<circle cx="1520" cy="580" fill="#89ceff" opacity="0.3" r="2.5"></circle>
+<circle cx="1440" cy="575" fill="#89ceff" opacity="0.45" r="3"></circle>
+<circle cx="1360" cy="568" fill="#89ceff" opacity="0.6" r="3"></circle>
+<circle cx="1270" cy="555" fill="#89ceff" opacity="0.75" r="3.5"></circle>
+<circle cx="1180" cy="538" fill="#0ea5e9" opacity="0.9" r="4"></circle>
+<circle cx="1090" cy="520" fill="#0ea5e9" r="4.5"></circle>
+<circle cx="1000" cy="505" fill="#38bdf8" r="5"></circle>
+<!-- TARGET VESSEL (MAERSK MC-KINNEY MOLLER) -->
+<!-- Heading 082Â° (in coordinate grid moving West-Northwest toward Port Pier 400) -->
+<g class="cursor-pointer group" id="vessel-maersk" onclick="toggleTelemetryDrawer(true)" transform="translate(915, 492) rotate(-8)">
+<!-- Selected Vessel Target Rings -->
+<circle class="animate-spin" cx="0" cy="0" fill="none" r="28" stroke="#0ea5e9" stroke-dasharray="4,4" stroke-width="1.5" style="animation-duration: 12s;"></circle>
+<circle cx="0" cy="0" fill="none" opacity="0.5" r="38" stroke="#0ea5e9" stroke-width="0.5"></circle>
+<!-- Velocity Vector Heading Line -->
+<line stroke="#0ea5e9" stroke-width="2" x1="0" x2="-48" y1="0" y2="0"></line>
+<polygon fill="#0ea5e9" points="-52,0 -44,-4 -44,4"></polygon>
+<!-- Detailed Ship Silhouette (Container Ship ULCS) -->
+<path d="M -22,0 L -14,-7 L 16,-7 L 22,-5 L 22,5 L 16,7 L -14,7 Z" fill="#0ea5e9" stroke="#f1f5f9" stroke-width="1.2"></path>
+<!-- Container Bay details -->
+<line stroke="#082f49" stroke-width="1.5" x1="-8" x2="-8" y1="-5" y2="5"></line>
+<line stroke="#082f49" stroke-width="1.5" x1="0" x2="0" y1="-5" y2="5"></line>
+<line stroke="#082f49" stroke-width="1.5" x1="8" x2="8" y1="-5" y2="5"></line>
+<!-- Pinned Tactical Callout Badge -->
+<g transform="translate(-10, -52)">
+<rect fill="#080d18" fill-opacity="0.95" filter="url(#glow-cyan)" height="34" rx="4" stroke="#0ea5e9" stroke-width="1.5" width="200" x="-6" y="-6"></rect>
+<text fill="#f1f5f9" font-family="Inter" font-size="11" font-weight="700" x="4" y="9">MAERSK MC-KINNEY MOLLER</text>
+<text fill="#7bd0ff" font-family="JetBrains Mono" font-size="9" x="4" y="22">12.4 kts â€¢ HDG 082Â° â€¢ DRAFT 15.2m</text>
+</g>
+</g>
+<!-- Second Vessel In Transit: TUG POLARIS assisting outbound -->
+<g class="cursor-pointer" transform="translate(740, 610) rotate(135)">
+<line stroke="#10b981" stroke-width="1.5" x1="0" x2="26" y1="0" y2="0"></line>
+<polygon fill="#10b981" points="12,0 4,-5 -10,-4 -10,4 4,5" stroke="#f1f5f9" stroke-width="0.8"></polygon>
+<text fill="#10b981" font-family="JetBrains Mono" font-size="9" transform="rotate(-135 18 14)" x="18" y="14">TUG POLARIS (8.2 kts)</text>
+</g>
+</g>
+</svg>
+</div>
+<!-- TOP-LEFT FLOATING TACTICAL HUD: QUICK LAYER TOGGLES -->
+<div class="absolute top-space-md left-space-md z-30 flex flex-col gap-space-xs">
+<div class="p-space-sm bg-surface-dim/90 backdrop-blur-md rounded border border-border-subtle shadow-xl flex flex-col gap-1.5 w-64">
+<div class="flex items-center justify-between pb-1 border-b border-border-subtle">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-base">layers</span>
+<span class="font-mono-badge text-mono-badge text-text-primary uppercase tracking-wider">Tactical GIS Overlays</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-status-safe">4 ACTIVE</span>
+</div>
+<!-- Toggle: Radar Trails -->
+<button class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-elevated text-primary font-mono-data text-mono-data border border-primary/40 transition-colors" id="btn-toggle-trails" onclick="toggleLayer('layer-motion-trails', this)">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">route</span>
+<span>AIS Motion Trails</span>
+</span>
+<span class="font-mono-badge text-mono-badge font-bold text-primary">ON</span>
+</button>
+<!-- Toggle: Congestion Heatmap -->
+<button class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-elevated text-status-warning font-mono-data text-mono-data border border-status-warning/40 transition-colors" id="btn-toggle-heatmap" onclick="toggleLayer('layer-congestion-heatmap', this)">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">blur_on</span>
+<span>Congestion Basin</span>
+</span>
+<span class="font-mono-badge text-mono-badge font-bold text-status-warning">ON</span>
+</button>
+<!-- Toggle: Berth Depth Labels -->
+<button class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-recessed text-text-secondary hover:text-text-primary font-mono-data text-mono-data border border-border-subtle transition-colors">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">straighten</span>
+<span>Berth Draft Contours</span>
+</span>
+<span class="font-mono-badge text-mono-badge font-bold text-text-muted">ON</span>
+</button>
+<!-- Toggle: Outer Anchorage Zone -->
+<button class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-elevated text-primary font-mono-data text-mono-data border border-primary/40 transition-colors" id="btn-toggle-anchorage" onclick="toggleLayer('layer-anchorage-zone', this)">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">anchor</span>
+<span>Anchorage Bounds</span>
+</span>
+<span class="font-mono-badge text-mono-badge font-bold text-primary">ON</span>
+</button>
+</div>
+<!-- Quick Port Coordinates Strip -->
+<div class="px-space-sm py-1 bg-surface-dim/80 backdrop-blur-md rounded border border-border-subtle flex items-center justify-between font-mono-badge text-mono-badge text-text-muted">
+<span>CRS: EPSG:3857 (WGS84)</span>
+<span class="text-primary font-bold">LAT 33.742Â° â€¢ LON -118.267Â°</span>
+</div>
+</div>
+<!-- TOP-RIGHT FLOATING TACTICAL HUD: METEOROLOGY BADGE & VIEW CONTROLS -->
+<div class="absolute top-space-md right-space-md z-30 flex items-start gap-space-sm">
+<!-- Marine Weather & Hydrographic Telemetry Badge -->
+<div class="px-space-md py-2 bg-surface-dim/90 backdrop-blur-md rounded border border-border-subtle shadow-xl flex items-center gap-space-md">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-base">air</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono-badge text-mono-badge text-text-muted uppercase">Wind Vector</span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">14 kts NW (315Â°)</span>
+</div>
+</div>
+<div class="h-6 w-[1px] bg-border-subtle"></div>
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-base">waves</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono-badge text-mono-badge text-text-muted uppercase">Outer Swell</span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">1.2m @ 8s SSW</span>
+</div>
+</div>
+<div class="h-6 w-[1px] bg-border-subtle"></div>
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-status-safe">
+<span class="material-symbols-outlined text-base">water</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono-badge text-mono-badge text-text-muted uppercase">Tide Gauge</span>
+<span class="font-mono-data text-mono-data text-status-safe font-bold">+1.4m Ebb (VTS OK)</span>
+</div>
+</div>
+</div>
+<!-- Tactical Camera Controls & Compass Rose -->
+<div class="p-1 bg-surface-dim/90 backdrop-blur-md rounded border border-border-subtle shadow-xl flex items-center gap-1">
+<button class="h-8 px-2 flex items-center gap-1 bg-surface-elevated hover:bg-surface-card-hover text-text-primary rounded text-body-sm font-medium transition-colors border border-border-subtle" title="Center Quayside Pier 400">
+<span class="material-symbols-outlined text-base text-primary">my_location</span>
+<span class="font-mono-data text-mono-data">Center Pier</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center bg-surface-container hover:bg-surface-elevated text-text-secondary hover:text-text-primary rounded transition-colors border border-border-subtle" title="Zoom In (+)">
+<span class="material-symbols-outlined text-base">add</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center bg-surface-container hover:bg-surface-elevated text-text-secondary hover:text-text-primary rounded transition-colors border border-border-subtle" title="Zoom Out (-)">
+<span class="material-symbols-outlined text-base">remove</span>
+</button>
+<!-- Compass Rose North Indicator -->
+<div class="w-8 h-8 rounded bg-surface-container flex flex-col items-center justify-center border border-border-subtle" title="True Heading North">
+<span class="text-[9px] font-mono-badge font-bold text-status-critical leading-none">N</span>
+<span class="material-symbols-outlined text-xs text-text-secondary leading-none">navigation</span>
+</div>
+</div>
+</div>
+<!-- SLIDE-OUT FLOATING VESSEL TELEMETRY DRAWER (RIGHT PANEL: 380px Glassmorphism Cockpit) -->
+<div class="absolute top-0 right-0 bottom-0 w-[380px] bg-surface-dim/95 backdrop-blur-xl border-l border-border-subtle shadow-2xl z-40 flex flex-col justify-between transition-transform duration-300 ease-in-out transform translate-x-0" id="vessel-telemetry-drawer">
+<!-- Drawer Header -->
+<div class="p-space-md border-b border-border-subtle bg-surface-recessed/70">
+<div class="flex items-start justify-between mb-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-status-critical animate-ping"></span>
+<span class="font-mono-badge text-mono-badge text-status-critical uppercase tracking-wider font-bold">Target Locked â€¢ Approaching</span>
+</div>
+<button class="p-1 text-text-muted hover:text-text-primary rounded hover:bg-surface-elevated transition-colors" onclick="toggleTelemetryDrawer(false)">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xl">ðŸ‡©ðŸ‡°</span>
+<h2 class="font-headline-lg text-headline-lg text-text-primary font-bold tracking-tight">MAERSK MC-KINNEY</h2>
+</div>
+<div class="flex items-center gap-2 mt-0.5 text-text-secondary font-mono-data text-mono-data">
+<span>IMO 9619907</span>
+<span>â€¢</span>
+<span>CALLSIGN: OWQZ2</span>
+<span>â€¢</span>
+<span class="text-primary font-semibold">Flag: Denmark</span>
+</div>
+</div>
+<!-- Drawer Content Scrollable Area -->
+<div class="flex-1 p-space-md overflow-y-auto space-y-space-md">
+<!-- Critical Berth Conflict Warning Box -->
+<div class="p-space-sm bg-status-critical-bg border border-status-critical/40 rounded-lg space-y-2">
+<div class="flex items-center gap-2 text-status-critical">
+<span class="material-symbols-outlined text-base">warning</span>
+<span class="font-mono-badge text-mono-badge font-bold uppercase tracking-wide">High Delay Risk Detected</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">
+            Assigned <strong class="text-status-critical">Berth 2</strong> is occupied by overdue <strong class="text-text-primary">MSC Oscar</strong> (+5.4h dwell spillover).
+          </p>
+<div class="pt-1.5 border-t border-status-critical/20 flex items-center justify-between font-mono-badge text-mono-badge">
+<span class="text-text-secondary">Projected Demurrage:</span>
+<span class="text-status-critical font-bold text-sm">$32,000 / hr</span>
+</div>
+<div class="p-1.5 bg-surface-recessed/80 rounded border border-border-subtle font-mono-data text-mono-data text-text-secondary">
+<span class="text-status-warning font-bold">AI Root Cause:</span> Berth 2 Crane 3 Outage (-28% quayside gang capacity).
+          </div>
+</div>
+<!-- Vessel Physical Specifications (JetBrains Mono Dense Specs) -->
+<div class="space-y-1.5">
+<span class="font-mono-badge text-mono-badge text-text-muted uppercase tracking-wider">Vessel Hydrodynamic Specs</span>
+<div class="grid grid-cols-2 gap-2">
+<div class="p-2 bg-surface-card border border-border-subtle rounded">
+<span class="font-mono-badge text-mono-badge text-text-muted block">Length Overall (LOA)</span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">399.0 m</span>
+</div>
+<div class="p-2 bg-surface-card border border-border-subtle rounded">
+<span class="font-mono-badge text-mono-badge text-text-muted block">Beam (Width)</span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">59.0 m (23 Rows)</span>
+</div>
+<div class="p-2 bg-surface-card border border-border-subtle rounded">
+<span class="font-mono-badge text-mono-badge text-text-muted block">Current Draft</span>
+<span class="font-mono-data text-mono-data text-status-warning font-bold">15.2 m (Critical)</span>
+</div>
+<div class="p-2 bg-surface-card border border-border-subtle rounded">
+<span class="font-mono-badge text-mono-badge text-text-muted block">Capacity Rating</span>
+<span class="font-mono-data text-mono-data text-primary font-bold">18,270 TEU</span>
+</div>
+</div>
+</div>
+<!-- Live AIS Telemetry Node -->
+<div class="space-y-1.5">
+<span class="font-mono-badge text-mono-badge text-text-muted uppercase tracking-wider">Live AIS Navigation Stream</span>
+<div class="p-3 bg-surface-card border border-border-subtle rounded space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-text-secondary">Speed Over Ground (SOG)</span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">12.4 kts</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-text-secondary">True Heading (HDG)</span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">082Â° (Approach Ch.)</span>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-text-secondary">Distance to Sea Buoy</span>
+<span class="font-mono-data text-mono-data text-primary font-bold">3.8 NM (24 min)</span>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-text-secondary">Target Pilot Station</span>
+<span class="font-mono-data text-mono-data text-status-safe font-bold">San Pedro Gate #1</span>
+</div>
+</div>
+</div>
+<!-- AI Prescriptive Berthing Recommendation -->
+<div class="p-3 bg-surface-elevated border border-primary/30 rounded-lg space-y-2 shadow-lg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-base">auto_fix_high</span>
+<span class="font-mono-badge text-mono-badge text-primary uppercase font-bold">Copilot Recommendation</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-status-safe bg-status-safe-bg px-1.5 py-0.5 rounded border border-status-safe/30">98% CONF</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-primary">
+            Reroute directly to <strong class="text-status-safe">Berth 4 (Deep Draft Ready)</strong>. Avoids 4.8 hours waiting at outer anchorage. Demurrage savings: <strong class="text-status-safe">$153,600</strong>.
+          </p>
+</div>
+</div>
+<!-- Operational Action Triggers (Persistent Cockpit Footer) -->
+<div class="p-space-md border-t border-border-subtle bg-surface-recessed/80 space-y-2">
+<!-- Tactical Primary Button -->
+<button class="w-full h-10 px-space-md bg-primary-container hover:bg-secondary-container text-on-primary-container font-headline-md text-headline-md font-semibold rounded flex items-center justify-center gap-2 shadow-lg transition-colors">
+<span class="material-symbols-outlined text-lg">swap_horiz</span>
+<span>Execute Reassignment to Berth 4</span>
+</button>
+<div class="grid grid-cols-2 gap-2">
+<!-- Secondary Action: Radio Harbor Pilot -->
+<button class="h-9 px-2 bg-surface-card hover:bg-surface-card-hover border border-border-subtle text-text-primary font-body-sm text-body-sm rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base text-status-safe">podcasts</span>
+<span class="font-mono-data text-mono-data font-medium">VHF Ch 16</span>
+</button>
+<!-- Secondary Action: AIS Track Audit -->
+<button class="h-9 px-2 bg-surface-card hover:bg-surface-card-hover border border-border-subtle text-text-primary font-body-sm text-body-sm rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base text-primary">history</span>
+<span class="font-mono-data text-mono-data font-medium">AIS History</span>
+</button>
+</div>
+</div>
+</div>
+<!-- BOTTOM FLOATING VESSEL QUICK-FILTER STRIP -->
+<div class="absolute bottom-space-md left-space-md z-30 flex items-center gap-space-sm max-w-[calc(100vw-420px)] overflow-x-auto p-1 bg-surface-dim/90 backdrop-blur-md rounded border border-border-subtle shadow-2xl">
+<!-- Filter Button 1: All -->
+<button class="flex items-center gap-2 px-space-md py-1.5 rounded bg-surface-elevated text-primary border border-primary/40 font-mono-data text-mono-data font-bold transition-all shadow-sm">
+<span>ALL VESSELS</span>
+<span class="px-1.5 py-0.2 bg-primary/20 rounded-full font-mono-badge text-mono-badge">14</span>
+</button>
+<!-- Filter Button 2: Moored -->
+<button class="flex items-center gap-2 px-space-md py-1.5 rounded bg-surface-card hover:bg-surface-card-hover text-text-secondary hover:text-text-primary border border-border-subtle font-mono-data text-mono-data transition-all">
+<span class="w-2 h-2 rounded-full bg-status-safe"></span>
+<span>Moored Berths</span>
+<span class="px-1.5 py-0.2 bg-surface-container rounded-full font-mono-badge text-mono-badge text-text-muted">5</span>
+</button>
+<!-- Filter Button 3: Outer Anchorage -->
+<button class="flex items-center gap-2 px-space-md py-1.5 rounded bg-surface-card hover:bg-surface-card-hover text-text-secondary hover:text-text-primary border border-border-subtle font-mono-data text-mono-data transition-all">
+<span class="w-2 h-2 rounded-full bg-status-warning"></span>
+<span>Outer Anchorage</span>
+<span class="px-1.5 py-0.2 bg-surface-container rounded-full font-mono-badge text-mono-badge text-text-muted">7</span>
+</button>
+<!-- Filter Button 4: In-Transit -->
+<button class="flex items-center gap-2 px-space-md py-1.5 rounded bg-surface-card hover:bg-surface-card-hover text-text-secondary hover:text-text-primary border border-border-subtle font-mono-data text-mono-data transition-all">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>In-Transit</span>
+<span class="px-1.5 py-0.2 bg-surface-container rounded-full font-mono-badge text-mono-badge text-text-muted">2</span>
+</button>
+<div class="h-5 w-[1px] bg-border-subtle"></div>
+<!-- Filter Button 5: Critical Risk -->
+<button class="flex items-center gap-2 px-space-md py-1.5 rounded bg-status-critical-bg text-status-critical border border-status-critical/40 hover:bg-status-critical/20 font-mono-data text-mono-data font-bold transition-all animate-pulse">
+<span class="material-symbols-outlined text-sm">bolt</span>
+<span>Critical Conflict</span>
+<span class="px-1.5 py-0.2 bg-status-critical text-text-primary rounded-full font-mono-badge text-mono-badge">3</span>
+</button>
+<!-- Expand Drawer toggle button if minimized -->
+<button class="p-1.5 bg-surface-card hover:bg-surface-elevated text-primary rounded border border-border-subtle ml-1" onclick="toggleTelemetryDrawer(true)" title="Open Target Telemetry Sheet">
+<span class="material-symbols-outlined text-base">dock_to_left</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  function toggleTelemetryDrawer(show) {
+    const drawer = document.getElementById('vessel-telemetry-drawer');
+    if (!drawer) return;
+    if (show) {
+      drawer.classList.remove('translate-x-full');
+      drawer.classList.add('translate-x-0');
+    } else {
+      drawer.classList.remove('translate-x-0');
+      drawer.classList.add('translate-x-full');
+    }
+  }
+
+  function toggleLayer(layerId, btnElement) {
+    const layer = document.getElementById(layerId);
+    if (!layer) return;
+    const isHidden = layer.getAttribute('display') === 'none';
+    if (isHidden) {
+      layer.removeAttribute('display');
+      if (btnElement) {
+        const badge = btnElement.querySelector('span:last-child');
+        if (badge) badge.innerText = 'ON';
+        btnElement.classList.add('border-primary/40');
+      }
+    } else {
+      layer.setAttribute('display', 'none');
+      if (btnElement) {
+        const badge = btnElement.querySelector('span:last-child');
+        if (badge) badge.innerText = 'OFF';
+        btnElement.classList.remove('border-primary/40');
+      }
+    }
+  }
+</script></main></div></body></html>
+
+

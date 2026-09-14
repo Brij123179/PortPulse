@@ -1,0 +1,656 @@
+﻿<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "error": "#ffb4ab", "border-subtle": "#1e3252", "status-critical-bg": "rgba(239, 68, 68, 0.15)", "on-error": "#690005", "on-tertiary-fixed-variant": "#2f2ebe", "surface-container-high": "#222a3a", "surface-container": "#18202f", "tertiary-container": "#8d90ff", "text-primary": "#f1f5f9", "status-safe": "#10b981", "surface-tint": "#89ceff", "on-surface": "#dbe2f8", "secondary-container": "#00a6e0", "surface-dim": "#0b1322", "inverse-surface": "#dbe2f8", "primary-fixed": "#c9e6ff", "surface-variant": "#2d3545", "inverse-on-surface": "#293041", "surface-card-hover": "#16253e", "status-critical": "#ef4444", "background": "#0b1322", "surface-card": "#0f1b2e", "vessel-maintenance": "#475569", "inverse-primary": "#006591", "outline": "#88929b", "surface-recessed": "#080d18", "surface-elevated": "#1a2a44", "status-safe-bg": "rgba(16, 185, 129, 0.12)", "on-secondary-container": "#00374d", "on-error-container": "#ffdad6", "outline-variant": "#3e4850", "primary-container": "#0ea5e9", "secondary-fixed": "#c4e7ff", "on-primary-fixed": "#001e2f", "tertiary-fixed-dim": "#c0c1ff", "error-container": "#93000a", "status-warning-bg": "rgba(245, 158, 11, 0.12)", "vessel-priority": "#a855f7", "on-surface-variant": "#bec8d2", "text-secondary": "#94a3b8", "on-tertiary-fixed": "#07006c", "on-secondary-fixed-variant": "#004c69", "secondary-fixed-dim": "#7bd0ff", "status-warning": "#f59e0b", "tertiary-fixed": "#e1e0ff", "on-secondary-fixed": "#001e2c", "surface-container-highest": "#2d3545", "on-tertiary": "#1000a9", "primary": "#89ceff", "tertiary": "#c0c1ff", "on-secondary": "#00354a", "border-hairline": "rgba(255, 255, 255, 0.07)", "on-background": "#dbe2f8", "text-muted": "#64748b", "surface-container-low": "#141c2b", "canvas-base": "#060a12", "secondary": "#7bd0ff", "on-primary-fixed-variant": "#004c6e", "on-primary-container": "#003751", "on-primary": "#00344d", "primary-fixed-dim": "#89ceff", "on-tertiary-container": "#1407ad", "surface-bright": "#32394a", "border-focus": "#2563eb", "surface-container-lowest": "#060e1d", "surface": "#0b1322" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem", "margin-compact": "1rem", "margin": "1.5rem", "gutter-sm": "0.75rem", "space-lg": "1.5rem", "space-md": "1rem" }, "fontFamily": { "touch-field": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"], "mono-badge": ["JetBrains Mono"], "display-hero": ["Inter"], "mono-data": ["JetBrains Mono"], "mono-kpi": ["JetBrains Mono"], "body-md": ["Inter"], "body-sm": ["Inter"] }, "fontSize": { "touch-field": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "headline-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "mono-badge": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }], "display-hero": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "mono-data": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }], "mono-kpi": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } };</script></head><body class="bg-canvas-base text-text-primary antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface-dim/95 backdrop-blur-md border-b border-border-subtle"><div class="h-14 w-full px-space-md flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><img alt="PortPulse Radar Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VzuF-qVybHS94ulWJMy4yeCFE4cmqi2kv3bkZ0gE-we9ttNo4ZItcE-sOHbVHPjwy_88VtNvQtuClnNv2J1iDrixZ1uyUmV6PfWV9iTjjwO5cu1r9dJ0ctc4haqUAkStF_HgMbT8P1ymMrPYU4xq-RyDh7ZBSEDMFDdwbAF7KLIfHrrmEdQdHcjIFMSJY7kPUHw8jykjSEY16Cmbh4qOlsenvymInfQuKda9YhlfevqF4cQ69aSUk8Mg"/><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-text-primary leading-none">PortPulse</span><span class="font-mono-badge text-mono-badge text-primary uppercase leading-tight">Maritime OS</span></div></div><div class="h-5 w-[1px] bg-border-subtle"></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-secondary transition-colors"><span class="material-symbols-outlined text-sm text-primary">anchor</span><span class="font-body-sm text-body-sm font-medium text-text-primary">Port of Los Angeles (Pier 400)</span><span class="material-symbols-outlined text-sm">expand_more</span></button></div><div class="hidden xl:flex items-center gap-space-md bg-surface-recessed border border-border-subtle rounded-lg px-space-md py-1 shrink-0"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-base">schedule</span><div class="flex flex-col"><span class="font-mono-data text-mono-data text-primary font-bold">15 OCT 2025 â€¢ 14:30 UTC</span><span class="font-mono-badge text-mono-badge text-text-muted">Local: 07:30 PDT</span></div></div><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-1"><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">-30m</button><button class="h-7 w-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded hover:opacity-90"><span class="material-symbols-outlined text-base">play_arrow</span></button><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">+30m</button></div><div class="flex items-center bg-surface-container border border-border-subtle rounded p-0.5"><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">1x</button><button class="px-1.5 py-0.5 bg-primary-container text-on-primary-container font-mono-badge text-mono-badge font-bold rounded-sm">2x</button><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">5x</button></div><div class="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden relative"><div class="h-full bg-primary w-3/5"></div><div class="absolute top-0 bottom-0 left-3/5 w-1 bg-status-critical"></div></div></div><div class="flex items-center gap-space-sm shrink-0"><div class="hidden lg:flex items-center gap-space-xs px-space-sm py-1 bg-status-safe-bg border border-status-safe/30 rounded-full"><span class="w-2 h-2 rounded-full bg-status-safe animate-pulse"></span><span class="font-mono-badge text-mono-badge text-status-safe">LIVE ML Engine (38ms â€¢ v2.4)</span></div><div class="hidden md:flex items-center gap-1 px-space-sm py-1 bg-surface-recessed border border-border-subtle rounded-lg text-text-secondary font-body-sm text-body-sm"><span class="material-symbols-outlined text-sm text-vessel-priority">shield_person</span><span>Shift Supervisor</span></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-muted transition-colors"><span class="material-symbols-outlined text-sm">search</span><span class="font-mono-badge text-mono-badge text-text-muted">âŒ˜K</span></button><button class="relative p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-status-critical text-text-primary rounded-full flex items-center justify-center font-mono-badge text-mono-badge">3</span></button><button class="flex items-center gap-space-xs px-space-sm py-1 bg-gradient-to-r from-vessel-priority/20 to-primary-container/20 border border-primary-container/40 rounded-full text-text-primary hover:border-primary-container transition-all"><span class="font-body-sm text-body-sm font-semibold text-primary">Ask Copilot</span><span class="font-mono-badge text-mono-badge text-secondary">âœ¨</span></button><div class="h-6 w-[1px] bg-border-subtle"></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-border-subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyBf3fWtUh7rQt3IStjeC9MjRbRcS5CKtuEP8jbutyp85Tv4lub40CESm1dECM220UFngbkh7MGNG8Siz0H_iSMtJgj0tJ329kxS3mXg5dM5TMdYw6XGXeiH6sknYcl9GayOetx67f4F_WpyUmh-Vi5lm-0G_Rq7hd3xi8RZdfFAPfUxKZIKzA2eOn6G2eZ-T26loOt8FSWsJ8eGojvM18_j2vOxKVJlm5GWYnZTBiTGctA4jIPo2-"/></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-60 bg-surface-dim border-r border-border-subtle z-40 flex flex-col justify-between overflow-y-auto"><div class="p-space-sm"><div class="px-space-sm py-space-xs mb-space-xs"><span class="font-mono-badge text-mono-badge text-text-muted uppercase tracking-wider">Operational Units</span></div><nav class="space-y-1" data-active-classes="bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]"><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="operations-plan" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">calendar_month</span><span class="font-body-sm text-body-sm">Operations Plan</span></div><span class="px-1.5 py-0.5 bg-status-safe-bg text-status-safe border border-status-safe/30 rounded font-mono-badge text-mono-badge">LIVE</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="terminal-vessel-map" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">explore</span><span class="font-body-sm text-body-sm">Terminal Vessel Map</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">12 Active</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="72h-congestion-heatmap" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bar_chart</span><span class="font-body-sm text-body-sm">72h Congestion</span></div><span class="px-1.5 py-0.5 bg-status-warning-bg text-status-warning border border-status-warning/30 rounded font-mono-badge text-mono-badge">Peak 18h</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="prescriptive-actions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bolt</span><span class="font-body-sm text-body-sm">Prescriptive Actions</span></div><span class="px-1.5 py-0.5 bg-status-critical-bg text-status-critical border border-status-critical/30 rounded font-mono-badge text-mono-badge">3 Pending</span></a><a aria-current="page" class="flex items-center justify-between px-space-sm py-2 rounded transition-colors bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]" data-path="what-if-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">tune</span><span class="font-body-sm text-body-sm">What-If Simulator</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="live-vessel-queue" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">anchor</span><span class="font-body-sm text-body-sm">Live Vessel Queue</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">7 Waiting</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="cascade-delay-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">account_tree</span><span class="font-body-sm text-body-sm">Cascade Delays</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="activity-log-audit" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">description</span><span class="font-body-sm text-body-sm">Activity &amp; Audit</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="forecast-ml-metrics" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">memory</span><span class="font-body-sm text-body-sm">Forecast &amp; ML Metrics</span></div></a></nav></div><div class="p-space-sm border-t border-border-subtle bg-surface-recessed/60 space-y-space-sm"><div class="p-space-xs bg-surface-card border border-border-subtle rounded"><div class="flex items-center justify-between mb-1"><span class="font-mono-badge text-mono-badge text-text-muted">APM PIER 400</span><span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span></div><div class="flex justify-between items-center text-text-secondary font-mono-badge text-mono-badge"><span>CRANES: 14/16</span><span>BERTHS: 88%</span></div></div><div class="flex items-center justify-between gap-space-xs"><button class="w-full flex items-center justify-center gap-1.5 py-1.5 px-space-sm bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-primary font-body-sm text-body-sm transition-colors"><span class="material-symbols-outlined text-sm text-primary">ios_share</span><span>Shift Briefing</span></button><button class="p-1.5 bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-secondary hover:text-primary transition-colors" title="Zen Deck (Z)"><span class="material-symbols-outlined text-base">fullscreen</span></button></div></div></aside><div class="pl-60"><main class="w-full min-h-screen pt-14 bg-canvas-base"><div class="flex flex-col w-full">
+<!-- Simulation Sandbox Container -->
+<div class="w-full px-space-md py-space-md space-y-space-md">
+<!-- Top Section: Scenario Parameter Control Panel -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-xl relative overflow-hidden">
+<!-- Ambient Glow Behind Control Panel -->
+<div class="absolute -right-16 -top-16 w-80 h-80 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Presets Selector & Control Header -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">tune</span>
+</div>
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="font-mono-badge text-mono-badge uppercase text-primary tracking-wider">Tactical Sim Engine v4.8</span>
+<span class="inline-flex items-center px-1.5 py-0.2 bg-status-safe-bg text-status-safe font-mono-badge text-mono-badge rounded-full">DETERMINISTIC</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-text-primary tracking-tight">Berth Allocator &amp; Scenario Sandbox</h2>
+</div>
+</div>
+<!-- Presets Row -->
+<div class="flex items-center gap-space-xs flex-wrap bg-surface-recessed p-1 rounded-lg">
+<button class="px-space-sm py-1 rounded font-mono-data text-mono-data text-text-muted hover:text-text-primary transition-all" id="preset-baseline" onclick="applyPreset('baseline')">
+            Baseline (Live)
+          </button>
+<button class="px-space-sm py-1 rounded font-mono-data text-mono-data text-text-muted hover:text-text-primary transition-all" id="preset-fog" onclick="applyPreset('fog')">
+            Fog Disruption (12h)
+          </button>
+<button class="px-space-sm py-1 rounded font-mono-data text-mono-data bg-surface-elevated text-primary font-bold shadow-sm transition-all" id="preset-crane" onclick="applyPreset('crane')">
+            Crane 3 Breakdown (Active)
+          </button>
+<button class="px-space-sm py-1 rounded font-mono-data text-mono-data text-text-muted hover:text-text-primary transition-all" id="preset-squall" onclick="applyPreset('squall')">
+            High Wind Squall &gt;35kts
+          </button>
+<button class="px-space-sm py-1 rounded font-mono-data text-mono-data text-text-secondary hover:text-primary transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add</span> Custom
+          </button>
+</div>
+</div>
+<!-- Tactical Parameter Modules (Hardware Layout) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md pt-space-sm">
+<!-- Parameter 1: Vessel Arrival Shock Slider -->
+<div class="bg-surface-recessed rounded-lg p-space-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-text-muted">directions_boat</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Arrival Shock</span>
+</div>
+<span class="font-mono-data text-mono-data font-bold text-primary bg-primary-container/15 px-1.5 py-0.5 rounded" id="shock-display">+3.5h Delay</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted truncate">Ever Given (IMO 9811000)</p>
+<div class="pt-1">
+<input class="w-full accent-secondary-container h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer" id="arrival-slider" max="8" min="-4" oninput="updateSliderVal(this.value)" step="0.5" type="range" value="3.5"/>
+</div>
+<div class="flex justify-between font-mono-badge text-mono-badge text-text-muted pt-0.5">
+<span>-4.0h</span>
+<span>0.0h</span>
+<span>+8.0h</span>
+</div>
+</div>
+<!-- Parameter 2: Crane Allocation Stepper -->
+<div class="bg-surface-recessed rounded-lg p-space-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-text-muted">precision_manufacturing</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Berth 2 Crane Gangs</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted">BASE: 3</span>
+</div>
+<div class="flex items-center justify-between pt-1">
+<button class="w-8 h-8 rounded bg-surface-container hover:bg-surface-elevated text-text-primary flex items-center justify-center transition-colors" onclick="decrementCranes()">
+<span class="material-symbols-outlined text-base">remove</span>
+</button>
+<div class="flex items-baseline gap-1">
+<span class="font-mono-kpi text-mono-kpi text-text-primary" id="crane-count">4</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Cranes</span>
+</div>
+<button class="w-8 h-8 rounded bg-surface-container hover:bg-surface-elevated text-text-primary flex items-center justify-center transition-colors" onclick="incrementCranes()">
+<span class="material-symbols-outlined text-base">add</span>
+</button>
+</div>
+<div class="flex items-center justify-between font-mono-badge text-mono-badge text-status-safe pt-0.5">
+<span>Lift capacity: 140 m/h</span>
+<span>+33% over baseline</span>
+</div>
+</div>
+<!-- Parameter 3: Berth Outage Switch -->
+<div class="bg-surface-recessed rounded-lg p-space-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-status-critical">build</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Berth 3 Maintenance</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-status-critical bg-status-critical-bg px-1.5 py-0.5 rounded">OUTAGE</span>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-mono-data text-mono-data text-text-primary">Offline â†’ 17 Oct</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="berth-outage-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-text-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-primary after:border-border-subtle after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-status-critical"></div>
+</label>
+</div>
+<div class="font-mono-badge text-mono-badge text-text-muted truncate pt-1">
+            Hydraulic Gantry Repairs â€¢ Bay 3A-3F
+          </div>
+</div>
+<!-- Parameter 4: Channel Speed Restriction Dropdown -->
+<div class="bg-surface-recessed rounded-lg p-space-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-text-muted">speed</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Speed Restriction</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-status-warning bg-status-warning-bg px-1.5 py-0.5 rounded">FOG PROTOCOL</span>
+</div>
+<div class="pt-1">
+<select class="w-full bg-surface-container text-text-primary font-mono-data text-mono-data px-space-sm py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-primary">
+<option selected="">Restricted (10 kts - Fog)</option>
+<option>Standard Approach (14 kts)</option>
+<option>Harbor Slow (6 kts - Tow Only)</option>
+<option>Full Speed (18 kts)</option>
+</select>
+</div>
+<div class="font-mono-badge text-mono-badge text-text-muted truncate pt-0.5">
+            Outer fairway: 12.4 nmi to Gate
+          </div>
+</div>
+</div>
+<!-- Execution Action Triggers -->
+<div class="mt-space-md pt-space-sm flex flex-wrap items-center justify-between gap-space-sm bg-surface-dim p-space-sm rounded-lg">
+<div class="flex items-center gap-space-sm text-text-secondary font-mono-badge text-mono-badge">
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+<span>SOLVER MODEL: MILP-BerthOpt-v8</span>
+<span class="text-text-muted">â€¢</span>
+<span>EST. COMPUTATION: 82ms</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-space-md py-2 bg-surface-container hover:bg-surface-elevated text-text-secondary hover:text-text-primary font-body-sm text-body-sm font-medium rounded transition-colors flex items-center gap-1" onclick="resetSimulation()">
+<span class="material-symbols-outlined text-sm">restart_alt</span>
+<span>Reset to Live Baseline</span>
+</button>
+<button class="relative px-space-lg py-2 bg-primary hover:bg-secondary text-canvas-base font-touch-field text-touch-field rounded shadow-[0_0_20px_rgba(137,206,255,0.35)] hover:shadow-[0_0_28px_rgba(137,206,255,0.55)] transition-all flex items-center gap-2" onclick="triggerSimulationPulse()">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span>Run What-If Simulation</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Middle Section: Side-by-Side Scenario Comparison Scorecard -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-xl space-y-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-xs">
+<div>
+<span class="font-mono-badge text-mono-badge uppercase text-secondary tracking-wider">Multi-Variable Comparative Matrix</span>
+<h3 class="font-headline-lg text-headline-lg text-text-primary tracking-tight">Scenario Impact Scorecard</h3>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center gap-1.5 font-mono-badge text-mono-badge text-text-muted">
+<span class="w-2.5 h-2.5 rounded-sm bg-surface-variant"></span>
+<span>BASELINE PRODUCTION</span>
+</div>
+<div class="flex items-center gap-1.5 font-mono-badge text-mono-badge text-primary">
+<span class="w-2.5 h-2.5 rounded-sm bg-primary"></span>
+<span>SIMULATED SCENARIO</span>
+</div>
+</div>
+</div>
+<!-- Sleek Bento Matrix Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-space-sm">
+<!-- Metric 1: Total Port Dwell Time -->
+<div class="bg-surface-recessed p-space-md rounded-lg space-y-space-sm relative">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-body-sm text-text-secondary">Total Port Dwell</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-status-safe-bg text-status-safe font-mono-badge text-mono-badge rounded">
+              â–¼ -172h (-12.1%)
+            </span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between items-baseline">
+<span class="font-mono-badge text-mono-badge text-text-muted">SIMULATED</span>
+<span class="font-mono-kpi text-mono-kpi text-text-primary">1,248<span class="font-body-sm text-body-sm text-text-secondary ml-1">hrs</span></span>
+</div>
+<div class="flex justify-between items-center font-mono-data text-mono-data text-text-muted">
+<span>Baseline</span>
+<span class="line-through">1,420 hrs</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-status-safe h-full rounded-full" style="width: 78%"></div>
+</div>
+</div>
+<!-- Metric 2: Peak Congestion Score -->
+<div class="bg-surface-recessed p-space-md rounded-lg space-y-space-sm relative">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-body-sm text-text-secondary">Peak Congestion</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-status-safe-bg text-status-safe font-mono-badge text-mono-badge rounded">
+              â–¼ -0.20 Margin
+            </span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between items-baseline">
+<span class="font-mono-badge text-mono-badge text-text-muted">SIMULATED</span>
+<span class="font-mono-kpi text-mono-kpi text-status-safe">0.68</span>
+</div>
+<div class="flex justify-between items-center font-mono-data text-mono-data text-text-muted">
+<span>Baseline</span>
+<span class="text-status-critical font-bold">0.88 ALERT</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-status-safe h-full rounded-full" style="width: 68%"></div>
+</div>
+</div>
+<!-- Metric 3: Demurrage Penalty Exposure -->
+<div class="bg-surface-recessed p-space-md rounded-lg space-y-space-sm relative">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-body-sm text-text-secondary">Demurrage Penalties</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-status-safe-bg text-status-safe font-mono-badge text-mono-badge rounded">
+              â–¼ -$140k Saved
+            </span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between items-baseline">
+<span class="font-mono-badge text-mono-badge text-text-muted">SIMULATED</span>
+<span class="font-mono-kpi text-mono-kpi text-primary">$240,000</span>
+</div>
+<div class="flex justify-between items-center font-mono-data text-mono-data text-text-muted">
+<span>Baseline</span>
+<span class="line-through">$380,000</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 63%"></div>
+</div>
+</div>
+<!-- Metric 4: Berth Schedule Clashes -->
+<div class="bg-surface-recessed p-space-md rounded-lg space-y-space-sm relative">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-body-sm text-text-secondary">Schedule Clashes</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-status-safe-bg text-status-safe font-mono-badge text-mono-badge rounded">
+              âœ“ All Cleared
+            </span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between items-baseline">
+<span class="font-mono-badge text-mono-badge text-text-muted">SIMULATED</span>
+<span class="font-mono-kpi text-mono-kpi text-status-safe">0<span class="font-body-sm text-body-sm text-text-secondary ml-1">Clashes</span></span>
+</div>
+<div class="flex justify-between items-center font-mono-data text-mono-data text-text-muted">
+<span>Baseline</span>
+<span class="text-status-critical font-bold">3 Clashes</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-status-safe h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Metric 5: Average Crane Productivity -->
+<div class="bg-surface-recessed p-space-md rounded-lg space-y-space-sm relative">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-body-sm text-text-secondary">Crane Moves / Hr</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-status-safe-bg text-status-safe font-mono-badge text-mono-badge rounded">
+              â–² +3.4 moves
+            </span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between items-baseline">
+<span class="font-mono-badge text-mono-badge text-text-muted">SIMULATED</span>
+<span class="font-mono-kpi text-mono-kpi text-text-primary">29.8<span class="font-body-sm text-body-sm text-text-secondary ml-1">m/h</span></span>
+</div>
+<div class="flex justify-between items-center font-mono-data text-mono-data text-text-muted">
+<span>Baseline</span>
+<span>26.4 m/h</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+</div>
+<!-- In-Depth Multi-Attribute Telemetry Row -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-mono-data text-mono-data">
+<thead>
+<tr class="text-text-muted border-b border-border-subtle/50">
+<th class="py-2 px-space-sm font-semibold">TARGET RESOURCE</th>
+<th class="py-2 px-space-sm font-semibold">BASELINE CONFIGURATION</th>
+<th class="py-2 px-space-sm font-semibold">SIMULATED REALLOCATION</th>
+<th class="py-2 px-space-sm font-semibold">VARIANCE IMPACT</th>
+<th class="py-2 px-space-sm font-semibold text-right">SAFETY COEFFICIENT</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle/30 text-text-secondary">
+<tr class="hover:bg-surface-recessed/50 transition-colors">
+<td class="py-2.5 px-space-sm text-text-primary font-medium flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Berth 02 (Deep Draft)
+              </td>
+<td class="py-2.5 px-space-sm text-text-muted">3 Gantry Cranes â€¢ MSC Oscar Allocated</td>
+<td class="py-2.5 px-space-sm text-text-primary">4 Gantry Cranes â€¢ Shifted +2h Window</td>
+<td class="py-2.5 px-space-sm text-status-safe font-semibold">+18.5 Moves/hr throughput</td>
+<td class="py-2.5 px-space-sm text-right font-mono-badge text-mono-badge text-status-safe">1.42 (SAFE)</td>
+</tr>
+<tr class="hover:bg-surface-recessed/50 transition-colors">
+<td class="py-2.5 px-space-sm text-text-primary font-medium flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-status-critical"></span> Berth 03 (Outer Quay)
+              </td>
+<td class="py-2.5 px-space-sm text-text-muted">Scheduled CMA CGM Antoine berthing</td>
+<td class="py-2.5 px-space-sm text-status-warning font-semibold">Rerouted to Berth 04 (Clear)</td>
+<td class="py-2.5 px-space-sm text-status-safe font-semibold">Prevented 14h Crane Idle Stoppage</td>
+<td class="py-2.5 px-space-sm text-right font-mono-badge text-mono-badge text-status-safe">1.28 (SAFE)</td>
+</tr>
+<tr class="hover:bg-surface-recessed/50 transition-colors">
+<td class="py-2.5 px-space-sm text-text-primary font-medium flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-vessel-priority"></span> Berth 04 (Feeder Spur)
+              </td>
+<td class="py-2.5 px-space-sm text-text-muted">Idle buffer capacity (65% slack)</td>
+<td class="py-2.5 px-space-sm text-text-primary">Absorbed Antoine + Dedicated Tug 04</td>
+<td class="py-2.5 px-space-sm text-status-safe font-semibold">Zero Tug Bottlenecks Created</td>
+<td class="py-2.5 px-space-sm text-right font-mono-badge text-mono-badge text-status-safe">1.60 (OPTIMAL)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Bottom Section: Ghost Overlay Gantt Chart Preview -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-xl space-y-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded bg-status-safe-bg flex items-center justify-center text-status-safe">
+<span class="material-symbols-outlined text-lg">stacked_bar_chart</span>
+</div>
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="font-mono-badge text-mono-badge text-status-safe uppercase tracking-wider">Dual-State Chronology</span>
+<span class="font-mono-badge text-mono-badge text-text-muted">â€¢ 72-Hour Lookahead</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-text-primary tracking-tight">Ghost Overlay Gantt Simulation</h3>
+</div>
+</div>
+<!-- Legend / Toggles -->
+<div class="flex items-center gap-space-md flex-wrap font-mono-badge text-mono-badge text-text-muted">
+<div class="flex items-center gap-1.5">
+<div class="w-4 h-3 rounded-sm border border-dashed border-text-muted/60 bg-text-muted/10"></div>
+<span>Baseline Ghost</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-4 h-3 rounded-sm bg-status-safe shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+<span class="text-status-safe">Simulated (Clear Flow)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-4 h-3 rounded-sm bg-status-warning shadow-[0_0_8px_rgba(245,158,11,0.4)]"></div>
+<span class="text-status-warning">Tight Margin (&lt;1.5h)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-4 h-3 rounded-sm bg-surface-container-highest pattern-diagonal"></div>
+<span>Forced Maintenance</span>
+</div>
+</div>
+</div>
+<!-- Timeline Canvas Container -->
+<div class="bg-surface-recessed rounded-lg p-space-md overflow-x-auto relative">
+<!-- Time Axis Marks -->
+<div class="min-w-[860px] flex border-b border-border-subtle/50 pb-2 mb-space-sm text-text-muted font-mono-badge text-mono-badge">
+<div class="w-36 shrink-0 font-semibold text-text-secondary">BERTH LOCATION</div>
+<div class="flex-1 grid grid-cols-6 text-center">
+<div>15 OCT 12:00</div>
+<div>15 OCT 18:00</div>
+<div class="text-primary font-bold">16 OCT 00:00 (NOW)</div>
+<div>16 OCT 06:00</div>
+<div>16 OCT 12:00</div>
+<div>16 OCT 18:00</div>
+</div>
+</div>
+<!-- Gantt Rows -->
+<div class="min-w-[860px] space-y-space-md relative">
+<!-- UTC Guideline (Now Playhead) -->
+<div class="absolute top-0 bottom-0 left-[48%] w-0.5 bg-status-critical/60 z-30 pointer-events-none">
+<span class="absolute -top-3 -translate-x-1/2 bg-status-critical text-text-primary px-1 rounded font-mono-badge text-mono-badge">T-ZERO</span>
+</div>
+<!-- ROW 1: Berth 01 -->
+<div class="flex items-center h-14 relative group">
+<div class="w-36 shrink-0 font-mono-data text-mono-data text-text-primary font-bold flex flex-col">
+<span>Berth 01 (Max 366m)</span>
+<span class="font-mono-badge text-mono-badge text-text-muted">Draft: 15.5m</span>
+</div>
+<div class="flex-1 h-full bg-surface-container-low/40 rounded relative p-1">
+<!-- Ghost outline (unchanged) -->
+<div class="absolute left-[10%] w-[32%] top-1 bottom-1 rounded border border-dashed border-text-muted/40 bg-text-muted/5 flex items-center px-2">
+<span class="font-mono-badge text-mono-badge text-text-muted truncate">MAERSK MC-KINNEY (UNALTERED)</span>
+</div>
+<!-- Simulated block -->
+<div class="absolute left-[10%] w-[32%] top-1 bottom-1 rounded bg-status-safe/90 hover:bg-status-safe text-surface-dim font-mono-badge text-mono-badge font-bold flex items-center justify-between px-3 shadow-sm transition-all">
+<span class="truncate">MAERSK MC-KINNEY [Cranes: 4]</span>
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</div>
+</div>
+</div>
+<!-- ROW 2: Berth 02 (Heavy Shift) -->
+<div class="flex items-center h-14 relative group">
+<div class="w-36 shrink-0 font-mono-data text-mono-data text-text-primary font-bold flex flex-col">
+<span>Berth 02 (Max 400m)</span>
+<span class="font-mono-badge text-mono-badge text-primary">Draft: 16.8m</span>
+</div>
+<div class="flex-1 h-full bg-surface-container-low/40 rounded relative p-1">
+<!-- Conflict Baseline Ghost Block (Clash) -->
+<div class="absolute left-[38%] w-[28%] top-1 bottom-1 rounded border border-dashed border-status-critical/60 bg-status-critical/10 flex items-center justify-between px-2 text-status-critical">
+<span class="font-mono-badge text-mono-badge truncate">GHOST: EVER GIVEN (CLASH)</span>
+<span class="material-symbols-outlined text-sm">warning</span>
+</div>
+<!-- Simulated Rescheduled MSC Oscar -->
+<div class="absolute left-[44%] w-[30%] top-1 bottom-1 rounded bg-status-safe text-surface-dim font-mono-badge text-mono-badge font-bold flex items-center justify-between px-3 shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-sm">verified</span>
+<span class="truncate">MSC OSCAR [4 CRANES ASSIGNED]</span>
+</div>
+<span class="text-[10px] bg-canvas-base/30 px-1 py-0.5 rounded text-text-primary">+33% SPEED</span>
+</div>
+</div>
+</div>
+<!-- ROW 3: Berth 03 (Maintenance Lockout) -->
+<div class="flex items-center h-14 relative group">
+<div class="w-36 shrink-0 font-mono-data text-mono-data text-text-primary font-bold flex flex-col">
+<span>Berth 03 (Max 399m)</span>
+<span class="font-mono-badge text-mono-badge text-status-critical">CRANE 3 DOWN</span>
+</div>
+<div class="flex-1 h-full bg-surface-container-low/40 rounded relative p-1 overflow-hidden">
+<!-- Baseline ghost that got pushed out -->
+<div class="absolute left-[20%] w-[35%] top-1 bottom-1 rounded border border-dashed border-status-warning/40 bg-status-warning/5 flex items-center px-2">
+<span class="font-mono-badge text-mono-badge text-text-muted line-through truncate">GHOST: CMA CGM ANTOINE (BERTH EVICTED)</span>
+</div>
+<!-- Outage Striped block -->
+<div class="absolute left-[15%] w-[80%] top-1 bottom-1 rounded bg-surface-variant/80 flex items-center justify-center gap-2 text-text-muted font-mono-badge text-mono-badge uppercase tracking-wider">
+<span class="material-symbols-outlined text-status-critical text-base">engineering</span>
+<span>EMERGENCY QUAY CRANE OVERHAUL (MAINTENANCE BUFFER LOCK)</span>
+</div>
+</div>
+</div>
+<!-- ROW 4: Berth 04 (Smooth Antoine Shift) -->
+<div class="flex items-center h-14 relative group">
+<div class="w-36 shrink-0 font-mono-data text-mono-data text-text-primary font-bold flex flex-col">
+<span>Berth 04 (Max 350m)</span>
+<span class="font-mono-badge text-mono-badge text-status-safe">Draft: 15.0m</span>
+</div>
+<div class="flex-1 h-full bg-surface-container-low/40 rounded relative p-1">
+<!-- Baseline Ghost empty window -->
+<div class="absolute left-[25%] w-[15%] top-1 bottom-1 rounded border border-dashed border-text-muted/30 flex items-center justify-center">
+<span class="font-mono-badge text-mono-badge text-text-muted/60">UNUSED WINDOW</span>
+</div>
+<!-- Simulated CMA CGM Antoine Shifted Here -->
+<div class="absolute left-[24%] w-[38%] top-1 bottom-1 rounded bg-secondary-container hover:bg-secondary text-surface-dim font-mono-badge text-mono-badge font-bold flex items-center justify-between px-3 shadow-[0_0_16px_rgba(0,166,224,0.35)] transition-all">
+<div class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-sm">swap_horiz</span>
+<span class="truncate">CMA CGM ANTOINE [GANG 4 ALLOCATED]</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-recessed/40 px-1.5 py-0.5 rounded text-text-primary">
+<span class="material-symbols-outlined text-xs text-status-safe">check</span>
+<span class="text-[10px]">CLASH RESOLVED</span>
+</div>
+</div>
+<!-- Subsequent feeder slot with tight margin -->
+<div class="absolute left-[65%] w-[25%] top-1 bottom-1 rounded bg-status-warning text-surface-dim font-mono-badge text-mono-badge font-bold flex items-center justify-between px-2 shadow-sm">
+<span class="truncate">WAN HAI 502</span>
+<span class="text-[10px] bg-canvas-base/30 px-1 rounded text-text-primary font-mono-data text-mono-data">MARGIN: 1.1h</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Annotation Bar Below Gantt -->
+<div class="mt-space-md pt-space-xs flex flex-wrap items-center justify-between gap-space-sm text-text-secondary font-mono-badge text-mono-badge bg-surface-dim p-space-sm rounded">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-status-safe text-sm">verified_user</span>
+<span>Simulated layout frees Berth 02 for MSC Oscar while absorbing Antoine seamlessly into Berth 04 without tug congestion.</span>
+</div>
+<div class="text-primary font-semibold">Dynamic Tide Headroom: +2.1m High Water Advantage</div>
+</div>
+</div>
+</div>
+<!-- Visual Polish: Operations Terminal Map Snippet & AIS Validation Card -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
+<div class="lg:col-span-2 bg-surface-card rounded-xl p-space-md shadow-xl flex flex-col justify-between">
+<div class="flex items-center justify-between pb-space-sm">
+<div>
+<span class="font-mono-badge text-mono-badge uppercase text-text-muted">Geographic Kinematics</span>
+<h4 class="font-headline-md text-headline-md text-text-primary">Outer Harbor Approach Vectors</h4>
+</div>
+<span class="font-mono-badge text-mono-badge text-primary bg-primary-container/20 px-2 py-1 rounded">AIS FEED REAL-TIME</span>
+</div>
+<!-- High visual appeal map card placeholder -->
+<div class="w-full h-48 bg-cover bg-center rounded-lg relative overflow-hidden flex items-end p-space-sm" data-alt="High angle maritime radar satellite view of a modern shipping container port with ultra large container vessels approaching illuminated quayside berths under tactical night operation glow" data-location="Port of Los Angeles, Pier 400" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_VGGanv-QKI4En8nRu_USkhD6wAe3RHmmY7DznDZcHy7At912ycyvM5MMh_ctItp18OQe-pa9dZTinGRHUPrxuflm7ao2KkULUjpaoBmRxe7RXB57D10lIEhw0HgBBP_SZ39alBIJmX-7dQaq5UN9XCKhwLj1qr2g3pR7l6GJ23mX6pWyyPUCVVd-3kkOjbxd0yhROxCLPiEaRLu_HShU1ubLCHZj50u32We1ZE0SDWYQX2JWBm4e')">
+<div class="bg-surface-dim/90 backdrop-blur-md p-space-xs rounded font-mono-badge text-mono-badge text-text-primary flex items-center gap-space-md">
+<span>VESSELS IN SECTOR: 8</span>
+<span>APPROACH SPEED: 9.8 kts avg</span>
+<span class="text-status-safe">SURGE RISK: MINIMAL</span>
+</div>
+</div>
+</div>
+<!-- Quick AI Copilot Prescriptive Audit -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-xl flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center gap-1.5 pb-1">
+<span class="material-symbols-outlined text-secondary text-sm">psychology</span>
+<span class="font-mono-badge text-mono-badge uppercase text-secondary">Copilot Sanity Check</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-text-primary">Safety Assurance Report</h4>
+<p class="font-body-sm text-body-sm text-text-secondary pt-2">
+            The candidate plan meets all Terminal Pier 400 safety protocols. Mooring line stress load remains below 62% under modeled wind gusts of 28 knots.
+          </p>
+</div>
+<div class="space-y-space-xs pt-space-xs">
+<div class="flex justify-between font-mono-badge text-mono-badge text-text-muted">
+<span>Keel Draft Clearance</span>
+<span class="text-status-safe font-bold">+1.2m OK</span>
+</div>
+<div class="flex justify-between font-mono-badge text-mono-badge text-text-muted">
+<span>Stevedore Gang Availability</span>
+<span class="text-status-safe font-bold">100% Staffed</span>
+</div>
+<div class="flex justify-between font-mono-badge text-mono-badge text-text-muted">
+<span>Bunker Fueling Conflicts</span>
+<span class="text-status-safe font-bold">0 Detected</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Bottom Action Bar -->
+<div class="sticky bottom-space-md z-40 w-full bg-surface-elevated/95 backdrop-blur-md rounded-xl p-space-md shadow-2xl flex flex-wrap items-center justify-between gap-space-md">
+<!-- Left: Engine Status & Sanity -->
+<div class="flex items-center gap-space-sm">
+<div class="w-3 h-3 rounded-full bg-status-safe animate-pulse shrink-0"></div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-mono-data text-text-primary font-bold">Simulation State: Ready for Production Commit</span>
+<span class="font-mono-badge text-mono-badge text-status-safe bg-status-safe-bg px-1.5 py-0.2 rounded">VERIFIED</span>
+</div>
+<span class="font-body-sm text-body-sm text-text-muted">Automated verification by Marine Safety Engine â€¢ Draft clearance: +1.2m OK â€¢ Gang labor shifts aligned</span>
+</div>
+</div>
+<!-- Right: Action Buttons -->
+<div class="flex items-center gap-space-sm">
+<button class="px-space-md py-2.5 bg-surface-card hover:bg-surface-card-hover text-text-primary font-body-md text-body-md rounded transition-colors flex items-center gap-2" onclick="exportBriefingPDF()">
+<span class="material-symbols-outlined text-base">picture_as_pdf</span>
+<span>Export Scenario PDF Briefing</span>
+</button>
+<button class="relative px-space-lg py-2.5 bg-status-safe hover:bg-emerald-400 text-canvas-base font-touch-field text-touch-field font-bold rounded shadow-[0_0_24px_rgba(16,185,129,0.45)] transition-all flex items-center gap-2" onclick="confirmCommitScenario()">
+<span class="material-symbols-outlined text-lg">rocket_launch</span>
+<span>Commit Simulated Scenario to Live Production</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Interactive JavaScript Sandbox Handlers -->
+<script>
+    function updateSliderVal(val) {
+      const display = document.getElementById('shock-display');
+      const num = parseFloat(val);
+      if (num > 0) {
+        display.textContent = '+' + num.toFixed(1) + 'h Delay';
+        display.className = 'font-mono-data text-mono-data font-bold text-status-warning bg-status-warning-bg px-1.5 py-0.5 rounded';
+      } else if (num === 0) {
+        display.textContent = '0.0h On-Time';
+        display.className = 'font-mono-data text-mono-data font-bold text-status-safe bg-status-safe-bg px-1.5 py-0.5 rounded';
+      } else {
+        display.textContent = num.toFixed(1) + 'h Ahead';
+        display.className = 'font-mono-data text-mono-data font-bold text-primary bg-primary-container/20 px-1.5 py-0.5 rounded';
+      }
+    }
+
+    function decrementCranes() {
+      const el = document.getElementById('crane-count');
+      let val = parseInt(el.textContent, 10);
+      if (val > 1) {
+        el.textContent = val - 1;
+      }
+    }
+
+    function incrementCranes() {
+      const el = document.getElementById('crane-count');
+      let val = parseInt(el.textContent, 10);
+      if (val < 6) {
+        el.textContent = val + 1;
+      }
+    }
+
+    function applyPreset(preset) {
+      const buttons = ['preset-baseline', 'preset-fog', 'preset-crane', 'preset-squall'];
+      buttons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          btn.className = 'px-space-sm py-1 rounded font-mono-data text-mono-data text-text-muted hover:text-text-primary transition-all';
+        }
+      });
+      const activeBtn = document.getElementById('preset-' + preset);
+      if (activeBtn) {
+        activeBtn.className = 'px-space-sm py-1 rounded font-mono-data text-mono-data bg-surface-elevated text-primary font-bold shadow-sm transition-all';
+      }
+
+      const slider = document.getElementById('arrival-slider');
+      const toggle = document.getElementById('berth-outage-toggle');
+      if (preset === 'baseline') {
+        slider.value = 0;
+        updateSliderVal(0);
+        toggle.checked = false;
+        document.getElementById('crane-count').textContent = '3';
+      } else if (preset === 'crane') {
+        slider.value = 3.5;
+        updateSliderVal(3.5);
+        toggle.checked = true;
+        document.getElementById('crane-count').textContent = '4';
+      } else if (preset === 'fog') {
+        slider.value = 6;
+        updateSliderVal(6);
+        toggle.checked = false;
+        document.getElementById('crane-count').textContent = '2';
+      } else if (preset === 'squall') {
+        slider.value = 2;
+        updateSliderVal(2);
+        toggle.checked = true;
+        document.getElementById('crane-count').textContent = '3';
+      }
+    }
+
+    function triggerSimulationPulse() {
+      const originalText = event.currentTarget.innerHTML;
+      const btn = event.currentTarget;
+      btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">refresh</span><span>Computing Schedule Optimization...</span>';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 700);
+    }
+
+    function resetSimulation() {
+      applyPreset('baseline');
+    }
+
+    function exportBriefingPDF() {
+      const prevText = event.currentTarget.innerText;
+      event.currentTarget.innerText = 'Compiling PDF Briefing...';
+      setTimeout(() => {
+        event.target.innerText = 'Downloaded: Scenario_Oct15_WhatIf.pdf';
+      }, 600);
+    }
+
+    function confirmCommitScenario() {
+      if (confirm('Commit candidate scenario to Live TOS? This will broadcast updated pilotage windows to LA VTS.')) {
+        alert('Candidate plan successfully committed to Production TOS. Pilots and quayside gantry operators dispatched.');
+      }
+    }
+  </script>
+</div></main></div></body></html>
+
+

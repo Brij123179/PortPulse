@@ -10,7 +10,8 @@ import { RecommendationFeed } from './components/RecommendationFeed';
 import { BerthScheduleGantt } from './components/BerthScheduleGantt';
 import { ManualOverrideModal } from './components/ManualOverrideModal';
 import { WhatIfSimulator } from './components/WhatIfSimulator';
-import { PortMap } from './components/PortMap';
+import { VesselMap } from './components/VesselMap';
+import { TimelineForecast } from './components/TimelineForecast';
 import { ActivityLogView } from './components/ActivityLogView';
 import { GuidedTourModal } from './components/GuidedTourModal';
 import { LoginModal } from './components/LoginModal';
@@ -459,7 +460,7 @@ export const App: React.FC = () => {
 
         {/* Tab 1: Terminal Map */}
         {!loading && activeTab === 'map' && (
-          <PortMap
+          <VesselMap
             onSelectVessel={(vId) => handleOpenOverride(vId)}
             onOpenOverride={(vId) => handleOpenOverride(vId)}
           />
@@ -478,11 +479,17 @@ export const App: React.FC = () => {
 
         {/* Tab 3: 72h Congestion Heatmap */}
         {!loading && activeTab === 'heatmap' && (
-          <CongestionHeatmap
-            heatmapData={heatmapData}
-            loading={heatmapLoading}
-            onRefresh={() => fetchLiveStatus(false)}
-          />
+          <div className="space-y-6">
+            <TimelineForecast
+              berths={heatmapData?.berths || []}
+              generatedAt={heatmapData?.generated_at}
+            />
+            <CongestionHeatmap
+              heatmapData={heatmapData}
+              loading={heatmapLoading}
+              onRefresh={() => fetchLiveStatus(false)}
+            />
+          </div>
         )}
 
         {/* Tab 4: Prescriptive Operational Interventions */}

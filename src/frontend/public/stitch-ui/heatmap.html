@@ -1,0 +1,542 @@
+﻿<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "error": "#ffb4ab", "border-subtle": "#1e3252", "status-critical-bg": "rgba(239, 68, 68, 0.15)", "on-error": "#690005", "on-tertiary-fixed-variant": "#2f2ebe", "surface-container-high": "#222a3a", "surface-container": "#18202f", "tertiary-container": "#8d90ff", "text-primary": "#f1f5f9", "status-safe": "#10b981", "surface-tint": "#89ceff", "on-surface": "#dbe2f8", "secondary-container": "#00a6e0", "surface-dim": "#0b1322", "inverse-surface": "#dbe2f8", "primary-fixed": "#c9e6ff", "surface-variant": "#2d3545", "inverse-on-surface": "#293041", "surface-card-hover": "#16253e", "status-critical": "#ef4444", "background": "#0b1322", "surface-card": "#0f1b2e", "vessel-maintenance": "#475569", "inverse-primary": "#006591", "outline": "#88929b", "surface-recessed": "#080d18", "surface-elevated": "#1a2a44", "status-safe-bg": "rgba(16, 185, 129, 0.12)", "on-secondary-container": "#00374d", "on-error-container": "#ffdad6", "outline-variant": "#3e4850", "primary-container": "#0ea5e9", "secondary-fixed": "#c4e7ff", "on-primary-fixed": "#001e2f", "tertiary-fixed-dim": "#c0c1ff", "error-container": "#93000a", "status-warning-bg": "rgba(245, 158, 11, 0.12)", "vessel-priority": "#a855f7", "on-surface-variant": "#bec8d2", "text-secondary": "#94a3b8", "on-tertiary-fixed": "#07006c", "on-secondary-fixed-variant": "#004c69", "secondary-fixed-dim": "#7bd0ff", "status-warning": "#f59e0b", "tertiary-fixed": "#e1e0ff", "on-secondary-fixed": "#001e2c", "surface-container-highest": "#2d3545", "on-tertiary": "#1000a9", "primary": "#89ceff", "tertiary": "#c0c1ff", "on-secondary": "#00354a", "border-hairline": "rgba(255, 255, 255, 0.07)", "on-background": "#dbe2f8", "text-muted": "#64748b", "surface-container-low": "#141c2b", "canvas-base": "#060a12", "secondary": "#7bd0ff", "on-primary-fixed-variant": "#004c6e", "on-primary-container": "#003751", "on-primary": "#00344d", "primary-fixed-dim": "#89ceff", "on-tertiary-container": "#1407ad", "surface-bright": "#32394a", "border-focus": "#2563eb", "surface-container-lowest": "#060e1d", "surface": "#0b1322" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem", "margin-compact": "1rem", "margin": "1.5rem", "gutter-sm": "0.75rem", "space-lg": "1.5rem", "space-md": "1rem" }, "fontFamily": { "touch-field": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"], "mono-badge": ["JetBrains Mono"], "display-hero": ["Inter"], "mono-data": ["JetBrains Mono"], "mono-kpi": ["JetBrains Mono"], "body-md": ["Inter"], "body-sm": ["Inter"] }, "fontSize": { "touch-field": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "headline-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "mono-badge": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }], "display-hero": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "mono-data": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }], "mono-kpi": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } };</script></head><body class="bg-canvas-base text-text-primary antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface-dim/95 backdrop-blur-md border-b border-border-subtle"><div class="h-14 w-full px-space-md flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><img alt="PortPulse Radar Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VzuF-qVybHS94ulWJMy4yeCFE4cmqi2kv3bkZ0gE-we9ttNo4ZItcE-sOHbVHPjwy_88VtNvQtuClnNv2J1iDrixZ1uyUmV6PfWV9iTjjwO5cu1r9dJ0ctc4haqUAkStF_HgMbT8P1ymMrPYU4xq-RyDh7ZBSEDMFDdwbAF7KLIfHrrmEdQdHcjIFMSJY7kPUHw8jykjSEY16Cmbh4qOlsenvymInfQuKda9YhlfevqF4cQ69aSUk8Mg"/><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-text-primary leading-none">PortPulse</span><span class="font-mono-badge text-mono-badge text-primary uppercase leading-tight">Maritime OS</span></div></div><div class="h-5 w-[1px] bg-border-subtle"></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-secondary transition-colors"><span class="material-symbols-outlined text-sm text-primary">anchor</span><span class="font-body-sm text-body-sm font-medium text-text-primary">Port of Los Angeles (Pier 400)</span><span class="material-symbols-outlined text-sm">expand_more</span></button></div><div class="hidden xl:flex items-center gap-space-md bg-surface-recessed border border-border-subtle rounded-lg px-space-md py-1 shrink-0"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-base">schedule</span><div class="flex flex-col"><span class="font-mono-data text-mono-data text-primary font-bold">15 OCT 2025 â€¢ 14:30 UTC</span><span class="font-mono-badge text-mono-badge text-text-muted">Local: 07:30 PDT</span></div></div><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-1"><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">-30m</button><button class="h-7 w-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded hover:opacity-90"><span class="material-symbols-outlined text-base">play_arrow</span></button><button class="h-7 px-2 flex items-center justify-center bg-surface-container hover:bg-surface-elevated hover:text-on-surface text-text-secondary border border-border-subtle rounded font-mono-data text-mono-data">+30m</button></div><div class="flex items-center bg-surface-container border border-border-subtle rounded p-0.5"><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">1x</button><button class="px-1.5 py-0.5 bg-primary-container text-on-primary-container font-mono-badge text-mono-badge font-bold rounded-sm">2x</button><button class="px-1.5 py-0.5 text-text-muted font-mono-badge text-mono-badge hover:text-text-primary">5x</button></div><div class="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden relative"><div class="h-full bg-primary w-3/5"></div><div class="absolute top-0 bottom-0 left-3/5 w-1 bg-status-critical"></div></div></div><div class="flex items-center gap-space-sm shrink-0"><div class="hidden lg:flex items-center gap-space-xs px-space-sm py-1 bg-status-safe-bg border border-status-safe/30 rounded-full"><span class="w-2 h-2 rounded-full bg-status-safe animate-pulse"></span><span class="font-mono-badge text-mono-badge text-status-safe">LIVE ML Engine (38ms â€¢ v2.4)</span></div><div class="hidden md:flex items-center gap-1 px-space-sm py-1 bg-surface-recessed border border-border-subtle rounded-lg text-text-secondary font-body-sm text-body-sm"><span class="material-symbols-outlined text-sm text-vessel-priority">shield_person</span><span>Shift Supervisor</span></div><button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-recessed hover:bg-surface-elevated hover:text-on-surface border border-border-subtle rounded text-text-muted transition-colors"><span class="material-symbols-outlined text-sm">search</span><span class="font-mono-badge text-mono-badge text-text-muted">âŒ˜K</span></button><button class="relative p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-status-critical text-text-primary rounded-full flex items-center justify-center font-mono-badge text-mono-badge">3</span></button><button class="flex items-center gap-space-xs px-space-sm py-1 bg-gradient-to-r from-vessel-priority/20 to-primary-container/20 border border-primary-container/40 rounded-full text-text-primary hover:border-primary-container transition-all"><span class="font-body-sm text-body-sm font-semibold text-primary">Ask Copilot</span><span class="font-mono-badge text-mono-badge text-secondary">âœ¨</span></button><div class="h-6 w-[1px] bg-border-subtle"></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-border-subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyBf3fWtUh7rQt3IStjeC9MjRbRcS5CKtuEP8jbutyp85Tv4lub40CESm1dECM220UFngbkh7MGNG8Siz0H_iSMtJgj0tJ329kxS3mXg5dM5TMdYw6XGXeiH6sknYcl9GayOetx67f4F_WpyUmh-Vi5lm-0G_Rq7hd3xi8RZdfFAPfUxKZIKzA2eOn6G2eZ-T26loOt8FSWsJ8eGojvM18_j2vOxKVJlm5GWYnZTBiTGctA4jIPo2-"/></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-60 bg-surface-dim border-r border-border-subtle z-40 flex flex-col justify-between overflow-y-auto"><div class="p-space-sm"><div class="px-space-sm py-space-xs mb-space-xs"><span class="font-mono-badge text-mono-badge text-text-muted uppercase tracking-wider">Operational Units</span></div><nav class="space-y-1" data-active-classes="bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]"><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="operations-plan" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">calendar_month</span><span class="font-body-sm text-body-sm">Operations Plan</span></div><span class="px-1.5 py-0.5 bg-status-safe-bg text-status-safe border border-status-safe/30 rounded font-mono-badge text-mono-badge">LIVE</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="terminal-vessel-map" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">explore</span><span class="font-body-sm text-body-sm">Terminal Vessel Map</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">12 Active</span></a><a aria-current="page" class="flex items-center justify-between px-space-sm py-2 rounded transition-colors bg-surface-elevated text-primary font-semibold border border-primary/30 shadow-[0_0_12px_rgba(14,165,233,0.15)]" data-path="72h-congestion-heatmap" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bar_chart</span><span class="font-body-sm text-body-sm">72h Congestion</span></div><span class="px-1.5 py-0.5 bg-status-warning-bg text-status-warning border border-status-warning/30 rounded font-mono-badge text-mono-badge">Peak 18h</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="prescriptive-actions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">bolt</span><span class="font-body-sm text-body-sm">Prescriptive Actions</span></div><span class="px-1.5 py-0.5 bg-status-critical-bg text-status-critical border border-status-critical/30 rounded font-mono-badge text-mono-badge">3 Pending</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="what-if-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">tune</span><span class="font-body-sm text-body-sm">What-If Simulator</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="live-vessel-queue" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">anchor</span><span class="font-body-sm text-body-sm">Live Vessel Queue</span></div><span class="px-1.5 py-0.5 bg-surface-container text-text-secondary rounded font-mono-badge text-mono-badge">7 Waiting</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="cascade-delay-simulator" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">account_tree</span><span class="font-body-sm text-body-sm">Cascade Delays</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="activity-log-audit" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">description</span><span class="font-body-sm text-body-sm">Activity &amp; Audit</span></div></a><a class="flex items-center justify-between px-space-sm py-2 rounded text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" data-path="forecast-ml-metrics" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-base">memory</span><span class="font-body-sm text-body-sm">Forecast &amp; ML Metrics</span></div></a></nav></div><div class="p-space-sm border-t border-border-subtle bg-surface-recessed/60 space-y-space-sm"><div class="p-space-xs bg-surface-card border border-border-subtle rounded"><div class="flex items-center justify-between mb-1"><span class="font-mono-badge text-mono-badge text-text-muted">APM PIER 400</span><span class="w-1.5 h-1.5 rounded-full bg-status-safe"></span></div><div class="flex justify-between items-center text-text-secondary font-mono-badge text-mono-badge"><span>CRANES: 14/16</span><span>BERTHS: 88%</span></div></div><div class="flex items-center justify-between gap-space-xs"><button class="w-full flex items-center justify-center gap-1.5 py-1.5 px-space-sm bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-primary font-body-sm text-body-sm transition-colors"><span class="material-symbols-outlined text-sm text-primary">ios_share</span><span>Shift Briefing</span></button><button class="p-1.5 bg-surface-elevated hover:bg-surface-card-hover border border-border-subtle rounded text-text-secondary hover:text-primary transition-colors" title="Zen Deck (Z)"><span class="material-symbols-outlined text-base">fullscreen</span></button></div></div></aside><div class="pl-60"><main class="w-full min-h-screen pt-14 bg-canvas-base"><div class="flex flex-col w-full">
+<div class="p-space-lg space-y-space-lg">
+<!-- Top Telemetry Sub-Header & Global Timeline Scrubber -->
+<section class="bg-surface-card rounded-xl p-space-md shadow-xl flex flex-col gap-space-md relative overflow-hidden">
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-xl">analytics</span>
+<span class="font-headline-lg text-headline-lg text-text-primary">72h Predictive Bottleneck Forecaster</span>
+</div>
+<span class="px-2 py-0.5 bg-status-critical-bg text-status-critical rounded font-mono-badge text-mono-badge flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-status-critical animate-ping"></span>
+            âš¡ PEAK CONGESTION: Thu 02:00 - 08:00 (Risk: 0.88)
+          </span>
+</div>
+<div class="flex items-center gap-space-sm font-mono-data text-mono-data text-text-secondary">
+<span class="text-text-muted">HORIZON:</span>
+<span class="text-text-primary font-bold">15 OCT 14:00Z â†’ 18 OCT 14:00Z</span>
+<span class="text-text-muted">|</span>
+<span class="text-primary">RUN ID: #ML-78401</span>
+</div>
+</div>
+<!-- Scrubber Track Visual Container -->
+<div class="relative w-full bg-surface-recessed rounded-lg p-space-md shadow-inner">
+<!-- Interactive Playhead Marker Guide -->
+<div class="absolute top-2 bottom-2 w-px bg-primary z-20 pointer-events-none transition-all duration-75" id="playhead-guide" style="left: 24.5%;">
+<div class="absolute -top-1 -translate-x-1/2 px-1.5 py-0.5 bg-primary text-on-primary font-mono-badge text-mono-badge rounded shadow-md">
+            +18h [Thu 02:00]
+          </div>
+</div>
+<!-- Floating Scrubber Tooltip -->
+<div class="absolute z-30 top-14 left-[24.5%] -translate-x-1/2 pointer-events-none bg-surface-elevated/95 backdrop-blur-md rounded-lg p-space-sm shadow-xl min-w-[280px]" id="scrubber-tooltip">
+<div class="flex items-center justify-between pb-1 mb-1 bg-surface-card-hover/40 px-1 rounded">
+<span class="font-mono-badge text-mono-badge text-status-critical font-bold">CRITICAL BUCKET 3</span>
+<span class="font-mono-badge text-mono-badge text-text-muted">Thu 02:00 - 08:00 UTC</span>
+</div>
+<div class="space-y-1 font-body-sm text-body-sm">
+<div class="flex justify-between">
+<span class="text-text-muted">Risk Score:</span>
+<span class="font-mono-data text-mono-data text-status-critical font-bold">0.884</span>
+</div>
+<div class="flex justify-between">
+<span class="text-text-muted">Anchor Queue:</span>
+<span class="font-mono-data text-mono-data text-text-primary">9 Vessels Waiting</span>
+</div>
+<div class="flex justify-between">
+<span class="text-text-muted">Dominant Factor:</span>
+<span class="font-mono-data text-mono-data text-secondary">3 ULCVs Overlap</span>
+</div>
+</div>
+</div>
+<!-- 12-Bucket Aggregate Bar Track -->
+<div class="grid grid-cols-12 gap-1.5 h-16 items-end pt-4 cursor-crosshair relative z-10" id="scrubber-track">
+<!-- B1: Today 14:00 (34%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="1" data-driver="Standard feeder rotations" data-label="Today 14:00" data-queue="2" data-risk="0.34">
+<div class="w-full bg-status-safe rounded-t transition-all group-hover:brightness-125" style="height: 34%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">14:00</span>
+</div>
+<!-- B2: Today 20:00 (48%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="2" data-driver="Mid-tide draft limits" data-label="Today 20:00" data-queue="4" data-risk="0.48">
+<div class="w-full bg-status-warning rounded-t transition-all group-hover:brightness-125" style="height: 48%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">20:00</span>
+</div>
+<!-- B3: Thu 02:00 (88% CRITICAL) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="3" data-driver="3 ULCVs overlapping" data-label="Thu 02:00" data-queue="9" data-risk="0.884">
+<div class="w-full bg-status-critical rounded-t shadow-[0_0_12px_rgba(239,68,68,0.5)] transition-all group-hover:brightness-125 relative" style="height: 88%;">
+<span class="absolute top-1 left-1/2 -translate-x-1/2 material-symbols-outlined text-[12px] text-text-primary">priority_high</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-status-critical font-bold text-center truncate">02:00</span>
+</div>
+<!-- B4: Thu 08:00 (82%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="4" data-driver="Crane crane gang transition lag" data-label="Thu 08:00" data-queue="8" data-risk="0.82">
+<div class="w-full bg-status-critical rounded-t transition-all group-hover:brightness-125" style="height: 82%;"></div>
+<span class="font-mono-badge text-mono-badge text-status-critical text-center truncate">08:00</span>
+</div>
+<!-- B5: Thu 14:00 (65%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="5" data-driver="Rail yard dwell saturation" data-label="Thu 14:00" data-queue="5" data-risk="0.65">
+<div class="w-full bg-status-warning rounded-t transition-all group-hover:brightness-125" style="height: 65%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">14:00</span>
+</div>
+<!-- B6: Thu 20:00 (52%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="6" data-driver="Tide gate slack water clearance" data-label="Thu 20:00" data-queue="4" data-risk="0.52">
+<div class="w-full bg-status-warning rounded-t transition-all group-hover:brightness-125" style="height: 52%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">20:00</span>
+</div>
+<!-- B7: Fri 02:00 (74% High - Secondary Peak) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="7" data-driver="28kt squall crane cycle decay" data-label="Fri 02:00" data-queue="7" data-risk="0.74">
+<div class="w-full bg-status-critical rounded-t transition-all group-hover:brightness-125" style="height: 74%;"></div>
+<span class="font-mono-badge text-mono-badge text-status-critical text-center truncate">02:00</span>
+</div>
+<!-- B8: Fri 08:00 (41%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="8" data-driver="Residual anchorage offload" data-label="Fri 08:00" data-queue="3" data-risk="0.41">
+<div class="w-full bg-status-warning rounded-t transition-all group-hover:brightness-125" style="height: 41%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">08:00</span>
+</div>
+<!-- B9: Fri 14:00 (28%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="9" data-driver="Nominal quay clearing" data-label="Fri 14:00" data-queue="2" data-risk="0.28">
+<div class="w-full bg-status-safe rounded-t transition-all group-hover:brightness-125" style="height: 28%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">14:00</span>
+</div>
+<!-- B10: Fri 20:00 (22%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="10" data-driver="Balanced berth headway" data-label="Fri 20:00" data-queue="1" data-risk="0.22">
+<div class="w-full bg-status-safe rounded-t transition-all group-hover:brightness-125" style="height: 22%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">20:00</span>
+</div>
+<!-- B11: Sat 02:00 (18%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="11" data-driver="Unconstrained berthing" data-label="Sat 02:00" data-queue="1" data-risk="0.18">
+<div class="w-full bg-status-safe rounded-t transition-all group-hover:brightness-125" style="height: 18%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">02:00</span>
+</div>
+<!-- B12: Sat 08:00 (15%) -->
+<div class="group flex flex-col justify-end h-full gap-1 cursor-pointer" data-bucket="12" data-driver="Full berth availability" data-label="Sat 08:00" data-queue="0" data-risk="0.15">
+<div class="w-full bg-status-safe rounded-t transition-all group-hover:brightness-125" style="height: 15%;"></div>
+<span class="font-mono-badge text-mono-badge text-text-muted text-center truncate">08:00</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-2 px-1 text-text-muted font-mono-badge text-mono-badge">
+<span>DAY 1 (TODAY)</span>
+<span>DAY 2 (CRITICAL BOTTLENECK WINDOW)</span>
+<span>DAY 3 (STABILIZATION)</span>
+</div>
+</div>
+</section>
+<!-- Middle Section: 72-Hour Berth-by-Hour Heatmap Matrix -->
+<section class="bg-surface-card rounded-xl p-space-md shadow-xl flex flex-col gap-space-md">
+<!-- Heatmap Control Bar & Legend -->
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-md text-headline-md text-text-primary">Berth Allocation &amp; Congestion Matrix</span>
+<div class="flex items-center gap-2">
+<div class="bg-surface-recessed px-space-sm py-1 rounded text-text-secondary font-body-sm text-body-sm flex items-center gap-1 cursor-pointer hover:bg-surface-elevated">
+<span class="material-symbols-outlined text-sm text-primary">schedule</span>
+<span>72h Horizon</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+<div class="bg-surface-recessed px-space-sm py-1 rounded text-text-secondary font-body-sm text-body-sm flex items-center gap-1 cursor-pointer hover:bg-surface-elevated">
+<span class="material-symbols-outlined text-sm text-primary">dock</span>
+<span>All Berths (B1-B6)</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Legend -->
+<div class="flex items-center gap-space-md font-mono-badge text-mono-badge">
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-sm bg-surface-elevated"></span>
+<span class="text-text-muted">0.0-0.4 Normal</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-sm bg-status-warning"></span>
+<span class="text-text-muted">0.4-0.7 Warning</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-sm bg-status-critical shadow-[0_0_6px_rgba(239,68,68,0.5)]"></span>
+<span class="text-status-critical font-bold">0.7-1.0 Critical</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-sm bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_2px,#080d18_2px,#080d18_6px)]"></span>
+<span class="text-text-muted">Outage / Dredge</span>
+</div>
+</div>
+</div>
+<!-- Matrix Grid -->
+<div class="overflow-x-auto">
+<div class="min-w-[760px] flex flex-col gap-1.5">
+<!-- X-Axis Timeline Labels -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 text-center font-mono-badge text-mono-badge text-text-muted pb-1">
+<div class="text-left pl-2">BERTH</div>
+<div>+6h</div>
+<div>+12h</div>
+<div>+18h</div>
+<div>+24h</div>
+<div>+30h</div>
+<div>+36h</div>
+<div>+42h</div>
+<div>+48h</div>
+<div>+54h</div>
+<div>+60h</div>
+<div>+66h</div>
+<div>+72h</div>
+</div>
+<!-- Berth 1 (Panamax / Feeders) -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 items-center">
+<div class="font-mono-data text-mono-data text-text-primary pl-2 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-status-safe"></span>
+<span>B1 [P]</span>
+</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.22">0.22</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.31">0.31</div>
+<div class="h-9 rounded bg-status-warning/40 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge font-semibold hover:bg-status-warning/60 cursor-pointer" title="Risk: 0.58">0.58</div>
+<div class="h-9 rounded bg-status-warning/30 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge hover:bg-status-warning/50 cursor-pointer" title="Risk: 0.49">0.49</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.35">0.35</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.20">0.20</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.18">0.18</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.25">0.25</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.15">0.15</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.12">0.12</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.08">0.08</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.05">0.05</div>
+</div>
+<!-- Berth 2 (ULCV Berth - CRITICAL CONFLICT ZONE H12-H24) -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 items-center">
+<div class="font-mono-data text-mono-data text-status-critical pl-2 flex items-center gap-1.5 font-bold">
+<span class="w-2 h-2 rounded-full bg-status-critical animate-pulse"></span>
+<span>B2 [UL]</span>
+</div>
+<div class="h-9 rounded bg-status-warning/40 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge font-semibold hover:bg-status-warning/60 cursor-pointer" title="Risk: 0.44">0.44</div>
+<div class="h-9 rounded bg-status-critical text-text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold shadow-[0_0_12px_rgba(239,68,68,0.6)] cursor-pointer" title="Risk: 0.91 â€¢ Heavy Overlap">0.91</div>
+<div class="h-9 rounded bg-status-critical text-text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold shadow-[0_0_12px_rgba(239,68,68,0.8)] cursor-pointer" title="Risk: 0.96 â€¢ PEAK OVERLAP (Ever Given)">0.96</div>
+<div class="h-9 rounded bg-status-critical text-text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold shadow-[0_0_12px_rgba(239,68,68,0.6)] cursor-pointer" title="Risk: 0.88 â€¢ Antoine Conflict">0.88</div>
+<div class="h-9 rounded bg-status-warning text-on-primary-container flex items-center justify-center font-mono-badge text-mono-badge font-bold cursor-pointer" title="Risk: 0.69">0.69</div>
+<div class="h-9 rounded bg-status-warning/50 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge hover:bg-status-warning/70 cursor-pointer" title="Risk: 0.54">0.54</div>
+<div class="h-9 rounded bg-status-critical/80 text-text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold cursor-pointer" title="Risk: 0.78">0.78</div>
+<div class="h-9 rounded bg-status-warning/40 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge hover:bg-status-warning/60 cursor-pointer" title="Risk: 0.45">0.45</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.32">0.32</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.24">0.24</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.16">0.16</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.11">0.11</div>
+</div>
+<!-- Berth 3 (Crane & Rail Maintenance Outage) -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 items-center">
+<div class="font-mono-data text-mono-data text-text-secondary pl-2 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-vessel-maintenance"></span>
+<span>B3 [UL]</span>
+</div>
+<div class="h-9 rounded bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_3px,#080d18_3px,#080d18_8px)] flex items-center justify-center font-mono-badge text-mono-badge text-text-muted" title="OFFLINE: Rail realignment">MAINT</div>
+<div class="h-9 rounded bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_3px,#080d18_3px,#080d18_8px)] flex items-center justify-center font-mono-badge text-mono-badge text-text-muted" title="OFFLINE: Rail realignment">MAINT</div>
+<div class="h-9 rounded bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_3px,#080d18_3px,#080d18_8px)] flex items-center justify-center font-mono-badge text-mono-badge text-text-muted" title="OFFLINE: STS Crane #04 overhaul">OUTAGE</div>
+<div class="h-9 rounded bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_3px,#080d18_3px,#080d18_8px)] flex items-center justify-center font-mono-badge text-mono-badge text-text-muted" title="OFFLINE: STS Crane #04 overhaul">OUTAGE</div>
+<div class="h-9 rounded bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_3px,#080d18_3px,#080d18_8px)] flex items-center justify-center font-mono-badge text-mono-badge text-text-muted" title="OFFLINE: Dredging Berth Pocket">DREDGE</div>
+<div class="h-9 rounded bg-[repeating-linear-gradient(45deg,#1e3252,#1e3252_3px,#080d18_3px,#080d18_8px)] flex items-center justify-center font-mono-badge text-mono-badge text-text-muted" title="OFFLINE: Dredging Berth Pocket">DREDGE</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.15 (Post-Maint Return)">0.15</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.18">0.18</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.22">0.22</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.19">0.19</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.14">0.14</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.10">0.10</div>
+</div>
+<!-- Berth 4 (Cool Cyan Available Slots - TARGET MITIGATION BERTH) -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 items-center">
+<div class="font-mono-data text-mono-data text-primary pl-2 flex items-center gap-1.5 font-semibold">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>B4 [P]</span>
+</div>
+<div class="h-9 rounded bg-surface-container-high/60 flex items-center justify-center font-mono-badge text-mono-badge text-text-muted cursor-pointer hover:bg-surface-elevated" title="Risk: 0.11">0.11</div>
+<!-- Highlighted target window -->
+<div class="h-9 rounded bg-primary-container/20 text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold shadow-inner cursor-pointer" title="Risk: 0.12 â€¢ OPTIMAL DIVERT WINDOW">
+              0.12
+            </div>
+<div class="h-9 rounded bg-primary-container/20 text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold shadow-inner cursor-pointer" title="Risk: 0.14 â€¢ OPTIMAL DIVERT WINDOW">
+              0.14
+            </div>
+<div class="h-9 rounded bg-primary-container/20 text-primary flex items-center justify-center font-mono-badge text-mono-badge font-bold shadow-inner cursor-pointer" title="Risk: 0.15 â€¢ OPTIMAL DIVERT WINDOW">
+              0.15
+            </div>
+<div class="h-9 rounded bg-surface-container-high/60 flex items-center justify-center font-mono-badge text-mono-badge text-text-muted cursor-pointer hover:bg-surface-elevated" title="Risk: 0.18">0.18</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.22">0.22</div>
+<div class="h-9 rounded bg-status-warning/30 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge hover:bg-status-warning/50 cursor-pointer" title="Risk: 0.44">0.44</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.30">0.30</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.20">0.20</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.12">0.12</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.08">0.08</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.04">0.04</div>
+</div>
+<!-- Berth 5 (Standard Container) -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 items-center">
+<div class="font-mono-data text-mono-data text-text-secondary pl-2 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-status-safe"></span>
+<span>B5 [S]</span>
+</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.18">0.18</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.25">0.25</div>
+<div class="h-9 rounded bg-status-warning/40 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge hover:bg-status-warning/60 cursor-pointer" title="Risk: 0.52">0.52</div>
+<div class="h-9 rounded bg-status-warning/40 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge hover:bg-status-warning/60 cursor-pointer" title="Risk: 0.48">0.48</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.32">0.32</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.29">0.29</div>
+<div class="h-9 rounded bg-status-warning/60 text-status-warning flex items-center justify-center font-mono-badge text-mono-badge font-bold hover:bg-status-warning/80 cursor-pointer" title="Risk: 0.63">0.63</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.38">0.38</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.24">0.24</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.17">0.17</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.12">0.12</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.08">0.08</div>
+</div>
+<!-- Berth 6 (Feeder / Barge) -->
+<div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 items-center">
+<div class="font-mono-data text-mono-data text-text-secondary pl-2 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-status-safe"></span>
+<span>B6 [F]</span>
+</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.08">0.08</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.12">0.12</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.24">0.24</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.21">0.21</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.15">0.15</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.10">0.10</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.16">0.16</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.12">0.12</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.09">0.09</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.05">0.05</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.04">0.04</div>
+<div class="h-9 rounded bg-surface-elevated flex items-center justify-center font-mono-badge text-mono-badge text-text-muted hover:bg-surface-card-hover cursor-pointer" title="Risk: 0.02">0.02</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Section: Dual Diagnostic & Explainability Panels -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
+<!-- Left Panel: Bottleneck Root Cause Cards -->
+<section class="bg-surface-card rounded-xl p-space-md shadow-xl flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-status-critical text-lg">crisis_alert</span>
+<span class="font-headline-md text-headline-md text-text-primary">Bottleneck Root Cause Diagnostics</span>
+</div>
+<span class="px-2 py-0.5 bg-surface-recessed text-text-muted rounded font-mono-badge text-mono-badge">Top 2 Ranked Windows</span>
+</div>
+<div class="space-y-space-md">
+<!-- Card 1: Critical Overlap -->
+<div class="bg-surface-recessed rounded-lg p-space-md shadow-md space-y-space-sm transition-all hover:bg-surface-card-hover">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-status-critical-bg text-status-critical font-mono-badge text-mono-badge font-bold rounded flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-status-critical"></span>
+                  RANK #1 â€¢ RISK 0.88
+                </span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">Thu 02:00 - 08:00 UTC</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-status-critical bg-status-critical-bg px-2 py-0.5 rounded font-bold">
+                $94,000 DEMURRAGE EXP.
+              </span>
+</div>
+<div class="space-y-1">
+<div class="font-body-md text-body-md text-text-primary font-medium">
+                Simultaneous arrival of 2 Ultra-Large Container Vessels (Ever Given &amp; Antoine) while Berth 3 is offline.
+              </div>
+<div class="flex flex-wrap items-center gap-space-md font-body-sm text-body-sm text-text-secondary pt-1">
+<span>Affected carriers: <strong class="text-text-primary font-mono-data">Evergreen (4,200 TEU)</strong>, <strong class="text-text-primary font-mono-data">CMA CGM (3,800 TEU)</strong></span>
+</div>
+</div>
+<!-- Recommended Prescriptive Action Box -->
+<div class="bg-surface-elevated rounded-lg p-space-sm flex items-center justify-between gap-space-sm mt-space-xs">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-primary text-base shrink-0">auto_fix_high</span>
+<div class="truncate">
+<span class="font-body-sm text-body-sm font-semibold text-primary">Recommended Mitigation:</span>
+<span class="font-body-sm text-body-sm text-text-secondary"> Divert Antoine to B4 (+15m transit, saving $68k demurrage).</span>
+</div>
+</div>
+<button class="shrink-0 px-space-sm py-1 bg-primary-container hover:opacity-90 text-on-primary-container font-mono-badge text-mono-badge font-bold rounded shadow transition-all">
+                STAGE DIVERT
+              </button>
+</div>
+</div>
+<!-- Card 2: Weather / Squall Constraint -->
+<div class="bg-surface-recessed rounded-lg p-space-md shadow-md space-y-space-sm transition-all hover:bg-surface-card-hover">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-status-warning-bg text-status-warning font-mono-badge text-mono-badge font-bold rounded flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-status-warning"></span>
+                  RANK #2 â€¢ RISK 0.74
+                </span>
+<span class="font-mono-data text-mono-data text-text-primary font-bold">Fri 02:00 - 08:00 UTC</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-text-muted bg-surface-container px-2 py-0.5 rounded">
+                METEOROLOGICAL IMPACT
+              </span>
+</div>
+<div class="space-y-1">
+<div class="font-body-md text-body-md text-text-primary font-medium">
+                Tidal restriction + 28kt NW wind squall slowing quay crane cycles by 35%.
+              </div>
+<div class="flex flex-wrap items-center gap-space-md font-body-sm text-body-sm text-text-secondary pt-1">
+<span>Estimated delay cascade: <strong class="text-text-primary font-mono-data">+3.8h queue turnaround</strong> across Berths 1, 2 &amp; 5</span>
+</div>
+</div>
+<!-- Recommended Action -->
+<div class="bg-surface-elevated rounded-lg p-space-sm flex items-center justify-between gap-space-sm mt-space-xs">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-secondary text-base shrink-0">tune</span>
+<div class="truncate">
+<span class="font-body-sm text-body-sm font-semibold text-secondary">Recommended Mitigation:</span>
+<span class="font-body-sm text-body-sm text-text-secondary"> Pre-stage double crane gangs at B1 prior to front arrival.</span>
+</div>
+</div>
+<button class="shrink-0 px-space-sm py-1 bg-surface-card-hover hover:bg-surface-container-high text-text-primary font-mono-badge text-mono-badge rounded shadow transition-all">
+                NOTIFY GANGS
+              </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Panel: SHAP Global Feature Importance Chart -->
+<section class="bg-surface-card rounded-xl p-space-md shadow-xl flex flex-col justify-between gap-space-md">
+<div class="space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-lg">schema</span>
+<span class="font-headline-md text-headline-md text-text-primary">SHAP Global Feature Importance</span>
+</div>
+<span class="font-mono-badge text-mono-badge text-primary uppercase bg-primary-container/20 px-2 py-0.5 rounded">
+              Explainable ML
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary">
+            Relative contribution of dynamic variables driving the +72h bottleneck probability score across APM Pier 400.
+          </p>
+</div>
+<!-- High-Precision Horizontal Feature Importance Bars -->
+<div class="space-y-3.5 bg-surface-recessed rounded-lg p-space-md shadow-inner">
+<!-- Driver 1 -->
+<div class="space-y-1">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-text-primary font-medium flex items-center gap-1.5">
+<span class="font-mono-badge text-mono-badge text-primary font-bold">01</span>
+                Berth Utilization &amp; Overbooking
+              </span>
+<span class="font-mono-data text-mono-data text-primary font-bold">45.0%</span>
+</div>
+<div class="w-full h-3 bg-surface-container rounded overflow-hidden">
+<div class="h-full bg-primary rounded" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Driver 2 -->
+<div class="space-y-1">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-text-primary font-medium flex items-center gap-1.5">
+<span class="font-mono-badge text-mono-badge text-status-warning font-bold">02</span>
+                Anchorage Queue Depth &amp; Dwell
+              </span>
+<span class="font-mono-data text-mono-data text-status-warning font-bold">28.0%</span>
+</div>
+<div class="w-full h-3 bg-surface-container rounded overflow-hidden">
+<div class="h-full bg-status-warning rounded" style="width: 28%;"></div>
+</div>
+</div>
+<!-- Driver 3 -->
+<div class="space-y-1">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-text-primary font-medium flex items-center gap-1.5">
+<span class="font-mono-badge text-mono-badge text-secondary font-bold">03</span>
+                Swell &amp; Tidal Navigation Constraints
+              </span>
+<span class="font-mono-data text-mono-data text-secondary font-bold">15.0%</span>
+</div>
+<div class="w-full h-3 bg-surface-container rounded overflow-hidden">
+<div class="h-full bg-secondary rounded" style="width: 15%;"></div>
+</div>
+</div>
+<!-- Driver 4 -->
+<div class="space-y-1">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-text-primary font-medium flex items-center gap-1.5">
+<span class="font-mono-badge text-mono-badge text-tertiary-container font-bold">04</span>
+                Quay Crane Gang Availability &amp; Fatigue
+              </span>
+<span class="font-mono-data text-mono-data text-tertiary-container font-bold">12.0%</span>
+</div>
+<div class="w-full h-3 bg-surface-container rounded overflow-hidden">
+<div class="h-full bg-tertiary-container rounded" style="width: 12%;"></div>
+</div>
+</div>
+</div>
+<!-- Model Telemetry Summary Footer Badge -->
+<div class="p-space-sm bg-surface-container rounded-lg flex flex-wrap items-center justify-between gap-2 font-mono-badge text-mono-badge text-text-secondary">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-status-safe"></span>
+<span>Model: <strong class="text-text-primary">XGBoost + NeuralProphet Hybrid v2.4</strong></span>
+</div>
+<div class="flex items-center gap-3">
+<span>Inference Latency: <strong class="text-primary font-bold">38ms</strong></span>
+<span>Calibration: <strong class="text-status-safe font-bold">96.2%</strong></span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const track = document.getElementById('scrubber-track');
+    const playhead = document.getElementById('playhead-guide');
+    const tooltip = document.getElementById('scrubber-tooltip');
+    
+    if (!track || !playhead || !tooltip) return;
+
+    const buckets = track.querySelectorAll('[data-bucket]');
+    
+    buckets.forEach((el, index) => {
+      el.addEventListener('mouseenter', (e) => {
+        const percent = ((index + 0.5) / 12) * 100;
+        playhead.style.left = percent + '%';
+        tooltip.style.left = percent + '%';
+
+        const label = el.getAttribute('data-label');
+        const risk = el.getAttribute('data-risk');
+        const queue = el.getAttribute('data-queue');
+        const driver = el.getAttribute('data-driver');
+        const bNum = el.getAttribute('data-bucket');
+
+        let riskColorClass = 'text-status-safe';
+        let badgeColorClass = 'bg-status-safe-bg text-status-safe';
+        let statusTitle = 'NORMAL BUCKET ' + bNum;
+
+        if (parseFloat(risk) >= 0.7) {
+          riskColorClass = 'text-status-critical';
+          badgeColorClass = 'bg-status-critical-bg text-status-critical';
+          statusTitle = 'CRITICAL BUCKET ' + bNum;
+        } else if (parseFloat(risk) >= 0.4) {
+          riskColorClass = 'text-status-warning';
+          badgeColorClass = 'bg-status-warning-bg text-status-warning';
+          statusTitle = 'WARNING BUCKET ' + bNum;
+        }
+
+        tooltip.innerHTML = `
+          <div class="flex items-center justify-between pb-1 mb-1 bg-surface-card-hover/40 px-1 rounded">
+            <span class="font-mono-badge text-mono-badge ${riskColorClass} font-bold">${statusTitle}</span>
+            <span class="font-mono-badge text-mono-badge text-text-muted">${label} UTC</span>
+          </div>
+          <div class="space-y-1 font-body-sm text-body-sm">
+            <div class="flex justify-between">
+              <span class="text-text-muted">Risk Score:</span>
+              <span class="font-mono-data text-mono-data ${riskColorClass} font-bold">${risk}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Anchor Queue:</span>
+              <span class="font-mono-data text-mono-data text-text-primary">${queue} Vessels Waiting</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Dominant Factor:</span>
+              <span class="font-mono-data text-mono-data text-secondary truncate ml-2">${driver}</span>
+            </div>
+          </div>
+        `;
+      });
+    });
+  })();
+</script></main></div></body></html>
+
+

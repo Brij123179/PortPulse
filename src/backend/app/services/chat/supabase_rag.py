@@ -13,7 +13,10 @@ Combines:
 import os
 import re
 import json
-import psycopg2
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
 import urllib.request
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
@@ -87,42 +90,43 @@ class SupabaseRAGEngine:
         if not tokens:
             tokens = ["berth", "vessel", "crane"]
 
-        try:
-            conn = psycopg2.connect(
-                host=SUPABASE_HOST,
-                port=SUPABASE_PORT,
-                user=SUPABASE_USER,
-                password=SUPABASE_PASS,
-                dbname=SUPABASE_DB,
-                connect_timeout=3
-            )
-            cur = conn.cursor()
+        if psycopg2 is not None:
+            try:
+                conn = psycopg2.connect(
+                    host=SUPABASE_HOST,
+                    port=SUPABASE_PORT,
+                    user=SUPABASE_USER,
+                    password=SUPABASE_PASS,
+                    dbname=SUPABASE_DB,
+                    connect_timeout=3
+                )
+                cur = conn.cursor()
 
-            # Query matching keywords or title
-            cur.execute("""
-                SELECT doc_id, title, category, source, content
-                FROM portpulse_rag_documents
-                WHERE keywords && %s OR title ILIKE %s OR content ILIKE %s
-                LIMIT %s;
-            """, (tokens, f"%{tokens[0]}%", f"%{tokens[0]}%", limit))
+                # Query matching keywords or title
+                cur.execute("""
+                    SELECT doc_id, title, category, source, content
+                    FROM portpulse_rag_documents
+                    WHERE keywords && %s OR title ILIKE %s OR content ILIKE %s
+                    LIMIT %s;
+                """, (tokens, f"%{tokens[0]}%", f"%{tokens[0]}%", limit))
 
-            rows = cur.fetchall()
-            cur.close()
-            conn.close()
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
 
-            if rows:
-                return [
-                    {
-                        "doc_id": r[0],
-                        "title": r[1],
-                        "category": r[2],
-                        "source": r[3],
-                        "content": r[4]
-                    }
-                    for r in rows
-                ]
-        except Exception as e:
-            logger.warning(f"Supabase RAG query failed ({e}), using cached fallback reference documents.")
+                if rows:
+                    return [
+                        {
+                            "doc_id": r[0],
+                            "title": r[1],
+                            "category": r[2],
+                            "source": r[3],
+                            "content": r[4]
+                        }
+                        for r in rows
+                    ]
+            except Exception as e:
+                logger.warning(f"Supabase RAG query failed ({e}), using cached fallback reference documents.")
 
         # Fallback keyword match
         matched = []
