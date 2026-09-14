@@ -1,10 +1,6 @@
-from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text
 from app.core.database import Base
-
-
-def utcnow():
-    return datetime.now(timezone.utc)
+from app.models.entities import utcnow
 
 
 class RiskScoreRecord(Base):

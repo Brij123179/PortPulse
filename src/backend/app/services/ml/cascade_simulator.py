@@ -45,7 +45,7 @@ class CascadingDelaySimulator:
 
         # Calculate original departure and delayed departure
         dwell = 24.0 if vessel.vessel_class in ["Panamax", "Feeder"] else 40.0
-        orig_arr = to_aware_utc(vessel.corrected_eta or vessel.carrier_eta)
+        orig_arr = to_aware_utc(vessel.corrected_eta or vessel.carrier_eta) or datetime.now(timezone.utc)
         orig_dep = orig_arr + timedelta(hours=dwell)
         delayed_dep = orig_dep + timedelta(hours=delay_hours)
 

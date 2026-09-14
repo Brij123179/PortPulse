@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, ROLE_PROFILES, UserRole } from '../context/AuthContext';
 import { api, UserItem } from '../api/client';
 import { Shield, UserPlus, Users, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
@@ -58,7 +58,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     onClose();
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
       setUserCreationError(null);
@@ -69,13 +69,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     } finally {
       setUsersLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen && role === 'admin' && activeTab === 'USERS') {
       fetchUsers();
     }
-  }, [isOpen, role, activeTab]);
+  }, [isOpen, role, activeTab, fetchUsers]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,9 +5,12 @@ from app.config import settings
 
 
 def seed_database(vessels: int = None, berths: int = None, seed: int = None):
-    vessels = vessels or settings.PORTPULSE_SYNTHETIC_VESSELS
-    berths = berths or settings.PORTPULSE_SYNTHETIC_BERTHS
-    seed = seed or settings.PORTPULSE_SYNTHETIC_SEED
+    if vessels is None:
+        vessels = settings.PORTPULSE_SYNTHETIC_VESSELS
+    if berths is None:
+        berths = settings.PORTPULSE_SYNTHETIC_BERTHS
+    if seed is None:
+        seed = settings.PORTPULSE_SYNTHETIC_SEED
 
     print(f"Creating database tables for engine: {engine.url}...")
     Base.metadata.create_all(bind=engine)

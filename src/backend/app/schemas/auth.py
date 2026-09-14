@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from app.core.auth import UserRole
 
 
 class UserLoginRequest(BaseModel):
@@ -20,6 +21,14 @@ class UserCreateRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=4)
     role: str = Field("shift_supervisor", description="admin, terminal_manager, vessel_planner, shift_supervisor")
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        valid_roles = {r.value for r in UserRole}
+        if v.lower() not in valid_roles:
+            raise ValueError(f"Role must be one of: {', '.join(sorted(valid_roles))}")
+        return v.lower()
 
 
 class UserResponse(BaseModel):

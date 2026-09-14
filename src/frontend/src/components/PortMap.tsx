@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api, LiveStatusTableResponse, BerthStatusItem, VesselStatusItem, HeatmapResponse, BerthHeatmapTrack } from '../api/client';
 
 interface PortMapProps {
@@ -14,7 +14,7 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
   const [selectedVessel, setSelectedVessel] = useState<VesselStatusItem | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'occupied' | 'available' | 'high_risk'>('all');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [liveRes, heatRes] = await Promise.all([
@@ -28,13 +28,13 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   if (loading && !data) {
     return (
@@ -328,9 +328,9 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
                         </div>
                         {/* Hour Blocks Strip (72 small segments grouped) */}
                         <div className="flex h-2.5 rounded overflow-hidden gap-[1px] bg-slate-950">
-                          {track.timeline.map((h, i) => (
+                          {track.timeline.map((h) => (
                             <div
-                              key={i}
+                              key={`hour-offset-${h.hour_offset}`}
                               title={`Hour +${h.hour_offset}: ${h.risk_tier} (${(h.occupancy_probability * 100).toFixed(0)}% occ)`}
                               className={`flex-1 transition-all ${
                                 h.risk_tier === 'RED'
@@ -434,9 +434,9 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
                     <span className="text-slate-400 text-[11px]">Hover over block for occupancy probability</span>
                   </div>
                   <div className="grid grid-cols-12 gap-1 p-3 bg-slate-950 rounded-xl border border-slate-800">
-                    {track.timeline.slice(0, 48).map((h, idx) => (
+                    {track.timeline.slice(0, 48).map((h) => (
                       <div
-                        key={idx}
+                        key={`grid-hour-${h.hour_offset}`}
                         className={`p-1 text-center rounded text-[9px] font-mono cursor-pointer transition ${
                           h.risk_tier === 'RED'
                             ? 'bg-rose-500/30 border border-rose-500/60 text-rose-300 hover:bg-rose-500/50'

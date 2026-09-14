@@ -156,13 +156,13 @@ class PortRiskEngine:
         base_mae = baseline_eta["mae"]
         base_rmse = baseline_eta["rmse"]
 
-        mae_improvement = round(max(0.0, ((base_mae - model_mae) / base_mae) * 100), 1)
-        rmse_improvement = round(max(0.0, ((base_rmse - model_rmse) / base_rmse) * 100), 1)
+        mae_improvement = round(max(0.0, ((base_mae - model_mae) / base_mae) * 100), 1) if base_mae > 0 else 0.0
+        rmse_improvement = round(max(0.0, ((base_rmse - model_rmse) / base_rmse) * 100), 1) if base_rmse > 0 else 0.0
 
         # Occupancy forecast brier score: lower is better
         occ_model_brier = 0.124
         occ_base_brier = baseline_occ["brier_score"]
-        brier_improvement = round(((occ_base_brier - occ_model_brier) / occ_base_brier) * 100, 1)
+        brier_improvement = round(max(0.0, ((occ_base_brier - occ_model_brier) / occ_base_brier) * 100), 1) if occ_base_brier > 0 else 0.0
 
         metrics = [
             ModelEvaluationMetric(

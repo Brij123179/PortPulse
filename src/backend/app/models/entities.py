@@ -23,8 +23,8 @@ class Vessel(Base):
     priority_flag = Column(Boolean, default=False)     # True if high priority (perishable/SLA)
     length_m = Column(Float, nullable=False)           # Length overall in meters
     draft_m = Column(Float, nullable=False)            # Operational draft in meters
-    status = Column(String(50), default="SCHEDULED")   # SCHEDULED, ANCHORED, BERTHED, DEPARTED
-    assigned_berth_id = Column(String(50), ForeignKey("berths.id"), nullable=True)
+    status = Column(String(50), default="SCHEDULED", index=True)   # SCHEDULED, ANCHORED, BERTHED, DEPARTED
+    assigned_berth_id = Column(String(50), ForeignKey("berths.id"), nullable=True, index=True)
 
     berth = relationship("Berth", back_populates="vessels")
 
@@ -38,10 +38,10 @@ class Berth(Base):
     draft_limit_m = Column(Float, nullable=False)      # Maximum permissible draft in meters
     crane_slots = Column(Integer, default=2)           # Max concurrent cranes supported
     contractual_priority_rules = Column(Text, nullable=True)  # JSON or text notes
-    status = Column(String(50), default="AVAILABLE")   # AVAILABLE, OCCUPIED, MAINTENANCE
+    status = Column(String(50), default="AVAILABLE", index=True)   # AVAILABLE, OCCUPIED, MAINTENANCE
 
     vessels = relationship("Vessel", back_populates="berth")
-    cranes = relationship("Crane", back_populates="berth")
+    cranes = relationship("Crane", back_populates="berth", lazy="selectin")
 
 
 class Crane(Base):
@@ -74,7 +74,7 @@ class TurnaroundRecord(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     vessel_id = Column(String(50), nullable=False, index=True)
-    vessel_class = Column(String(50), nullable=False)
+    vessel_class = Column(String(50), nullable=False, index=True)
     berth_id = Column(String(50), nullable=False, index=True)
     arrival_time = Column(DateTime, nullable=False)
     departure_time = Column(DateTime, nullable=False)
@@ -117,8 +117,8 @@ class AuditLogEntry(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     correlation_id = Column(String(100), nullable=False, index=True)
     actor = Column(String(100), nullable=False)
-    action = Column(String(100), nullable=False)
-    entity_type = Column(String(50), nullable=False)
+    action = Column(String(100), nullable=False, index=True)
+    entity_type = Column(String(50), nullable=False, index=True)
     entity_id = Column(String(50), nullable=False)
     payload_snapshot = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=utcnow)

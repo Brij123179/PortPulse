@@ -48,8 +48,12 @@ class AuditService:
             payload_snapshot=payload_str
         )
         db.add(entry)
-        db.commit()
-        db.refresh(entry)
+        try:
+            db.commit()
+            db.refresh(entry)
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"Audit log commit rolled back: {e}")
         return entry
 
     @staticmethod

@@ -47,8 +47,16 @@ class PortPulseChatAssistant:
         vessel_list = []
         delayed_vessels = []
         for v in vessels:
-            carrier_eta = v.carrier_eta.replace(tzinfo=timezone.utc) if v.carrier_eta.tzinfo is None else v.carrier_eta
-            corrected_eta = v.corrected_eta.replace(tzinfo=timezone.utc) if v.corrected_eta and v.corrected_eta.tzinfo is None else v.corrected_eta
+            carrier_eta = (
+                v.carrier_eta.replace(tzinfo=timezone.utc)
+                if v.carrier_eta and v.carrier_eta.tzinfo is None
+                else v.carrier_eta
+            )
+            corrected_eta = (
+                v.corrected_eta.replace(tzinfo=timezone.utc)
+                if v.corrected_eta and v.corrected_eta.tzinfo is None
+                else v.corrected_eta
+            )
             delay_h = 0.0
             if corrected_eta and carrier_eta:
                 delay_h = max(0.0, (corrected_eta - carrier_eta).total_seconds() / 3600.0)

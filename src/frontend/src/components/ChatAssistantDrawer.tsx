@@ -45,6 +45,17 @@ export const ChatAssistantDrawer: React.FC<ChatAssistantDrawerProps> = ({ isOpen
     }
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleSend = async (queryToSend?: string) => {
     const query = (queryToSend || inputQuery).trim();
     if (!query || isLoading) return;
@@ -87,7 +98,12 @@ export const ChatAssistantDrawer: React.FC<ChatAssistantDrawerProps> = ({ isOpen
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end transition-opacity">
+    <div
+      className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end transition-opacity"
+      role="dialog"
+      aria-modal="true"
+      aria-label="PortPulse AI Copilot Drawer"
+    >
       <div className="w-full max-w-lg bg-white dark:bg-zinc-900 h-full shadow-2xl border-l border-zinc-300 dark:border-zinc-800 flex flex-col animate-in slide-in-from-right duration-200">
         {/* Header */}
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">

@@ -35,8 +35,9 @@ def get_vessels_status(
     # Pre-fetch berths for name mapping and fit verification
     berths_dict = {b.id: b for b in db.query(Berth).all()}
 
-    # Initialize and run ML prediction core
-    risk_engine.initialize_models(db)
+    # Initialize ML prediction core once (cached across requests)
+    if not risk_engine.models_initialized:
+        risk_engine.initialize_models(db)
     port_context = FeatureStore.get_port_context(db)
 
     items = []
@@ -52,6 +53,7 @@ def get_vessels_status(
         corr_eta = v.corrected_eta or v.carrier_eta
         conf = v.eta_confidence or 0.88
         pred_delay_hours = 0.0
+        factors_list: List[str] = []
         if v.status == "SCHEDULED":
             try:
                 m_eta, offset, c_low, c_high, factors = risk_engine.eta_model.predict_vessel_eta(v, port_context)
@@ -61,7 +63,7 @@ def get_vessels_status(
                 conf = round(max(0.76, min(0.96, 0.95 - (offset * 0.025))), 2)
                 factors_list = [f["feature_name"] for f in factors]
             except Exception:
-                pass
+                factors_list = ["Carrier Schedule Bias"]
         elif v.status == "ANCHORED":
             try:
                 now_utc = datetime.now(timezone.utc)

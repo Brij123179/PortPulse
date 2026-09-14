@@ -31,6 +31,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
   userRole,
 }) => {
   const [runningSolver, setRunningSolver] = useState(false);
+  const [solverError, setSolverError] = useState<string | null>(null);
   const horizon = 72;
   const [selectedAssignment, setSelectedAssignment] = useState<VesselAssignment | null>(null);
   const [collapsedBerths, setCollapsedBerths] = useState<Record<string, boolean>>({});
@@ -42,10 +43,11 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
   const handleRunOptimization = async () => {
     try {
       setRunningSolver(true);
+      setSolverError(null);
       await api.runOptimisation(horizon);
       onRefresh();
     } catch (err: any) {
-      alert(`Solver run failed: ${err.message || err.detail || 'Server error'}`);
+      setSolverError(`Solver run failed: ${err.message || err.detail || 'Server error'}`);
     } finally {
       setRunningSolver(false);
     }
@@ -122,6 +124,13 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
             )}
           </div>
         </div>
+
+        {solverError && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-semibold flex items-center justify-between">
+            <span>{solverError}</span>
+            <button onClick={() => setSolverError(null)} className="text-xs hover:underline">Dismiss</button>
+          </div>
+        )}
 
         {/* Solver KPI Metrics */}
         {solverRes && (
@@ -251,13 +260,26 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
                   >
                     {/* Berth Row Label - Clickable Accordion Header */}
                     <div
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={!isCollapsed}
+                      aria-label={`Toggle schedule for ${berthName}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setCollapsedBerths((prev) => ({
+                            ...prev,
+                            [berthName]: !prev[berthName],
+                          }));
+                        }
+                      }}
                       onClick={() =>
                         setCollapsedBerths((prev) => ({
                           ...prev,
                           [berthName]: !prev[berthName],
                         }))
                       }
-                      className="flex items-center justify-between text-xs cursor-pointer select-none hover:opacity-80 transition-opacity"
+                      className="flex items-center justify-between text-xs cursor-pointer select-none hover:opacity-80 transition-opacity focus:outline-none focus:ring-1 focus:ring-blue-500 rounded p-1"
                     >
                       <div className="flex items-center space-x-2">
                         {isCollapsed ? (

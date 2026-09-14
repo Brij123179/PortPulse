@@ -14,9 +14,13 @@ class MaritimeCostEngine:
     # Industry benchmark hourly demurrage by vessel class ($/hour)
     DEMURRAGE_RATES: Dict[str, float] = {
         "FEEDER": 500.0,         # ~$12,000 / day
+        "Feeder": 500.0,
         "PANAMAX": 1000.0,       # ~$24,000 / day
+        "Panamax": 1000.0,
         "POST_PANAMAX": 1500.0,  # ~$36,000 / day
+        "Post-Panamax": 1500.0,
         "ULTRA_LARGE": 2300.0,   # ~$55,200 / day
+        "ULCV": 2300.0,
         "DEFAULT": 1041.67       # ~$25,000 / day
     }
 
@@ -37,7 +41,11 @@ class MaritimeCostEngine:
         Calculates demurrage cost avoided by reducing waiting or turnaround time.
         Priority cargo (reefers / expedited contracts) carries a 1.5x penalty multiplier.
         """
-        base_rate = cls.DEMURRAGE_RATES.get(vessel_class or "DEFAULT", cls.DEMURRAGE_RATES["DEFAULT"])
+        v_cls_str = str(vessel_class or "DEFAULT").strip()
+        v_norm = v_cls_str.upper().replace("-", "_").replace(" ", "_")
+        if v_norm == "ULCV":
+            v_norm = "ULTRA_LARGE"
+        base_rate = cls.DEMURRAGE_RATES.get(v_norm, cls.DEMURRAGE_RATES.get(v_cls_str, cls.DEMURRAGE_RATES["DEFAULT"]))
         multiplier = 1.5 if is_priority else 1.0
         return round(hours_saved * base_rate * multiplier, 2)
 

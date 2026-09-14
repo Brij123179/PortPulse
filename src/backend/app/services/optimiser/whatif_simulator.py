@@ -63,8 +63,19 @@ class WhatIfSimulator:
         sim_crane_util = min(98.0, sim_res.crane_utilization_pct + (len(req.interventions) * 2.5))
         crane_delta = round(sim_crane_util - base_crane_util, 1)
 
-        red_before = 24
-        red_after = max(4, red_before - (len(req.interventions) * 6))
+        # Calculate red-tier hours dynamically from risk engine heatmap
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            heatmap = risk_engine.generate_heatmap(db, horizon_hours=72)
+            red_before = heatmap.summary.red_tier_count if heatmap and hasattr(heatmap, "summary") else 24
+        except Exception:
+            red_before = 24
+
+        hours_mitigated = sum(
+            max(2, int(getattr(inv, "hours_shifted", 4) or 4))
+            for inv in req.interventions
+        ) if req.interventions else 0
+        red_after = max(0, red_before - hours_mitigated)
 
         comparisons = [
             WhatIfMetricComparison(

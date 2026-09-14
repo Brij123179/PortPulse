@@ -449,8 +449,8 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="w-full text-left text-xs print:text-[10px] print:w-full">
                 <thead className="bg-surface-hover/60 border-b border-surface-border text-content-secondary font-bold uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="p-3.5">Vessel Name</th>

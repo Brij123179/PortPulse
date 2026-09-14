@@ -12,7 +12,6 @@ FastAPI Compatibility Router implementing the exact REST endpoints specified in 
 - GET /api/plan
 """
 
-import secrets
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
@@ -352,10 +351,11 @@ def api_plan(db: Session = Depends(get_db), user: CurrentUser = Depends(get_curr
         briefing_lines.append("  No urgent intervention actions pending supervisor review.")
 
     display_name = user.username.replace('_', ' ').title()
+    role_str = user.role.value if hasattr(user.role, "value") else str(user.role)
     briefing_lines.extend([
         "",
         "4. HANDOVER SIGN-OFF",
-        f"Prepared for: {display_name} ({user.role.replace('_', ' ').title()})",
+        f"Prepared for: {display_name} ({role_str.replace('_', ' ').title()})",
         "Compliance: All assignments physically validated against berth draft, length, and crane capacity limits.",
         "================================================================="
     ])

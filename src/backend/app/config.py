@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     # Security
     PORTPULSE_SECRET_KEY: str = "portpulse-super-secret-key-for-local-dev-2026"
     PORTPULSE_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    PORTPULSE_DEV_AUTH_BYPASS: bool = True
     
     # Ingestion Defaults
     PORTPULSE_SYNTHETIC_VESSELS: int = 50

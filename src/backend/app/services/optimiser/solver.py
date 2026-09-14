@@ -29,6 +29,8 @@ from app.core.logging import logger, correlation_id_ctx
 
 
 def to_aware_utc(dt: datetime) -> datetime:
+    if dt is None:
+        return None
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
@@ -202,9 +204,10 @@ class BerthCraneOptimiser:
                 # Crane allocation: assign up to available berth cranes based on vessel class
                 max_cranes = chosen_berth.crane_slots
                 v_class = getattr(vessel, "vessel_class", "PANAMAX")
-                if v_class == "ULTRA_LARGE":
+                v_class_norm = str(v_class).upper().replace("-", "_").replace(" ", "_")
+                if v_class_norm in ("ULTRA_LARGE", "ULCV"):
                     allocated_cranes = min(max_cranes, 4)
-                elif v_class == "POST_PANAMAX":
+                elif v_class_norm == "POST_PANAMAX":
                     allocated_cranes = min(max_cranes, 3)
                 else:
                     allocated_cranes = min(max_cranes, 2)

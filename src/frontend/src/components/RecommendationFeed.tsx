@@ -43,7 +43,8 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
       setTimeout(() => setActionNotice(null), 5000);
       onRefresh();
     } catch (err: any) {
-      alert(`Failed to record action: ${err.message || err.detail || 'Server error'}`);
+      setActionNotice(`Failed to record action: ${err.message || err.detail || 'Server error'}`);
+      setTimeout(() => setActionNotice(null), 6000);
     } finally {
       setActingId(null);
     }

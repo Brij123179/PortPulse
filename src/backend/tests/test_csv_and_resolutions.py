@@ -115,7 +115,7 @@ def test_import_vessels_csv_validation(client, planner_token, admin_token):
 
 def test_override_collision_resolution_suggestions(client, supervisor_token):
     # Find a vessel currently berthed
-    status_res = client.get("/api/v1/status/table")
+    status_res = client.get("/api/v1/status/table", headers={"Authorization": f"Bearer {supervisor_token}"})
     assert status_res.status_code == 200
     data = status_res.json()
     berthed_vessel = next((v for v in data["vessels"] if v["status"] == "BERTHED"), None)
@@ -149,7 +149,7 @@ def test_override_collision_resolution_suggestions(client, supervisor_token):
 # --- 4. DEPENDENCY CHECK ON DELETION ---
 
 def test_cannot_delete_berthed_vessel(client, admin_token):
-    status_res = client.get("/api/v1/status/table")
+    status_res = client.get("/api/v1/status/table", headers={"Authorization": f"Bearer {admin_token}"})
     berthed_vessel = next((v for v in status_res.json()["vessels"] if v["status"] == "BERTHED"), None)
     if berthed_vessel:
         del_res = client.delete(

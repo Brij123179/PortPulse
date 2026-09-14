@@ -69,7 +69,8 @@ def inject_shock(
 def get_historical_records(
     limit: int = Query(50, ge=1, le=500),
     vessel_class: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles([UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.SHIFT_SUPERVISOR, UserRole.VESSEL_PLANNER]))
 ):
     """
     F-103: Historical turnaround store endpoint for model training and historical verification.
