@@ -214,6 +214,18 @@ class OverrideGuardrail:
         db.commit()
         db.refresh(vessel)
 
+        try:
+            from app.services.event_bus import event_bus, EventType
+            event_bus.publish(
+                EventType.ASSIGNMENT_CHANGED,
+                entity_type="VESSEL",
+                action="MANUAL_OVERRIDE",
+                vessel_id=vessel.id,
+                berth_id=target_berth.id
+            )
+        except Exception:
+            pass
+
         logger.info(
             f"Manual override APPROVED: Vessel '{vessel.name}' reassigned to '{target_berth.name}' at {req_start.isoformat()} by '{actor_username}' (Reason: {req.override_reason})",
             extra={"extra_data": {"vessel": vessel.id, "berth": target_berth.id, "actor": actor_username}}

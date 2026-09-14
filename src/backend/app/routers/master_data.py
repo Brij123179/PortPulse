@@ -38,6 +38,8 @@ def create_berth(
     AuditService.record_event(
         db=db,
         actor=admin.username,
+        actor_role=admin.role.value,
+        actor_id=admin.id,
         action="CREATE_BERTH",
         entity_type="BERTH",
         entity_id=res.id,
@@ -58,6 +60,8 @@ def update_berth(
     AuditService.record_event(
         db=db,
         actor=admin.username,
+        actor_role=admin.role.value,
+        actor_id=admin.id,
         action="UPDATE_BERTH",
         entity_type="BERTH",
         entity_id=res.id,
@@ -77,6 +81,8 @@ def delete_berth(
     AuditService.record_event(
         db=db,
         actor=admin.username,
+        actor_role=admin.role.value,
+        actor_id=admin.id,
         action="DELETE_BERTH",
         entity_type="BERTH",
         entity_id=berth_id
@@ -118,6 +124,8 @@ def create_vessel(
     AuditService.record_event(
         db=db,
         actor=user.username,
+        actor_role=user.role.value,
+        actor_id=user.id,
         action="CREATE_VESSEL",
         entity_type="VESSEL",
         entity_id=res.id,
@@ -138,6 +146,8 @@ def update_vessel(
     AuditService.record_event(
         db=db,
         actor=user.username,
+        actor_role=user.role.value,
+        actor_id=user.id,
         action="UPDATE_VESSEL",
         entity_type="VESSEL",
         entity_id=res.id,
@@ -157,6 +167,8 @@ def delete_vessel(
     AuditService.record_event(
         db=db,
         actor=admin.username,
+        actor_role=admin.role.value,
+        actor_id=admin.id,
         action="DELETE_VESSEL",
         entity_type="VESSEL",
         entity_id=vessel_id

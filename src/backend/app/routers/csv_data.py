@@ -11,6 +11,7 @@ from app.core.auth import CurrentUser, get_current_user, require_roles, UserRole
 from app.models.entities import Berth, Crane, Vessel
 from app.services.audit import AuditService
 from app.services.optimiser.solver import berth_optimiser
+from app.services.event_bus import event_bus, EventType
 
 router = APIRouter(prefix="/api/v1", tags=["CSV Import & Export Engine"])
 
@@ -328,6 +329,7 @@ async def import_berths_csv(
         payload_snapshot={"imported": imported, "updated": updated, "cranes_created": cranes_created, "error_count": len(errors)}
     )
 
+    event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="CSV_IMPORT")
     return CsvImportResult(
         status="success" if not errors else "partial_success",
         imported_count=imported,
@@ -452,6 +454,7 @@ async def import_vessels_csv(
         payload_snapshot={"imported": imported, "updated": updated, "error_count": len(errors)}
     )
 
+    event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="CSV_IMPORT")
     return CsvImportResult(
         status="success" if not errors else "partial_success",
         imported_count=imported,

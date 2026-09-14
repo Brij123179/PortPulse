@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.auth import CurrentUser, get_current_user
+from app.core.auth import CurrentUser, get_current_user, require_roles, UserRole
 from app.schemas.audit import AuditLogListResponse, AuditLogResponse
 from app.services.audit import AuditService
 
@@ -17,13 +17,16 @@ def get_audit_logs(
     action: Optional[str] = Query(None, description="Filter by action (e.g. CREATE_BERTH, RECOMMENDATION_DECISION)"),
     actor: Optional[str] = Query(None, description="Filter by username"),
     db: Session = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user)
+    user: CurrentUser = Depends(require_roles([UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.SHIFT_SUPERVISOR]))
 ):
     """
     Returns an append-only audit trail of operational events, master data mutations,
     prescriptive recommendation actions, and manual supervisor overrides.
     Accessible to all authenticated terminal personnel.
     """
+    if user.role != UserRole.ADMIN:
+        actor = user.username
+
     total, items = AuditService.get_logs(
         db=db,
         limit=limit,

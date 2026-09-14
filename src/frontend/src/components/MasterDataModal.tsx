@@ -418,8 +418,9 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                         required
                         value={newBerthLength}
                         onChange={(e) => setNewBerthLength(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-surface-border bg-surface-card text-content-primary text-xs"
+                        className={`w-full px-2.5 py-1.5 rounded-lg border bg-surface-card text-content-primary text-xs ${parseFloat(newBerthLength) <= 0 ? 'border-rose-500' : 'border-surface-border'}`}
                       />
+                      {parseFloat(newBerthLength) <= 0 && <p className="text-rose-500 text-[10px] mt-1">Must be &gt; 0</p>}
                     </div>
                     <div>
                       <label className="text-[10px] text-content-muted block mb-1">Draft Limit (m)</label>
@@ -429,8 +430,9 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                         required
                         value={newBerthDraft}
                         onChange={(e) => setNewBerthDraft(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-surface-border bg-surface-card text-content-primary text-xs"
+                        className={`w-full px-2.5 py-1.5 rounded-lg border bg-surface-card text-content-primary text-xs ${parseFloat(newBerthDraft) <= 0 ? 'border-rose-500' : 'border-surface-border'}`}
                       />
+                      {parseFloat(newBerthDraft) <= 0 && <p className="text-rose-500 text-[10px] mt-1">Must be &gt; 0</p>}
                     </div>
                     <div>
                       <label className="text-[10px] text-content-muted block mb-1">Crane Slots</label>
@@ -448,7 +450,8 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm"
+                      disabled={!newBerthId.trim() || !newBerthName.trim() || parseFloat(newBerthLength) <= 0 || parseFloat(newBerthDraft) <= 0}
+                      className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Provision Berth &amp; Cranes
                     </button>
@@ -575,8 +578,9 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                         required
                         value={newVesselLength}
                         onChange={(e) => setNewVesselLength(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-surface-border bg-surface-card text-content-primary text-xs"
+                        className={`w-full px-2.5 py-1.5 rounded-lg border bg-surface-card text-content-primary text-xs ${parseFloat(newVesselLength) <= 0 ? 'border-rose-500' : 'border-surface-border'}`}
                       />
+                      {parseFloat(newVesselLength) <= 0 && <p className="text-rose-500 text-[10px] mt-1">Must be &gt; 0</p>}
                     </div>
                     <div>
                       <label className="text-[10px] text-content-muted block mb-1">Draft (m)</label>
@@ -586,8 +590,9 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                         required
                         value={newVesselDraft}
                         onChange={(e) => setNewVesselDraft(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-surface-border bg-surface-card text-content-primary text-xs"
+                        className={`w-full px-2.5 py-1.5 rounded-lg border bg-surface-card text-content-primary text-xs ${parseFloat(newVesselDraft) <= 0 ? 'border-rose-500' : 'border-surface-border'}`}
                       />
+                      {parseFloat(newVesselDraft) <= 0 && <p className="text-rose-500 text-[10px] mt-1">Must be &gt; 0</p>}
                     </div>
                     <div>
                       <label className="text-[10px] text-content-muted block mb-1">Assigned Berth</label>
@@ -619,7 +624,8 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm"
+                      disabled={!newVesselId.trim() || !newVesselName.trim() || parseFloat(newVesselLength) <= 0 || parseFloat(newVesselDraft) <= 0}
+                      className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Register Vessel
                     </button>

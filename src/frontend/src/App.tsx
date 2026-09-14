@@ -111,6 +111,7 @@ export const App: React.FC = () => {
   // Auto-refresh config (default 60s)
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshIntervalSec] = useState(60);
+  const [lastDataRefresh, setLastDataRefresh] = useState<Date>(new Date());
 
   // Notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -130,6 +131,7 @@ export const App: React.FC = () => {
       setBerths(tableData.berths);
       setHeatmapData(hmData);
       setAnchorageData(ancData);
+      setLastDataRefresh(new Date());
 
       setError(null);
       setIsBackendConnected(true);
@@ -589,7 +591,7 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="no-print border-t border-surface-border bg-surface-card py-4 text-center text-xs text-content-muted">
-        PortPulse · Container Congestion Predictor &amp; Port Operations Optimiser · IBM BoB AI Hackathon 2026 (Problem Statement L1)
+        PortPulse · Container Congestion Predictor &amp; Port Operations Optimiser · IBM BoB AI Hackathon 2026 (Problem Statement L1) · Last Synced: {lastDataRefresh.toLocaleTimeString()}
       </footer>
     </div>
   );

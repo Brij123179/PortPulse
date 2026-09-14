@@ -21,6 +21,7 @@ import urllib.request
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from app.core.logging import logger
+from app.services.sanitizer import sanitize_ai_response
 
 try:
     from dotenv import load_dotenv
@@ -205,6 +206,7 @@ class SupabaseRAGEngine:
                 choice = res_json["choices"][0]
                 answer = choice["message"].get("content", "")
                 if answer:
+                    answer = sanitize_ai_response(answer)
                     return answer
         except Exception as e:
             logger.warning(f"Groq API call failed: {e}. Falling back to deterministic RAG synthesis.")

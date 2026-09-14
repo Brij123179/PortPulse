@@ -12,6 +12,7 @@ def utcnow():
 
 class Vessel(Base):
     __tablename__ = "vessels"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String(50), primary_key=True, index=True)
     name = Column(String(100), nullable=False)
@@ -31,6 +32,7 @@ class Vessel(Base):
 
 class Berth(Base):
     __tablename__ = "berths"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String(50), primary_key=True, index=True)
     name = Column(String(100), nullable=False)
@@ -46,6 +48,7 @@ class Berth(Base):
 
 class Crane(Base):
     __tablename__ = "cranes"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String(50), primary_key=True, index=True)
     berth_id = Column(String(50), ForeignKey("berths.id"), nullable=False)
@@ -59,6 +62,7 @@ class Crane(Base):
 
 class YardCapacity(Base):
     __tablename__ = "yard_capacity"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     teu_capacity = Column(Integer, nullable=False, default=50000)
@@ -71,6 +75,7 @@ class YardCapacity(Base):
 class TurnaroundRecord(Base):
     """Historical dwell and delay log for model training (F-103)."""
     __tablename__ = "turnaround_records"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     vessel_id = Column(String(50), nullable=False, index=True)
@@ -88,6 +93,7 @@ class TurnaroundRecord(Base):
 
 class WeatherEvent(Base):
     __tablename__ = "weather_events"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     window_start = Column(DateTime, nullable=False)
@@ -100,6 +106,7 @@ class WeatherEvent(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
@@ -113,10 +120,13 @@ class User(Base):
 class AuditLogEntry(Base):
     """Append-only audit trail (F-501, cross-cutting)."""
     __tablename__ = "audit_log"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     correlation_id = Column(String(100), nullable=False, index=True)
     actor = Column(String(100), nullable=False)
+    actor_role = Column(String(50), nullable=True)
+    actor_id = Column(Integer, nullable=True)
     action = Column(String(100), nullable=False, index=True)
     entity_type = Column(String(50), nullable=False, index=True)
     entity_id = Column(String(50), nullable=False)

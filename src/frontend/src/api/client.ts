@@ -286,22 +286,31 @@ export const api = {
   getExportOperationsPlanUrl: () => `${API_BASE}/optimiser/export/operations-plan.csv`,
 
   importBerthsCsv: (csvContent: string) =>
-    apiFetch<{ status: string; imported_count: number; berths: any[]; cranes_created: number; message: string }>(
-      '/master-data/import/berths',
-      {
-        method: 'POST',
-        body: JSON.stringify({ csv_content: csvContent }),
-      }
-    ),
+    apiFetch<{
+      status: string;
+      imported_count: number;
+      updated_count: number;
+      cranes_created: number;
+      errors: string[];
+      message: string;
+      berths?: any[];
+    }>('/master-data/import/berths', {
+      method: 'POST',
+      body: JSON.stringify({ csv_content: csvContent }),
+    }),
 
   importVesselsCsv: (csvContent: string) =>
-    apiFetch<{ status: string; imported_count: number; vessels: any[]; message: string }>(
-      '/master-data/import/vessels',
-      {
-        method: 'POST',
-        body: JSON.stringify({ csv_content: csvContent }),
-      }
-    ),
+    apiFetch<{
+      status: string;
+      imported_count: number;
+      updated_count: number;
+      errors: string[];
+      message: string;
+      vessels?: any[];
+    }>('/master-data/import/vessels', {
+      method: 'POST',
+      body: JSON.stringify({ csv_content: csvContent }),
+    }),
 
   // Increment 2: Prediction Core & Heatmap (F-201 to F-207)
   getHeatmap: (horizon = 72) =>
@@ -394,6 +403,24 @@ export const api = {
         reason,
       }),
     }),
+
+  // Phase 3: Auto-Optimizer Pipeline
+  autoOptimize: () =>
+    apiFetch<AutoOptimizeResult>('/optimiser/auto-optimize', {
+      method: 'POST',
+    }),
+
+  confirmOptimization: (resultId: string) =>
+    apiFetch<{ status: string; result_id: string; applied_count: number; message: string }>(
+      `/optimiser/auto-optimize/${resultId}/confirm`,
+      { method: 'POST' }
+    ),
+
+  rejectOptimization: (resultId: string, reason: string = '') =>
+    apiFetch<{ status: string; result_id: string; message: string }>(
+      `/optimiser/auto-optimize/${resultId}/reject?reason=${encodeURIComponent(reason)}`,
+      { method: 'POST' }
+    ),
 };
 
 export const apiClient = api;
@@ -412,6 +439,22 @@ export interface AuditLogEntryItem {
 export interface AuditLogListResponse {
   total: number;
   items: AuditLogEntryItem[];
+}
+
+export interface AutoOptimizeResult {
+  result_id: string;
+  correlation_id: string;
+  status: 'PENDING_APPROVAL' | 'CONFIRMED' | 'REJECTED';
+  ml_status: string;
+  solver_status: string;
+  assignments_count: number;
+  recommendations_count: number;
+  average_wait_time_hours: number;
+  total_demurrage_usd: number;
+  crane_utilization_pct: number;
+  created_at: string;
+  solver_result?: OptimisationRunResponse;
+  recommendations?: RecommendationsListResponse;
 }
 
 // --- Increment 3 Interfaces ---

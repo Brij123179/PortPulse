@@ -37,10 +37,9 @@ class BerthOccupancyForecaster:
         Returns (berth_forecasts_map, anchorage_timeline).
         """
         now = to_aware_utc(datetime.now(timezone.utc))
-        port_context = FeatureStore.get_port_context(db, now)
-
         berths: List[Berth] = db.query(Berth).all()
         vessels: List[Vessel] = db.query(Vessel).all()
+        port_context = FeatureStore.get_port_context(db, now, vessels=vessels)
         cranes_by_berth = {b.id: [c for c in b.cranes] for b in berths}
 
         # Predict corrected ETAs and dwell times for all scheduled vessels

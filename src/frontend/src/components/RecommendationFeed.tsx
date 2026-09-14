@@ -341,7 +341,7 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
                     )}
                   </div>
 
-                  {canAct && isPending && (
+                  {canAct && isPending ? (
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleAction(rec.id, 'REJECT')}
@@ -361,7 +361,13 @@ export const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
                         <span>Accept & Re-route</span>
                       </button>
                     </div>
-                  )}
+                  ) : (!canAct && isPending) ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="px-3 py-1 rounded-lg bg-surface-border text-content-muted text-[10px] font-bold uppercase tracking-wider">
+                        View Only
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

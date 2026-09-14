@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import numpy as np
 from sqlalchemy.orm import Session
 from app.models.entities import Vessel, Berth, Crane, WeatherEvent, YardCapacity, TurnaroundRecord
@@ -64,7 +64,7 @@ class FeatureStore:
         }
 
     @staticmethod
-    def get_port_context(db: Session, target_time: datetime = None) -> Dict[str, Any]:
+    def get_port_context(db: Session, target_time: datetime = None, vessels: Optional[List[Vessel]] = None) -> Dict[str, Any]:
         """Calculates live operational context without future leakage."""
         now = to_aware_utc(target_time or datetime.now(timezone.utc))
 
@@ -84,18 +84,27 @@ class FeatureStore:
         )
 
         # Compute arrival overlap for upcoming scheduled vessels
-        vessels = db.query(Vessel).all()
-        overlap_counts = {}
-        for v1 in vessels:
-            count = 0
-            eta1 = to_aware_utc(v1.carrier_eta)
-            if eta1:
-                for v2 in vessels:
-                    if v1.id != v2.id:
-                        eta2 = to_aware_utc(v2.carrier_eta)
-                        if eta2 and abs((eta1 - eta2).total_seconds()) <= 6 * 3600:
-                            count += 1
-            overlap_counts[v1.id] = count
+        if vessels is None:
+            vessels = db.query(Vessel).all()
+
+        vessel_etas = []
+        for v in vessels:
+            eta = to_aware_utc(v.carrier_eta)
+            if eta:
+                vessel_etas.append((v.id, eta.timestamp()))
+
+        vessel_etas.sort(key=lambda x: x[1])
+        overlap_counts: Dict[str, int] = {}
+        window_sec = 6.0 * 3600.0
+        n = len(vessel_etas)
+        left = 0
+        right = 0
+        for i, (vid, ts) in enumerate(vessel_etas):
+            while left < n and vessel_etas[left][1] < ts - window_sec:
+                left += 1
+            while right < n and vessel_etas[right][1] <= ts + window_sec:
+                right += 1
+            overlap_counts[vid] = max(0, right - left - 1)
 
         return {
             "crane_breakdowns": breakdown_count,

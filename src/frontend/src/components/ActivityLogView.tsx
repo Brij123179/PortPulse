@@ -65,10 +65,23 @@ export const ActivityLogView: React.FC = () => {
 
   const getActorBadge = (actor: string) => {
     if (actor === 'admin') return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
-    if (actor === 'manager') return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-    if (actor === 'supervisor') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-    if (actor === 'planner') return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
+    if (actor === 'terminal_manager') return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+    if (actor === 'shift_supervisor') return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+    if (actor === 'vessel_planner') return 'bg-green-500/20 text-green-300 border-green-500/30';
     return 'bg-slate-700/50 text-slate-300 border-slate-600';
+  };
+
+  const getHumanReadableDescription = (log: AuditLogEntryItem) => {
+    const action = log.action.toUpperCase();
+    if (action.includes('CREATE')) return `Created new ${log.entity_type.toLowerCase()} record.`;
+    if (action.includes('UPDATE')) return `Modified ${log.entity_type.toLowerCase()} configuration.`;
+    if (action.includes('DELETE')) return `Removed ${log.entity_type.toLowerCase()} record.`;
+    if (action.includes('ACCEPT')) return `Approved system recommendation.`;
+    if (action.includes('REJECT')) return `Declined system recommendation.`;
+    if (action.includes('SOLVER') || action.includes('OPTIMISATION')) return `Executed HiGHS MILP solver algorithm.`;
+    if (action.includes('CONFIRM')) return `Applied AI optimized schedule.`;
+    if (action.includes('OVERRIDE')) return `Manually bypassed system assignment.`;
+    return `Performed ${log.action.toLowerCase()} operation.`;
   };
 
   return (
@@ -236,7 +249,8 @@ export const ActivityLogView: React.FC = () => {
                         {log.correlation_id}
                       </td>
                       <td className="p-3 text-content-secondary text-[11px] truncate max-w-[260px]" title={log.payload_snapshot || ''}>
-                        {formattedPayload || <span className="text-content-muted italic">No extra payload</span>}
+                        <div className="font-semibold text-content-primary mb-0.5">{getHumanReadableDescription(log)}</div>
+                        <div className="text-content-muted">{formattedPayload || <span className="italic">No extra payload</span>}</div>
                       </td>
                     </tr>
                   );

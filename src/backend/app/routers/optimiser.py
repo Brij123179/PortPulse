@@ -63,6 +63,8 @@ def act_on_recommendation(
     AuditService.record_event(
         db=db,
         actor=user.username,
+        actor_role=user.role.value,
+        actor_id=user.id,
         action=f"RECOMMENDATION_{payload.action.upper()}",
         entity_type="RECOMMENDATION",
         entity_id=recommendation_id,
@@ -115,6 +117,8 @@ def run_optimisation(
     AuditService.record_event(
         db=db,
         actor=user.username,
+        actor_role=user.role.value,
+        actor_id=user.id,
         action="OPTIMISATION_RUN",
         entity_type="SOLVER",
         entity_id=res.solver_status,
@@ -140,6 +144,8 @@ def recompute_optimisation(
     AuditService.record_event(
         db=db,
         actor=user.username,
+        actor_role=user.role.value,
+        actor_id=user.id,
         action="OPTIMISATION_RECOMPUTE",
         entity_type="SOLVER",
         entity_id=res.solver_status,
@@ -151,6 +157,62 @@ def recompute_optimisation(
     )
     return res
 
+
+# --- Auto-Optimizer (Phase 3) ---
+
+@router.post("/optimiser/auto-optimize")
+def auto_optimize(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles("admin", "terminal_manager"))
+):
+    """Phase 3: Run full ML → Solver → Recommendations pipeline. Returns pending result for approval."""
+    from app.services.optimiser.auto_optimizer import auto_optimizer
+    result = auto_optimizer.run_full_optimization(
+        db, actor=user.username, actor_role=user.role.value, actor_id=user.id
+    )
+    # Strip non-serializable solver_result and recommendations
+    return {
+        "result_id": result["result_id"],
+        "correlation_id": result["correlation_id"],
+        "status": result["status"],
+        "ml_status": result["ml_status"],
+        "solver_status": result["solver_status"],
+        "assignments_count": result["assignments_count"],
+        "recommendations_count": result["recommendations_count"],
+        "average_wait_time_hours": result["average_wait_time_hours"],
+        "total_demurrage_usd": result["total_demurrage_usd"],
+        "crane_utilization_pct": result["crane_utilization_pct"],
+        "created_at": result["created_at"],
+        "solver_result": result.get("solver_result"),
+        "recommendations": result.get("recommendations"),
+    }
+
+
+@router.post("/optimiser/auto-optimize/{result_id}/confirm")
+def confirm_auto_optimize(
+    result_id: str,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles("admin", "terminal_manager"))
+):
+    """Phase 3: Confirm and apply an auto-optimization result."""
+    from app.services.optimiser.auto_optimizer import auto_optimizer
+    return auto_optimizer.confirm_optimization(
+        db, result_id=result_id, actor=user.username, actor_role=user.role.value, actor_id=user.id
+    )
+
+
+@router.post("/optimiser/auto-optimize/{result_id}/reject")
+def reject_auto_optimize(
+    result_id: str,
+    reason: str = Query("", description="Rejection reason"),
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles("admin", "terminal_manager"))
+):
+    """Phase 3: Reject an auto-optimization result without applying."""
+    from app.services.optimiser.auto_optimizer import auto_optimizer
+    return auto_optimizer.reject_optimization(
+        db, result_id=result_id, actor=user.username, actor_role=user.role.value, actor_id=user.id, reason=reason
+    )
 
 # --- F-307: Manual Supervisor Override with Guardrails ---
 
@@ -168,6 +230,8 @@ def manual_override(
     AuditService.record_event(
         db=db,
         actor=user.username,
+        actor_role=user.role.value,
+        actor_id=user.id,
         action=f"OVERRIDE_{res.status}",
         entity_type="BERTH_ASSIGNMENT",
         entity_id=payload.vessel_id,

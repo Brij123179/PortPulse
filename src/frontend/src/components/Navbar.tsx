@@ -99,14 +99,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Master Data Trigger */}
-          <button
-            onClick={onOpenMasterData}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary transition-colors"
-            title="Infrastructure &amp; Vessel Master Data"
-          >
-            <Database className="w-3.5 h-3.5 text-blue-500" />
-            <span className="hidden sm:inline">Master Data</span>
-          </button>
+          {role === 'admin' && (
+            <button
+              onClick={onOpenMasterData}
+              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary transition-colors"
+              title="Infrastructure &amp; Vessel Master Data"
+            >
+              <Database className="w-3.5 h-3.5 text-blue-500" />
+              <span className="hidden sm:inline">Master Data</span>
+            </button>
+          )}
 
           {/* Admin User Management Shortcut */}
           {role === 'admin' && (

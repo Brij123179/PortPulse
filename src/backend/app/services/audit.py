@@ -15,7 +15,9 @@ class AuditService:
         entity_type: str,
         entity_id: str,
         payload_snapshot: Optional[Any] = None,
-        correlation_id: Optional[str] = None
+        correlation_id: Optional[str] = None,
+        actor_role: Optional[str] = None,
+        actor_id: Optional[int] = None
     ) -> AuditLogEntry:
         """
         Appends an immutable audit record to the audit trail.
@@ -42,6 +44,8 @@ class AuditService:
         entry = AuditLogEntry(
             correlation_id=cid,
             actor=actor,
+            actor_role=actor_role,
+            actor_id=actor_id,
             action=action.upper(),
             entity_type=entity_type.upper(),
             entity_id=str(entity_id),

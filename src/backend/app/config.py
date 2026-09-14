@@ -25,12 +25,32 @@ class Settings(BaseSettings):
     PORTPULSE_SYNTHETIC_BERTHS: int = 10
     PORTPULSE_SYNTHETIC_SEED: int = 42
 
+    # Supabase PostgreSQL Migration
+    SUPABASE_HOST: str = ""
+    SUPABASE_PORT: str = "5432"
+    SUPABASE_USER: str = ""
+    SUPABASE_PASS: str = ""
+    SUPABASE_DB: str = ""
+    PORTPULSE_USE_SQLITE: bool = False
+
+    @property
+    def effective_db_url(self) -> str:
+        if self.PORTPULSE_USE_SQLITE:
+            return "sqlite:///./portpulse.db"
+        if self.SUPABASE_HOST and self.SUPABASE_USER and self.SUPABASE_PASS and self.SUPABASE_DB:
+            return f"postgresql+psycopg2://{self.SUPABASE_USER}:{self.SUPABASE_PASS}@{self.SUPABASE_HOST}:{self.SUPABASE_PORT}/{self.SUPABASE_DB}"
+        return self.PORTPULSE_DB_URL
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.PORTPULSE_CORS_ORIGINS.split(",") if origin.strip()]
 
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
+        env_file=[
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".env"),
+            ".env"
+        ],
         env_file_encoding="utf-8",
         extra="ignore"
     )

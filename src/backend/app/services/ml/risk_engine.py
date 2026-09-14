@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, Tuple
+
 from sqlalchemy.orm import Session
 
 from app.models.entities import Berth, TurnaroundRecord
@@ -12,6 +13,7 @@ from app.schemas.forecast import (
     MLMetricsResponse, ModelEvaluationMetric
 )
 from app.core.logging import logger, correlation_id_ctx
+from app.services.sanitizer import clamp_confidence
 
 
 class PortRiskEngine:
@@ -26,6 +28,32 @@ class PortRiskEngine:
         self.occupancy_forecaster = BerthOccupancyForecaster(self.eta_model)
         self.models_initialized = False
         self.initialization_error: Optional[str] = None
+        self._forecast_cache: Optional[Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]] = None
+        self._forecast_cache_time: Optional[datetime] = None
+        self._forecast_cache_horizon: Optional[int] = None
+
+    def clear_cache(self):
+        """Clears in-memory forecast cache."""
+        self._forecast_cache = None
+        self._forecast_cache_time = None
+        self._forecast_cache_horizon = None
+
+    def _get_cached_forecast_72h(self, db: Session, horizon_hours: int = 72) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
+        """Returns cached 72h forecast if recent (< 25s) to avoid repeated remote database simulations."""
+        now = datetime.now(timezone.utc)
+        if (
+            self._forecast_cache is not None
+            and self._forecast_cache_horizon == horizon_hours
+            and self._forecast_cache_time is not None
+            and (now - self._forecast_cache_time).total_seconds() < 25.0
+        ):
+            return self._forecast_cache
+
+        result = self.occupancy_forecaster.forecast_72h(db, horizon_hours=horizon_hours)
+        self._forecast_cache = result
+        self._forecast_cache_time = now
+        self._forecast_cache_horizon = horizon_hours
+        return result
 
     def initialize_models(self, db: Session):
         """Fits ML models if not already initialized."""
@@ -38,11 +66,27 @@ class PortRiskEngine:
                 self.initialization_error = str(e)
                 logger.error(f"Error fitting ETA model: {e}", exc_info=True)
 
+    def invalidate_models(self):
+        """Invalidate ML models, forcing re-training on next prediction request."""
+        self.models_initialized = False
+        self.initialization_error = None
+        self.clear_cache()
+        logger.info("ML models invalidated — will re-train on next prediction request.")
+
+    def retrain_and_predict(self, db: Session):
+        """Force re-training of ML models with current data."""
+        self.invalidate_models()
+        self.initialize_models(db)
+        if self.models_initialized:
+            logger.info("ML models re-trained successfully.")
+        else:
+            logger.warning(f"ML model re-training failed: {self.initialization_error}")
+
     def generate_heatmap(self, db: Session, horizon_hours: int = 72) -> HeatmapResponse:
         self.initialize_models(db)
         corr_id = correlation_id_ctx.get() or "heatmap-query"
 
-        berth_forecasts, _ = self.occupancy_forecaster.forecast_72h(db, horizon_hours=horizon_hours)
+        berth_forecasts, _ = self._get_cached_forecast_72h(db, horizon_hours=horizon_hours)
         berths = db.query(Berth).all()
 
         tracks: List[BerthHeatmapTrack] = []
@@ -79,9 +123,9 @@ class PortRiskEngine:
                     BerthHourRiskItem(
                         hour_offset=h["hour_offset"],
                         forecast_time=h["forecast_time"],
-                        occupancy_probability=h["occupancy_probability"],
-                        confidence_low=h["confidence_low"],
-                        confidence_high=h["confidence_high"],
+                        occupancy_probability=clamp_confidence(h["occupancy_probability"]),
+                        confidence_low=clamp_confidence(h["confidence_low"]),
+                        confidence_high=clamp_confidence(h["confidence_high"]),
                         risk_tier=tier,
                         expected_vessel_id=h["expected_vessel_id"],
                         expected_vessel_name=h["expected_vessel_name"],
@@ -121,7 +165,7 @@ class PortRiskEngine:
         self.initialize_models(db)
         corr_id = correlation_id_ctx.get() or "anchorage-query"
 
-        _, queue_timeline = self.occupancy_forecaster.forecast_72h(db, horizon_hours=horizon_hours)
+        _, queue_timeline = self._get_cached_forecast_72h(db, horizon_hours=horizon_hours)
 
         items = [
             AnchorageHourItem(
@@ -212,3 +256,16 @@ class PortRiskEngine:
 
 # Global singleton instance
 risk_engine = PortRiskEngine()
+
+def _on_data_changed(**kwargs):
+    """Event bus handler: invalidate ML models and forecast cache when port data changes."""
+    logger.info(f"ML models and forecast cache invalidated due to data change: {kwargs.get('entity_type', 'unknown')}")
+    risk_engine.clear_cache()
+    risk_engine.invalidate_models()
+
+try:
+    from app.services.event_bus import event_bus, EventType
+    event_bus.subscribe(EventType.DATA_CHANGED, _on_data_changed)
+    event_bus.subscribe(EventType.ASSIGNMENT_CHANGED, _on_data_changed)
+except ImportError:
+    pass

@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from app.models.entities import Berth, Crane, Vessel, YardCapacity
 from app.schemas.berth import BerthCreate, BerthUpdate, CraneCreate
 from app.schemas.vessel import VesselCreate, VesselUpdate
+from app.services.event_bus import event_bus, EventType
 
 
 class MasterDataService:
@@ -38,6 +39,7 @@ class MasterDataService:
         db.add(berth)
         db.commit()
         db.refresh(berth)
+        event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="CREATE", entity_id=berth.id)
         return berth
 
     @staticmethod
@@ -48,6 +50,7 @@ class MasterDataService:
             setattr(berth, key, value)
         db.commit()
         db.refresh(berth)
+        event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="UPDATE", entity_id=berth_id)
         return berth
 
     @staticmethod
@@ -64,6 +67,7 @@ class MasterDataService:
         db.query(Crane).filter(Crane.berth_id == berth_id).delete()
         db.delete(berth)
         db.commit()
+        event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="DELETE", entity_id=berth_id)
         return True
 
     @staticmethod
@@ -104,6 +108,7 @@ class MasterDataService:
         db.add(vessel)
         db.commit()
         db.refresh(vessel)
+        event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="CREATE", entity_id=vessel.id)
         return vessel
 
     @staticmethod
@@ -132,6 +137,7 @@ class MasterDataService:
             setattr(vessel, key, value)
         db.commit()
         db.refresh(vessel)
+        event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="UPDATE", entity_id=vessel_id)
         return vessel
 
     @staticmethod
@@ -144,6 +150,7 @@ class MasterDataService:
             )
         db.delete(vessel)
         db.commit()
+        event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="DELETE", entity_id=vessel_id)
         return True
 
     @staticmethod

@@ -122,6 +122,81 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
     setModalTab('FORM');
   };
 
+  const handleAcceptAndReassignDirectly = async (res: SuggestedResolution) => {
+    if (!selectedVesselId || !res.target_berth_id) return;
+    try {
+      setSubmitting(true);
+      const targetTime = res.recommended_start_time
+        ? new Date(res.recommended_start_time).toISOString()
+        : new Date(newStartTime).toISOString();
+
+      const overrideRes = await api.manualOverride({
+        vessel_id: selectedVesselId,
+        target_berth_id: res.target_berth_id,
+        new_start_time: targetTime,
+        override_reason: `Accepted Suggestion: ${res.description}`,
+      });
+      setResult(overrideRes);
+      if (overrideRes.is_valid) {
+        setTimeout(() => {
+          onOverrideSuccess();
+          onClose();
+        }, 1200);
+      }
+    } catch (err: any) {
+      setResult({
+        correlation_id: 'err',
+        is_valid: false,
+        status: 'REJECTED_HARD_CONSTRAINT',
+        vessel_id: selectedVesselId,
+        vessel_name: 'Unknown',
+        berth_id: res.target_berth_id,
+        berth_name: res.target_berth_name || 'Unknown',
+        constraint_violations: [err.message || 'Direct reassignment failed'],
+        warnings: [],
+        message: err.message || 'Direct reassignment failed',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDirectAssignBerth = async (berthId: string) => {
+    if (!selectedVesselId || !berthId) return;
+    try {
+      setSubmitting(true);
+      const targetTime = new Date(newStartTime).toISOString();
+      const overrideRes = await api.manualOverride({
+        vessel_id: selectedVesselId,
+        target_berth_id: berthId,
+        new_start_time: targetTime,
+        override_reason: `Direct Reassignment to ${berthId}`,
+      });
+      setResult(overrideRes);
+      if (overrideRes.is_valid) {
+        setTimeout(() => {
+          onOverrideSuccess();
+          onClose();
+        }, 1200);
+      }
+    } catch (err: any) {
+      setResult({
+        correlation_id: 'err',
+        is_valid: false,
+        status: 'REJECTED_HARD_CONSTRAINT',
+        vessel_id: selectedVesselId,
+        vessel_name: 'Unknown',
+        berth_id: berthId,
+        berth_name: 'Unknown',
+        constraint_violations: [err.message || 'Direct reassignment failed'],
+        warnings: [],
+        message: err.message || 'Direct reassignment failed',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVesselId || !targetBerthId || !newStartTime) return;
@@ -308,6 +383,42 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
           {/* TAB 1: FORM */}
           {modalTab === 'FORM' && (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Top AI Recommendation Quick-Fix Banner */}
+              {(() => {
+                const curVessel = vessels.find((v) => v.id === selectedVesselId);
+                if (!curVessel) return null;
+                const topSuggestion = berths.find((b) => {
+                  const isOccupied = vessels.some(
+                    (v) => v.assigned_berth_id === b.id && v.status === 'BERTHED' && v.id !== curVessel.id
+                  );
+                  return !isOccupied && curVessel.draft_m <= b.draft_limit_m && curVessel.length_m <= b.length_m;
+                });
+                if (!topSuggestion) return null;
+                return (
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-950/60 to-emerald-950/60 border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
+                    <div className="flex items-center space-x-2.5">
+                      <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 animate-pulse" />
+                      <div className="text-xs">
+                        <span className="font-extrabold text-white">Suggested Optimal Quay: </span>
+                        <span className="text-emerald-300 font-bold">{topSuggestion.name} ({topSuggestion.id})</span>
+                        <span className="text-slate-400 text-[11px] block mt-0.5">
+                          Safe UKC Clearance ({topSuggestion.draft_limit_m}m depth) · 0 Quay Collisions
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => handleDirectAssignBerth(topSuggestion.id)}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-xs transition flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-600/30 whitespace-nowrap"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{submitting ? 'Reassigning...' : `⚡ Reassign Directly to ${topSuggestion.id}`}</span>
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* Vessel Selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
@@ -370,18 +481,33 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {availableBerths.slice(0, 5).map((ab) => (
-                          <button
+                          <div
                             key={ab.id}
-                            type="button"
-                            onClick={() => setTargetBerthId(ab.id)}
-                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition shadow-sm ${
-                              targetBerthId === ab.id
-                                ? 'bg-blue-600 text-white border-blue-400 ring-2 ring-blue-500/40'
-                                : 'bg-emerald-950/50 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60'
-                            }`}
+                            className="inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-1 space-x-1 shadow-sm"
                           >
-                            ✓ {ab.name} ({ab.id}) · {ab.draft_limit_m}m D
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => setTargetBerthId(ab.id)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                                targetBerthId === ab.id
+                                  ? 'bg-blue-600 text-white shadow-sm'
+                                  : 'text-emerald-300 hover:bg-emerald-900/60'
+                              }`}
+                              title="Select this berth in the form"
+                            >
+                              ✓ {ab.name} ({ab.id}) · {ab.draft_limit_m}m D
+                            </button>
+                            <button
+                              type="button"
+                              disabled={submitting}
+                              onClick={() => handleDirectAssignBerth(ab.id)}
+                              className="px-2 py-1 rounded-lg text-[11px] font-black bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center space-x-1 shadow-sm disabled:opacity-50"
+                              title={`Accept suggestion and reassign directly to ${ab.name}`}
+                            >
+                              <Zap className="w-3 h-3 text-amber-300" />
+                              <span>⚡ Direct Reassign</span>
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -481,14 +607,26 @@ export const ManualOverrideModal: React.FC<ManualOverrideModalProps> = ({
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => applyResolution(res)}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition flex items-center justify-center space-x-2 shadow-md shadow-blue-600/25 whitespace-nowrap self-stretch sm:self-center"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Apply Safe Alternative</span>
-                    </button>
+                    <div className="flex items-center space-x-2 self-stretch sm:self-center">
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => handleAcceptAndReassignDirectly(res)}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-xs transition flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-600/30 whitespace-nowrap"
+                        title="Accept suggestion and execute reassignment immediately"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{submitting ? 'Reassigning...' : '⚡ Accept & Reassign Directly'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyResolution(res)}
+                        className="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold text-xs transition whitespace-nowrap"
+                        title="Edit parameters in manual form"
+                      >
+                        Edit in Form
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

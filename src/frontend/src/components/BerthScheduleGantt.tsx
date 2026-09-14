@@ -94,7 +94,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
           </div>
 
           <div className="flex items-center space-x-3">
-            {canRunSolver ? (
+            {canRunSolver && (
               <button
                 onClick={handleRunOptimization}
                 disabled={runningSolver}
@@ -107,10 +107,6 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
                 )}
                 <span>Auto-Optimize Schedule</span>
               </button>
-            ) : (
-              <span className="text-[11px] text-content-muted font-medium">
-                * Solver execution requires Admin / Terminal Manager role.
-              </span>
             )}
 
             {canOverride && (

@@ -171,9 +171,14 @@ def get_status_summary(
 
     berths = db.query(Berth).all()
     total_berths = len(berths)
-    available = sum(1 for b in berths if b.status == "AVAILABLE")
-    occupied = sum(1 for b in berths if b.status == "OCCUPIED")
+    berthed_berth_ids = set(
+        b_id for (b_id,) in db.query(Vessel.assigned_berth_id).filter(
+            Vessel.status == "BERTHED", Vessel.assigned_berth_id.isnot(None)
+        ).all()
+    )
+    occupied = sum(1 for b in berths if b.status == "OCCUPIED" or b.id in berthed_berth_ids)
     maintenance = sum(1 for b in berths if b.status == "MAINTENANCE")
+    available = sum(1 for b in berths if b.id not in berthed_berth_ids and b.status not in ("OCCUPIED", "MAINTENANCE"))
     total_quay = sum(b.length_m for b in berths)
 
     yard = db.query(YardCapacity).first()

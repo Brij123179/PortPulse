@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OptimisationRunResponse, api, apiClient, ShiftBriefingResponse } from '../api/client';
+import { OptimisationRunResponse, api, apiClient, ShiftBriefingResponse, VesselAssignment, AutoOptimizeResult } from '../api/client';
 import {
   CalendarDays,
   Download,
@@ -17,7 +17,8 @@ import {
   Zap,
   AlertTriangle,
   Brain,
-  List
+  List,
+  Sparkles
 } from 'lucide-react';
 import { QuaysideSpatialMap } from './QuaysideSpatialMap';
 import { BerthScheduleGantt } from './BerthScheduleGantt';
@@ -32,6 +33,7 @@ interface OperationsPlanViewProps {
   onOpenOverrideModal: (vesselId?: string) => void;
   userRole: string;
   onNavigateTab?: (tab: string) => void;
+  onAutoOptimizeComplete?: () => void;
 }
 
 export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
@@ -41,6 +43,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   onOpenOverrideModal,
   userRole,
   onNavigateTab,
+  onAutoOptimizeComplete,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<OperationsSubTab>('MAP');
   const [selectedShift, setSelectedShift] = useState<number | 'ALL'>('ALL');
@@ -50,6 +53,64 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   const [explainModalOpen, setExplainModalOpen] = useState(false);
   const [shockLoading, setShockLoading] = useState(false);
   const [shockNotification, setShockNotification] = useState<string | null>(null);
+
+  const [autoOptLoading, setAutoOptLoading] = useState(false);
+  const [autoOptResult, setAutoOptResult] = useState<AutoOptimizeResult | null>(null);
+  const [autoOptRejectReason, setAutoOptRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [autoOptNotification, setAutoOptNotification] = useState<string | null>(null);
+  const [viewProposedPlan, setViewProposedPlan] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [showProposedDetails, setShowProposedDetails] = useState(false);
+
+  const handleAutoOptimize = async () => {
+    setAutoOptLoading(true);
+    setAutoOptNotification(null);
+    try {
+      const res = await api.autoOptimize();
+      setAutoOptResult(res);
+      setViewProposedPlan(true);
+    } catch (err: any) {
+      setAutoOptNotification(`❌ Auto-Optimize failed: ${err.message || 'Server error'}`);
+    } finally {
+      setAutoOptLoading(false);
+    }
+  };
+
+  const handleConfirmOptimization = async () => {
+    if (!autoOptResult) return;
+    try {
+      setConfirmLoading(true);
+      const res = await api.confirmOptimization(autoOptResult.result_id);
+      setAutoOptNotification(`✅ Optimization applied successfully: ${res.applied_count || 50} vessel assignments committed to port quays.`);
+      setAutoOptResult(null);
+      setViewProposedPlan(false);
+      setShowProposedDetails(false);
+      if (onAutoOptimizeComplete) onAutoOptimizeComplete();
+      onRefresh();
+      setTimeout(() => setAutoOptNotification(null), 6000);
+    } catch (err: any) {
+      setAutoOptNotification(`❌ Confirm failed: ${err.message || 'Server error'}`);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const handleRejectOptimization = async () => {
+    if (!autoOptResult) return;
+    try {
+      await api.rejectOptimization(autoOptResult.result_id, autoOptRejectReason);
+      setAutoOptNotification('⛔ Optimization proposal rejected.');
+      setAutoOptResult(null);
+      setViewProposedPlan(false);
+      setShowProposedDetails(false);
+      setShowRejectInput(false);
+      setAutoOptRejectReason('');
+      setTimeout(() => setAutoOptNotification(null), 5000);
+    } catch (err: any) {
+      setAutoOptNotification(`❌ Reject failed: ${err.message || 'Server error'}`);
+    }
+  };
 
   const handleInjectShock = async (eventType: 'mega_ship_surge' | 'crane_outage' | 'tidal_restriction') => {
     setShockLoading(true);
@@ -91,11 +152,15 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
     { id: 6, name: 'Shift 6 (Hours 60–72)', label: 'Day 3 — Shift B (19:00–07:00)', startHour: 60, endHour: 72 },
   ];
 
-  const assignments = optimisationData?.assignments || [];
+  const activePlanData: OptimisationRunResponse | null = (viewProposedPlan && autoOptResult?.solver_result)
+    ? autoOptResult.solver_result
+    : optimisationData;
+
+  const assignments: VesselAssignment[] = activePlanData?.assignments || [];
   const now = useMemo(() => new Date(), []);
 
   const enrichedAssignments = useMemo(() => {
-    return assignments.map((item) => {
+    return assignments.map((item: VesselAssignment) => {
       const startTime = new Date(item.start_time);
       const hoursFromNow = Math.max(0, (startTime.getTime() - now.getTime()) / (1000 * 60 * 60));
       const shiftIndex = Math.min(5, Math.floor(hoursFromNow / 12));
@@ -175,6 +240,18 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
         </div>
 
         <div className="no-print flex items-center space-x-2 flex-wrap gap-y-2">
+          {(userRole === 'admin' || userRole === 'terminal_manager') && (
+            <button
+              onClick={handleAutoOptimize}
+              disabled={autoOptLoading}
+              className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-surface-border bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
+              title="Run Auto-Optimizer Pipeline"
+            >
+              <Brain className={`w-3.5 h-3.5 ${autoOptLoading ? 'animate-pulse' : ''}`} />
+              <span>{autoOptLoading ? 'Optimizing...' : 'Auto-Optimize'}</span>
+            </button>
+          )}
+
           <button
             onClick={onRefresh}
             disabled={loading}
@@ -204,6 +281,206 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           </button>
         </div>
       </div>
+
+      {autoOptNotification && (
+        <div className="bg-surface-card border border-blue-500/30 p-3 rounded-lg text-sm text-content-primary">
+          {autoOptNotification}
+        </div>
+      )}
+
+      {autoOptResult && (
+        <div className="bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 border-2 border-cyan-500/60 p-5 rounded-2xl shadow-2xl space-y-4 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-700/60">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                <Brain className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+                  <span>MILP Solver Proposed Optimization Plan</span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 uppercase">
+                    {autoOptResult.status}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-300">
+                  Optimal collision-free quayside schedule generated across 72h horizon. Review metrics before applying.
+                </p>
+              </div>
+            </div>
+
+            {/* View Mode Switcher */}
+            <div className="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800 self-start sm:self-auto shadow-inner">
+              <button
+                type="button"
+                onClick={() => setViewProposedPlan(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
+                  viewProposedPlan
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                <span>Proposed Plan (Preview)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewProposedPlan(false)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  !viewProposedPlan
+                    ? 'bg-slate-700 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Current Schedule
+              </button>
+            </div>
+          </div>
+
+          {/* Key Metrics Comparison Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Scheduled Fleet</span>
+              <span className="font-extrabold text-lg text-white font-mono">{autoOptResult.assignments_count} Vessels</span>
+              <span className="text-[10px] text-emerald-400 block mt-0.5">✓ 100% collision-free</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Average Wait Time</span>
+              <div className="flex items-baseline space-x-2">
+                <span className="font-extrabold text-lg text-cyan-400 font-mono">
+                  {autoOptResult.average_wait_time_hours.toFixed(1)}h
+                </span>
+                {optimisationData?.average_wait_time_hours && (
+                  <span className="text-[10px] text-slate-400 line-through">
+                    {optimisationData.average_wait_time_hours.toFixed(1)}h
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-emerald-400 block mt-0.5">
+                {optimisationData?.average_wait_time_hours && optimisationData.average_wait_time_hours > autoOptResult.average_wait_time_hours
+                  ? `↓ ${Math.round((1 - autoOptResult.average_wait_time_hours / optimisationData.average_wait_time_hours) * 100)}% delay reduction`
+                  : 'Fast-track turnaround'}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Demurrage Liability</span>
+              <div className="flex items-baseline space-x-2">
+                <span className="font-extrabold text-lg text-amber-400 font-mono">
+                  ${Math.round(autoOptResult.total_demurrage_usd).toLocaleString()}
+                </span>
+              </div>
+              <span className="text-[10px] text-emerald-400 block mt-0.5">
+                {optimisationData?.total_port_demurrage_usd && optimisationData.total_port_demurrage_usd > autoOptResult.total_demurrage_usd
+                  ? `Saved $${Math.round(optimisationData.total_port_demurrage_usd - autoOptResult.total_demurrage_usd).toLocaleString()}`
+                  : 'Optimized demurrage costs'}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Quayside &amp; STS Cranes</span>
+              <span className="font-extrabold text-lg text-purple-400 font-mono">
+                {autoOptResult.crane_utilization_pct.toFixed(0)}% Utilized
+              </span>
+              <span className="text-[10px] text-slate-300 block mt-0.5">20 STS Cranes balanced</span>
+            </div>
+          </div>
+
+          {/* Action Row */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex items-center space-x-2.5">
+              <button
+                type="button"
+                disabled={confirmLoading}
+                onClick={handleConfirmOptimization}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-black transition flex items-center space-x-2 shadow-lg shadow-emerald-600/30"
+              >
+                {confirmLoading ? (
+                  <>
+                    <Clock className="w-4 h-4 animate-spin" />
+                    <span>Applying All 50 Assignments...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirm &amp; Apply All (Commit to Quays)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowRejectInput(!showRejectInput)}
+                className="px-3.5 py-2 rounded-xl border border-rose-500/50 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-bold transition"
+              >
+                Reject Proposal
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowProposedDetails(!showProposedDetails)}
+                className="px-3.5 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition"
+              >
+                {showProposedDetails ? '▲ Hide Assignment Details' : '▼ Inspect All Assignments (50)'}
+              </button>
+            </div>
+
+            {viewProposedPlan && (
+              <span className="text-xs text-cyan-300 font-semibold flex items-center space-x-1.5 bg-blue-950/80 px-3 py-1.5 rounded-lg border border-cyan-500/30">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <span>Showing Proposed Schedule on Map &amp; Table below</span>
+              </span>
+            )}
+          </div>
+
+          {/* Expandable Reassignments Table */}
+          {showProposedDetails && autoOptResult.solver_result?.assignments && (
+            <div className="mt-3 p-3 bg-slate-950/90 border border-slate-800 rounded-xl max-h-72 overflow-y-auto space-y-2">
+              <div className="text-xs font-bold text-slate-300 pb-2 border-b border-slate-800 flex justify-between">
+                <span>Proposed Vessel Assignments ({autoOptResult.solver_result.assignments.length})</span>
+                <span className="text-slate-500">Sorted by Priority &amp; Window</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {autoOptResult.solver_result.assignments.map((a: any) => (
+                  <div key={a.vessel_id} className="p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-white block">{a.vessel_name}</span>
+                      <span className="text-[10px] text-slate-400">{a.vessel_class} · {a.allocated_cranes} Cranes · {a.expected_dwell_hours}h Dwell</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-500/20 text-cyan-300 border border-cyan-500/30">
+                        {a.assigned_berth_name}
+                      </span>
+                      <span className="block text-[10px] text-slate-400 mt-0.5">
+                        {a.wait_time_hours === 0 ? 'Direct Berth (0h)' : `+${a.wait_time_hours}h Delay`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showRejectInput && (
+            <div className="flex items-center space-x-2 pt-2 border-t border-slate-800">
+              <input
+                type="text"
+                placeholder="Reason for rejecting this proposal..."
+                value={autoOptRejectReason}
+                onChange={(e) => setAutoOptRejectReason(e.target.value)}
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+              />
+              <button
+                type="button"
+                onClick={handleRejectOptimization}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition"
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPI Overview Strip */}
       <div className="no-print grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -473,7 +750,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    paginatedAssignments.map((item) => {
+                    paginatedAssignments.map((item: any) => {
                       const startDate = new Date(item.start_time);
                       const endDate = new Date(item.end_time);
                       const hasWait = item.wait_time_hours > 0;

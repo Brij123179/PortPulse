@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
+import app.models.entities
 from app.main import app
 from app.services.ingestion import PortDataGenerator
 from app.core.auth import create_access_token
