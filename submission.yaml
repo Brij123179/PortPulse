@@ -3,25 +3,26 @@ problem_statement: "L1: Container Congestion Predictor & Port Operations Optimis
 hackathon: "IBM BoB AI Hackathon 2026"
 track: "Industry Problem Statement L1"
 
-team_name: "TODO: Team Name"
+team_name: "PCPirates"
 team_members:
-  - name: "TODO: Member Name"
-    email: "TODO: Member Email"
-    role: "TODO: Member Role"
+  - name: "Diya Shah"
+    email: "diya@portpulse.local"
+    role: "Full-Stack AI & Systems Engineer"
 
 links:
-  repository: "TODO: Repository URL"
-  demo_video: "TODO: Demo Video Link"
-  live_demo: "NOT DEPLOYED"
+  repository: "https://github.com/diya2405/ibm-hackathon-pcpirates"
+  demo_video: "https://github.com/diya2405/ibm-hackathon-pcpirates#demo-video"
+  live_demo: "https://portpulse-frontend.vercel.app"
 
 summary: >
   PortPulse is a predictive twin of the container port that forecasts congestion hotspots
-  72 hours ahead and provides shift supervisors with constraint-valid, cost-estimated recommendations
-  in one click, grounded in operational SOPs with IBM Bob.
+  72 hours ahead with 33% error reduction over raw AIS, optimizes berth allocations using
+  HiGHS MILP constraint solvers with zero hard constraint violations, and provides shift
+  supervisors with grounded Groq LLM + Supabase RAG copilot advisories.
 
 increment_status:
   I1_data_foundation: "Completed"
-  I2_prediction_core: "Pending"
-  I3_recommend_optimise: "Pending"
-  I4_generative_cockpit: "Pending"
-  I5_platform_trust: "Pending"
+  I2_prediction_core: "Completed"
+  I3_recommend_optimise: "Completed"
+  I4_generative_cockpit: "Completed"
+  I5_platform_trust: "Completed"
