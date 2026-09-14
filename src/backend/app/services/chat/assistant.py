@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.models.entities import Vessel, Berth, Crane, WeatherEvent
 from app.services.optimiser.recommender import prescriptive_recommender
+from app.services.chat.supabase_rag import supabase_rag
 
 
 class PortPulseChatAssistant:
@@ -120,6 +121,52 @@ class PortPulseChatAssistant:
         q_lower = sanitized_query.lower()
         ctx = cls.get_grounding_context(db)
 
+        # 1. Retrieve domain knowledge from Supabase PostgreSQL (World Port Index, BIMCO, IMO)
+        rag_docs = supabase_rag.query_supabase_knowledge(sanitized_query, limit=3)
+        supabase_citations = [f"Supabase RAG: {d['title']} ({d.get('source', 'Maritime Standard')})" for d in rag_docs]
+
+        # 2. Execute Groq LLM Inference (openai/gpt-oss-120b)
+        groq_answer = supabase_rag.generate_groq_response(sanitized_query, ctx, rag_docs)
+
+        if groq_answer:
+            answer = groq_answer
+            citations = list(supabase_citations)
+            for v in ctx["vessels"]:
+                if v["name"] in answer or v["id"] in answer:
+                    citations.append(f"Live Vessel: {v['name']} ({v['id']})")
+            for c in ctx.get("crane_breakdowns", []):
+                if c["name"] in answer:
+                    citations.append(f"Crane: {c['name']} (Berth {c['berth_id']})")
+        else:
+            answer, extra_citations = cls._generate_deterministic_answer(ctx, q_lower)
+            citations = list(supabase_citations[:1]) + extra_citations
+
+        # Mechanical Anti-Hallucination Validation:
+        # Cross check every berth ID (B-XX) mentioned in the answer against valid database berths
+        valid_berth_ids = set(ctx["berths"].keys())
+        mentioned_berths = set(re.findall(r"\bB-\d+\b", answer))
+        for mb in mentioned_berths:
+            if mb not in valid_berth_ids:
+                answer = answer.replace(mb, "B-01")  # substitute with verified fallback
+
+        active_model = "Groq High-Speed LLM (Grounded via Supabase RAG)" if groq_answer else cls.MODEL_NAME
+        return {
+            "query": sanitized_query,
+            "answer": answer,
+            "model": active_model,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "citations": citations,
+            "grounding_summary": {
+                "total_berths": len(ctx["berths"]),
+                "total_vessels": ctx["total_vessels"],
+                "delayed_vessels_count": len(ctx["delayed_vessels"]),
+                "active_cranes": ctx["active_cranes"],
+                "recommendations_count": len(ctx["recommendations"])
+            }
+        }
+
+    @classmethod
+    def _generate_deterministic_answer(cls, ctx: Dict[str, Any], q_lower: str):
         citations = []
         
         # 1. Congestion / Risk Query
@@ -206,28 +253,7 @@ class PortPulseChatAssistant:
                 f"*Try asking:* 'Which berths are at risk tomorrow?', 'What slow-steam savings are available?', or 'Check crane status'."
             )
 
-        # Mechanical Anti-Hallucination Validation:
-        # Cross check every berth ID (B-XX) mentioned in the answer against valid database berths
-        valid_berth_ids = set(ctx["berths"].keys())
-        mentioned_berths = set(re.findall(r"\bB-\d+\b", answer))
-        for mb in mentioned_berths:
-            if mb not in valid_berth_ids:
-                answer = answer.replace(mb, "B-01")  # substitute with verified fallback
-
-        return {
-            "query": sanitized_query,
-            "answer": answer,
-            "model": cls.MODEL_NAME,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "citations": citations,
-            "grounding_summary": {
-                "total_berths": len(ctx["berths"]),
-                "total_vessels": ctx["total_vessels"],
-                "delayed_vessels_count": len(ctx["delayed_vessels"]),
-                "active_cranes": ctx["active_cranes"],
-                "recommendations_count": len(ctx["recommendations"])
-            }
-        }
+        return answer, citations
 
     @classmethod
     def generate_shift_briefing(cls, db: Session, shift_label: str = "Upcoming 12h Shift") -> Dict[str, Any]:
