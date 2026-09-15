@@ -1,6 +1,8 @@
 # PortPulse — Container Congestion Predictor & Port Operations Optimiser
 ### IBM BoB AI Hackathon 2026 — Problem Statement L1
 
+![Validate Submission](https://github.com/diya2405/ibm-hackathon-pcpirates/actions/workflows/validate.yml/badge.svg)
+
 > **A predictive digital twin and prescriptive cockpit for maritime container terminals that predicts quayside and anchorage bottlenecks 72 hours in advance and generates constraint-guaranteed optimization advisories.**
 
 ---
