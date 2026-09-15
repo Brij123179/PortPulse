@@ -1,285 +1,175 @@
-# PortPulse — Container Congestion Predictor & Port Operations Optimiser
-### IBM BoB AI Hackathon 2026 — Problem Statement L1
+# 🚀 PortPulse — Container Congestion Predictor & Port Operations Optimiser
 
 ![Validate Submission](https://github.com/diya2405/ibm-hackathon-pcpirates/actions/workflows/validate.yml/badge.svg)
 
-> **A predictive digital twin and prescriptive cockpit for maritime container terminals that predicts quayside and anchorage bottlenecks 72 hours in advance and generates constraint-guaranteed optimization advisories.**
+> **IBM BoB AI Hackathon 2026 — Industry Problem Statement L1**
+> A predictive digital twin and prescriptive cockpit for maritime container terminals that predicts quayside and anchorage bottlenecks 72 hours in advance and generates constraint-guaranteed optimization advisories.
 
 ---
 
-## 📑 Table of Contents
-- [Problem Statement & Operational Challenge](#-problem-statement--operational-challenge)
-- [System Architecture](#-system-architecture)
-- [Core Features & Modules](#-core-features--modules)
-  - [1. 72-Hour Quayside Spatial Harbor Map](#1-72-hour-quayside-spatial-harbor-map)
-  - [2. Zero-Scroll Operations Cockpit (5 Sub-Tabs)](#2-zero-scroll-operations-cockpit-5-sub-tabs)
-  - [3. Predictive Machine Learning Engine](#3-predictive-machine-learning-engine)
-  - [4. Prescriptive Mixed-Integer Linear Programming (MILP) Optimiser](#4-prescriptive-mixed-integer-linear-programming-milp-optimiser)
-  - [5. Generative AI Copilot & Maritime RAG Assistant](#5-generative-ai-copilot--maritime-rag-assistant)
-  - [6. Supervisor Manual Override Modal with AI Conflict Resolution](#6-supervisor-manual-override-modal-with-ai-conflict-resolution)
-  - [7. Enterprise RBAC & Dedicated Operator Login](#7-enterprise-rbac--dedicated-operator-login)
-  - [8. Governance, Immutable Audit Trails & Continuous Learning](#8-governance-immutable-audit-trails--continuous-learning)
-- [Incremental Delivery Scorecard](#-incremental-delivery-scorecard)
-- [Pre-Configured Operator Roles & Credentials](#-pre-configured-operator-roles--credentials)
-- [Local Installation & Quickstart](#-local-installation--quickstart)
-- [Automated Verification & Test Suite](#-automated-verification--test-suite)
+## 👥 Team
+
+| Field | Value |
+| :--- | :--- |
+| **Team Name** | PCPirates |
+| **Track** | Industry Problem Statement L1 |
+| **Team Lead** | Diya Shah — diya@portpulse.local |
+| **Members** | Diya Shah |
 
 ---
 
-## 🌊 Problem Statement & Operational Challenge
+## 🎯 Problem Statement
 
-Container port terminals handle immense cargo volumes under volatile conditions: carrier schedule unreliability, tidal fluctuations, crane mechanical breakdowns, and fluctuating container dwell times. When disruptions hit, the standard operational response is manual and reactive — relying on phone calls and static spreadsheets.
+Container port terminals allocate berths, cranes, and yard space manually using spreadsheets and reactive judgment — responding to congestion only *after* vessels are already idling offshore. There is no forward-looking system that fuses vessel schedule data, berth/crane capacity, and historical turnaround patterns into a 72-hour predictive view.
 
-Cascading delays accumulate exponentially:
-- **Demurrage Penalties**: Commercial laytime breaches cost carriers and terminals between **\$1,040 to \$3,125 per hour** per vessel (BIMCO standards).
-- **Emissions & Fuel Waste**: Vessels idling at anchorage or rushing at high speed consume excess bunker fuel, spiking maritime greenhouse gas emissions.
-- **Berth Under-Utilization**: Imbalanced crane allocation and uncoordinated turnaround leave deepwater berths vacant while anchorage basins overflow.
+Shift supervisors and terminal managers at container ports bear the direct cost: demurrage penalties of **$1,040–$3,125 per hour** per vessel (BIMCO), wasted bunker fuel, and cascading berth conflicts that compound exponentially once a single mega-ship or crane outage hits.
 
-**PortPulse** solves this challenge by pairing **Predictive AI** (correcting carrier ETA bias and forecasting 72h berth occupancy) with **Prescriptive Optimization** (HiGHS MILP solver guaranteeing zero hard constraint violations) and **Generative AI** (real-time maritime regulatory RAG assistant and automated shift handover briefings).
+> See [`docs/problem-statement.md`](docs/problem-statement.md) for the full analysis.
 
 ---
 
-## 🏗️ System Architecture
+## 💡 Solution
 
-```mermaid
-flowchart TB
-    subgraph Data Layer
-        SQLite[(SQLite / TOS DB)]
-        Supabase[(Supabase RAG Vector Store)]
-        Synth[Synthetic Port Data Generator]
-    end
+PortPulse is a full-stack predictive-prescriptive port operations platform. It corrects carrier ETA bias using a GradientBoosting regressor (**1.17h MAE**, 33% improvement over naive baseline), computes hour-by-hour 72-hour berth occupancy probabilities, and runs a HiGHS MILP solver that generates constraint-guaranteed berth and crane schedules with **zero hard constraint violations**.
 
-    subgraph Intelligence Core
-        ML[GradientBoosting ETA Corrector]
-        Markov[72h Occupancy Probability Matrix]
-        HiGHS[HiGHS MILP Berth & Crane Optimiser]
-        Groq[Groq Ultra-Fast LLM Inference]
-    end
+Operators interact through a zero-scroll cockpit with a live quayside spatial map, 72h Gantt timeline, congestion shock testing lab, and a Groq LLM + Supabase RAG copilot grounded in 6 authoritative maritime standards — turning reactive spreadsheet planning into proactive, AI-verified decision-making.
 
-    subgraph Backend API (FastAPI)
-        Auth[JWT RBAC & Password Hashing]
-        API[FastAPI REST Endpoints]
-        Audit[Immutable Audit Trail & Correlation IDs]
-        Feedback[Operator Feedback Loop Tracker]
-    end
+> See [`docs/solution-overview.md`](docs/solution-overview.md) for architecture detail.
 
-    subgraph Frontend Cockpit (React + TypeScript + Vite)
-        SpatialMap[Quayside Spatial Harbor Map]
-        Manifest[72h Berthing Manifest Table]
-        Gantt[72h Gantt Timeline]
-        ShockLab[Congestion Shock Testing Lab]
-        Briefing[Dynamic AI Shift Briefing]
-        ChatDrawer[RAG Maritime Copilot]
-        OverrideModal[Manual Override & Conflict Resolver]
-    end
+---
 
-    Synth --> SQLite
-    SQLite --> API
-    Supabase --> Groq
-    API --> ML --> Markov --> HiGHS
-    API --> Groq
-    API --> Frontend Cockpit
+## ✨ Key Features
+
+- **Feature 1 — 72h Predictive Congestion Engine**: GradientBoosting ETA corrector + Markov-chain occupancy probability matrix across 10 berths × 72 hours (720 discrete time slots), with calibrated 80% confidence intervals achieving 84.4% empirical coverage.
+- **Feature 2 — HiGHS MILP Berth & Crane Optimiser**: Mathematically optimal berth/crane allocation with guaranteed hard constraints (draft, LOA, crane slots, temporal non-overlap). Zero violations in all 8/8 optimizer tests.
+- **Feature 3 — Quayside Spatial Harbor Map**: True-to-scale vessel footprints on a continuous coastline, live congestion rings (emerald/amber/pulsing crimson), paginated anchorage basin, and slide-up vessel inspection HUD.
+- **Feature 4 — Groq LLM + Supabase RAG Maritime Copilot**: Ultra-low-latency (<150ms) generative AI grounded in 6 maritime regulatory standards with anti-hallucination cross-validation and prompt-injection defense.
+- **Feature 5 — Enterprise RBAC, Audit Trails & Feedback Loop**: JWT-secured 4-role access control (Admin/Supervisor/Planner/Manager), immutable append-only audit log with correlation IDs, and operator feedback drift tracker across DIVERSION / SLOW_STEAM / PRIORITY_RESEQUENCE recommendation types.
+
+---
+
+## 🛠️ Tech Stack
+
+| Category | Technologies |
+| :--- | :--- |
+| **Languages** | Python 3.12, TypeScript |
+| **Frameworks** | FastAPI, React 18, Vite, Tailwind CSS |
+| **IBM Technologies** | IBM BoB AI (development), Groq LLM Inference (`openai/gpt-oss-120b`) |
+| **Databases** | SQLite (local), Supabase PostgreSQL (RAG vector store) |
+| **ML / Optimisation** | scikit-learn GradientBoosting, SciPy HiGHS MILP solver, Markov occupancy matrix |
+| **Other** | GitHub Actions, JWT, bcrypt, pytest (48 tests), Vercel, Render |
+
+---
+
+## 📁 Repository Structure
+
+```
+├── src/                        # All source code
+│   ├── backend/                # FastAPI Python backend
+│   │   ├── app/                # Routers, services, models, schemas
+│   │   ├── tests/              # 48 automated tests (pytest)
+│   │   └── requirements.txt
+│   └── frontend/               # React + TypeScript + Vite cockpit
+│       └── src/components/     # All UI components
+├── docs/                       # Written documentation
+│   ├── problem-statement.md
+│   ├── solution-overview.md
+│   ├── architecture.md
+│   └── setup-guide.md
+├── demo/                       # Demo artifacts
+│   ├── screenshots/            # App screenshots
+│   ├── demo-video-link.txt     # Link to demo video
+│   └── live-demo-url.txt       # Live deployment URL
+├── presentation/               # Slide deck
+├── submission.yaml             # Structured submission metadata
+└── README.md
 ```
 
 ---
 
-## ⚡ Core Features & Modules
+## ⚡ How to Run
 
-### 1. 72-Hour Quayside Spatial Harbor Map
-- **Continuous Coastline Geography**: Visually models 10 quayside berths (`B-01` through `B-10`) along a realistic physical coastline with operational water depth indicators (11.0m to 16.5m deepwater berths).
-- **STS Crane Gantry Allocation**: Displays active Ship-to-Shore (STS) crane gantries assigned to each berth in real time.
-- **True-to-Scale Vessel Dimensions**: Vessel footprints visually scaled according to vessel classification:
-  - Ultra-Large Container Vessels (ULCV): 400m LOA
-  - Post-Panamax: 366m LOA
-  - Panamax: 294m LOA
-  - Feeder: 160m LOA
-- **Luminous High-Contrast Theme**: Designed for bright daylight and dark control tower visibility with deep navy slates (`bg-slate-900/95`), neon cyan depth indicators, and safety amber crane chips.
-- **Dynamic Congestion Rings**:
-  - 🟢 **Normal / Direct Berth** ($\le 1.0\text{h}$ delay): Emerald status ring.
-  - 🟡 **Minor Delay** ($1.0 - 5.0\text{h}$ delay): Amber alert ring.
-  - 🔴 **Severe Bottleneck** ($> 5.0\text{h}$ delay): Pulsing crimson border with live BIMCO demurrage penalty estimation.
-- **Paginated Offshore Anchorage Basin**: Displays waiting vessels queued offshore awaiting berth availability without vertical page jumping.
-- **Approach Fairway Channel**: Tracks incoming vessels currently navigating under pilot escort.
-- **Slide-Up Inspection HUD**: Clicking any berth or vessel opens an informative bottom HUD drawer with technical specs, dwell windows, under-keel clearance, and demurrage calculations.
+```bash
+# 1. Clone the repo
+git clone https://github.com/diya2405/ibm-hackathon-pcpirates.git
+cd ibm-hackathon-pcpirates
 
----
+# 2. Backend — install dependencies
+cd src/backend
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS / Linux:
+# source .venv/bin/activate
+pip install -r requirements.txt
 
-### 2. Zero-Scroll Operations Cockpit (5 Sub-Tabs)
-To eliminate vertical scrolling fatigue across long operational shifts, the 72-Hour Operations Plan is partitioned into **5 dedicated, first-class sub-tabs**:
+# 3. Configure environment
+cp src/.env.example src/.env
+# Edit src/.env with your Supabase and Groq credentials (optional — runs fully on SQLite without them)
 
-1. `[ 🗺️ Quayside Spatial Map ]`: Dedicated quayside view with top KPI telemetry strip, high-contrast harbor visualization, paginated offshore anchorage, and vessel inspection HUD drawer.
-2. `[ 📋 Berthing Manifest Table ]`: Shift-level filtering (`All Shifts`, `Shift 1`–`Shift 6`), quick search, page size selection (`10 / 20 / 50 / All`), and paginated gang-allocation table displayed immediately at the top with zero scrolling.
-3. `[ 📊 72h Gantt Timeline ]`: Full-width visual schedule timeline tracking vessel berthing windows, turnaround durations, and crane allocations.
-4. `[ ⚡ Congestion Testing Lab ]`: Standalone testing bay with 4 one-click shock injection scenarios (`Mega-Ship Surge`, `Crane Breakdown`, `Low Tide Anomaly`, `Reset Baseline`) alongside step-by-step prediction explainability guides.
-5. `[ 🤖 AI Shift Briefing ]`: One-click operational briefing generator grounded in live TOS data with quick CSV download and print capabilities.
+# 4. Run the backend
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
----
+# 5. Run the frontend (new terminal)
+cd src/frontend
+npm install
+npm run dev
+```
 
-### 3. Predictive Machine Learning Engine
-- **ETA Correction Regressor (`F-201`)**: Corrects carrier schedule optimism by training on historical vessel dimensions, past carrier dwell histories, meteorological factors, and quayside crane congestion.
-  - **Model MAE:** **1.17 hours** vs. Naive Baseline **1.75 hours** (**33.0% error reduction**).
-  - **Model RMSE:** **1.69 hours** vs. Naive Baseline **2.06 hours** (**18.1% improvement**).
-- **72h Occupancy Probability Matrix (`F-202`)**: Hour-by-hour occupancy calculation across all 10 berths and 72 hours (720 discrete time slots).
-- **Risk Heatmap & Driver Explainability (`F-203`, `F-206`)**: Color-coded risk matrix (Green $\le 0.40$, Amber $0.40-0.75$, Red $> 0.75$) with SHAP-inspired driver breakdowns (*e.g., Weather & Tidal Outage 39.7%, STS Crane Breakdown 33.7%, Cargo Dwell 12.8%*).
-- **Calibrated Uncertainty Bounds (`F-207`)**: Calibrated 80% Confidence Intervals ($Z = 1.28 \times \sigma_{\text{res}}$) achieve **84.4% empirical test coverage**.
+Open **`http://localhost:5173`** — log in with any demo profile below.
 
----
+| Role | Username | Password |
+| :--- | :--- | :--- |
+| 🛡️ Administrator | `admin` | `admin123` |
+| ⚓ Shift Supervisor | `supervisor` | `super123` |
+| 📊 Vessel Planner | `planner` | `plan123` |
+| 🏢 Terminal Manager | `manager` | `manage123` |
 
-### 4. Prescriptive Mixed-Integer Linear Programming (MILP) Optimiser
-- **Mathematical Optimization Engine (`F-305`)**: Formulates quayside scheduling as a Mixed-Integer Linear Program solved via SciPy's HiGHS solver.
-- **Guaranteed Hard Constraints**:
-  - **Draft Invariance**: Vessel draft $\le$ Berth water depth minus safety Under-Keel Clearance (UKC).
-  - **Length Invariance**: Vessel LOA $\le$ Physical berth length.
-  - **Crane Slot Invariance**: Maximum simultaneous STS cranes assigned $\le$ Berth gantry limit.
-  - **Temporal Non-Overlap**: No two vessels occupying the same physical berth segment simultaneously.
-- **Prescriptive Interventions**:
-  - **Vessel Diversions (`F-301`)**: Proposes alternative berths when primary berths face critical congestion.
-  - **Slow-Steaming Advisories (`F-302`)**: Recommends speed reduction down fairway channels, using cubic-law fuel consumption models ($P \propto v^3$) to save bunker fuel and mitigate $\text{CO}_2$.
-  - **Side-by-Side Cost Engine (`F-304`)**: Quantifies Net Financial Benefit (\$), Demurrage Penalties Saved (\$), and Emissions Mitigated ($\text{t CO}_2$).
-- **What-If Simulation Sandbox (`F-308`)**: Simulates hypothetical schedule adjustments non-destructively before persisting to production.
+> Full step-by-step instructions: [`docs/setup-guide.md`](docs/setup-guide.md)
 
 ---
 
-### 5. Generative AI Copilot & Maritime RAG Assistant
-- **RAG Operational Copilot (`F-406`)**: Docked slide-over drawer accessible from the top navigation bar via **"Ask AI"**.
-- **Supabase Cloud PostgreSQL Knowledge Base**: Table `portpulse_rag_documents` populated with 6 authoritative maritime reference documents:
-  1. *World Port Index (NGA Pub 150)* — Deepwater container berth constraints, channel depths, and draft safety limits.
-  2. *BIMCO Commercial Laytime & Demurrage Guidelines (2025/2026)* — Contractual penalty rates (\$1,040/h to \$3,125/h) by vessel class.
-  3. *IMO Safety of Navigation Resolution A.893(21)* — Dynamic Under-Keel Clearance (UKC) protocols and squat effect calculations.
-  4. *IAPH & TOS Quayside Performance Standards* — STS crane gang moves/hour and berth throughput benchmarking.
-  5. *IMO Slow-Steaming Standards & 4th GHG Study* — Fuel consumption cubic power law ($P \propto v^3$) and $\text{CO}_2$ mitigation ($1\text{ MT VLSFO} = 3.114\text{ MT CO}_2$).
-  6. *PortPulse Incident SOP* — Cascading delay mitigation and pilot boarding procedures.
-- **Groq Ultra-Low Latency LLM Inference**: Integrated `openai/gpt-oss-120b` via Groq API generating grounded operational advice in $<150$ms.
-- **Dual Source Grounding**: Synthesizes live operational state (berth status, vessel queue, active crane breakdowns, MILP recommendations) with Supabase maritime regulatory guidelines.
-- **Mechanical Anti-Hallucination Validator**: Automatically cross-references all mentioned berth IDs and vessel names against the live database.
-- **Prompt-Injection Defense**: Sanitizes user queries and restricts AI capabilities strictly to read-only maritime assistance.
-- **Dynamic AI Shift Handover Briefing (`F-401`)**: Generates structured shift briefing notes with 1-click Markdown display, CSV export, and print formatting.
+## 🖥️ Demo
+
+| Artifact | Link |
+| :--- | :--- |
+| 📹 Demo Video | See [`demo/demo-video-link.txt`](demo/demo-video-link.txt) |
+| 🌐 Live Demo | See [`demo/live-demo-url.txt`](demo/live-demo-url.txt) |
+| 🖼️ Screenshots | See [`demo/screenshots/`](demo/screenshots/) |
+| 📊 Presentation | See [`presentation/`](presentation/) |
 
 ---
 
-### 6. Supervisor Manual Override Modal with AI Conflict Resolution
-- **Fullscreen / Maximize Toggle (`[ ⛶ ]`)**: Maximizes the override modal to full-screen view for spacious scheduling workflows on terminal control tower screens.
-- **Dual Sub-Tabs**:
-  - `[ 🎯 Reassignment Parameters ]`: Vessel selection, destination berth, arrival/departure date pickers, free compatible berth chips, and supervisor justification.
-  - `[ ⚡ AI Conflict Resolutions ]`: Evaluated HiGHS alternatives segregated into a clean sub-tab with 1-click `Apply Safe Alternative` buttons, automatically surfacing when hard constraint violations occur.
+## 🧪 Automated Tests
+
+```bash
+cd src/backend
+pytest -v
+# 48 passed in 6.02s — covers auth, RBAC, forecast, optimiser, audit, ingestion, CSV, E2E
+```
 
 ---
 
-### 7. Enterprise RBAC & Dedicated Operator Login
-- **Dedicated Login Page (`LoginPage.tsx`)**: Secure command portal presented when unauthenticated.
-- **4 One-Click Demo Profiles**:
-  - 🛡️ **Administrator (`admin`)**: Master data CRUD, operator provisioning, system governance.
-  - ⚓ **Shift Supervisor (`supervisor`)**: Quayside dispatch, manual override approvals, AI shift briefings.
-  - 📊 **Vessel Planner (`planner`)**: ETA ML predictions, berth scheduling, What-If simulation sandbox.
-  - 🏢 **Terminal Manager (`manager`)**: Executive KPIs, demurrage analysis, decarbonization audits.
-- **Strict Admin-Only User Registration**: Self-registration is strictly disabled. Non-admin attempts to invoke `POST /api/v1/auth/register` receive `HTTP 403 Forbidden`.
+## ⚠️ Known Limitations
+
+- **Synthetic data only**: The platform uses a synthetic port dataset (50 vessels, 10 berths) — not connected to a live AIS/TOS feed.
+- **Local LLM credentials required for RAG copilot**: The Groq API key and Supabase credentials in `.env` are required for the AI chat and shift briefing features; all other features run fully offline on SQLite.
+- **Single-node SQLite**: Designed for hackathon evaluation on a single machine; production path uses PostgreSQL on OpenShift as documented in `docs/architecture.md`.
 
 ---
 
-### 8. Governance, Immutable Audit Trails & Continuous Learning
-- **Immutable Audit Trail (`F-501`)**: Detailed governance logging of actor, role, action, timestamp, correlation ID, and payload snapshots in `ActivityLogView.tsx`.
-- **Operator Feedback Loop Tracker (`F-502`)**: Tracks supervisor decisions on recommendations in `FeedbackLoopTracker`, calculating acceptance rates by intervention type (`DIVERSION`, `SLOW_STEAM`, `PRIORITY_RESEQUENCE`) and alerting on calibration drift.
-- **Congestion Shock Testing Lab (`F-503`)**: Dynamic injection of mega-ship arrival surges, crane breakdowns, and low tide anomalies (`POST /api/v1/ingestion/shock`).
+## 🏅 What We're Most Proud Of
+
+The **end-to-end integration** of four AI disciplines in a single coherent product: predictive ML (ETA correction + 72h occupancy), prescriptive MILP optimisation (zero hard constraint violations), generative AI (RAG copilot grounded in real maritime standards), and governance (immutable audit trail + operator feedback drift detection) — all running on a single Intel i3/8GB RAM machine with 48 passing automated tests. The quayside spatial map renders a true-to-scale physical harbor with live congestion semantics that a real shift supervisor could interpret and act on immediately.
 
 ---
 
 ## 🏆 Incremental Delivery Scorecard
 
-| Increment | Scope | Status | Verification & Evidence |
-| :--- | :--- | :---: | :--- |
-| **I1: Foundation** | Data pipeline, synthetic generator (`F-101`), master data CRUD (`F-104`), read-only Live Status Table (`F-105`), RBAC (`F-106`), theme tokens (`F-410`). | ✅ **100% COMPLETE** | 16/16 Unit & RBAC tests passing. Master schema with 50 vessels, 10 berths, crane inventories, and JWT authentication. |
-| **I2: Prediction** | ETA correction model (`F-201`), 72h occupancy forecast (`F-202`), risk heatmap with SHAP explainability (`F-203`, `F-206`) & confidence intervals (`F-207`). | ✅ **100% COMPLETE** | 5/5 Forecast tests passing. GradientBoosting achieves **1.17h MAE** vs **1.75h baseline** (**33.0% improvement**). Empirical 80% CI coverage is **84.4%**. |
-| **I3: Prescriptive** | Diversions (`F-301`), slow-steam advisories (`F-302`), cost/impact estimator (`F-304`), MILP optimiser (`F-305`), What-If simulation (`F-308`). | ✅ **100% COMPLETE** | 8/8 Optimizer tests passing. Deterministic HiGHS MILP solver guarantees zero hard constraint violations. |
-| **I4: Cockpit & GenAI** | LLM shift briefing (`F-401`), 72h Gantt (`F-402`), RAG chat assistant (`F-406`), recommendation actions (`F-407`), unified cockpit (`F-408`). | ✅ **100% COMPLETE** | Groq LLM + Supabase RAG copilot grounded in 6 maritime standards with anti-hallucination validation and dynamic shift briefing. |
-| **I5: Platform & Trust** | Audit log (`F-501`), feedback loop (`F-502`), historical replay scenario (`F-503`). | ✅ **100% COMPLETE** | Immutable audit trail, operator feedback drift tracker, and historical shock scenario injection. |
-
----
-
-## 🔑 Pre-Configured Operator Roles & Credentials
-
-For fast evaluation and role-based demonstrations, PortPulse provides four pre-seeded operational profiles:
-
-| Role | Username | Default Password | Permissions & Operational Scope |
-| :--- | :--- | :--- | :--- |
-| 🛡️ **Administrator** | `admin` | `admin123` | Master data CRUD (Berths/Vessels), operator provisioning, role management, full system governance. |
-| ⚓ **Shift Supervisor** | `supervisor` | `super123` | Quayside dispatch, manual berth overrides, approval/rejection of AI recommendations, AI shift briefings. |
-| 📊 **Vessel Planner** | `planner` | `plan123` | ETA ML prediction adjustments, 72h berth scheduling, What-If simulation sandbox, shock scenario testing. |
-| 🏢 **Terminal Manager** | `manager` | `manage123` | Executive KPI monitoring, demurrage penalty tracking, decarbonization audits, audit log inspection. |
-
----
-
-## 🚀 Local Installation & Quickstart
-
-### Prerequisites
-- Python 3.11+
-- Node.js 18+ & npm
-- Git
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/diya2405/ibm-hackathon-pcpirates.git
-cd ibm-hackathon-pcpirates
-```
-
-### 2. Backend Setup
-```bash
-cd src/backend
-python -m venv .venv
-
-# On Windows:
-.venv\Scripts\activate
-# On Linux / macOS:
-# source .venv/bin/activate
-
-pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
-*The backend automatically seeds the SQLite database (`portpulse.db`) with 50 vessels, 10 berths, crane allocations, pre-configured users, and fits the ML models on startup.*
-
-### 3. Frontend Setup
-```bash
-# In a new terminal window:
-cd src/frontend
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173
-```
-
-Open your browser at **`http://127.0.0.1:5173`** to access the PortPulse command center.
-
----
-
-## 🧪 Automated Verification & Test Suite
-
-PortPulse includes a comprehensive automated test suite covering all backend services, machine learning models, optimization solvers, RBAC policies, and audit logging.
-
-```bash
-cd src/backend
-pytest -v
-```
-
-```
-============================= test session starts =============================
-platform win32 -- Python 3.12.7, pytest-9.1.1
-rootdir: E:\IBM_HACKATHON_PORTPLUS\src\backend
-collected 48 items
-
-tests/test_audit.py (4/4 passed) ........................................ [  8%]
-tests/test_auth_rbac.py (5/5 passed) .................................... [ 18%]
-tests/test_chat_and_feedback.py (5/5 passed) ............................ [ 29%]
-tests/test_csv_and_resolutions.py (7/7 passed) .......................... [ 43%]
-tests/test_forecast.py (5/5 passed) ..................................... [ 54%]
-tests/test_ingestion.py (4/4 passed) .................................... [ 62%]
-tests/test_live_e2e.py (2/2 passed) ..................................... [ 66%]
-tests/test_master_data.py (4/4 passed) .................................. [ 75%]
-tests/test_optimiser.py (8/8 passed) .................................... [ 91%]
-tests/test_status.py (4/4 passed) ....................................... [100%]
-
-============================== 48 passed in 6.02s ==============================
-```
-
-Frontend production bundle verification:
-```bash
-cd src/frontend
-npm run build
-```
-*(Transpiles with TypeScript, optimizes chunks, and verifies 0 compile errors).*
+| Increment | Scope | Status |
+| :--- | :--- | :---: |
+| **I1 — Data Foundation** | Synthetic pipeline, master data CRUD, live status table, JWT RBAC | ✅ Complete |
+| **I2 — Prediction Core** | ETA corrector (1.17h MAE), 72h occupancy matrix, risk heatmap, SHAP explainability | ✅ Complete |
+| **I3 — Recommend & Optimise** | Diversions, slow-steam advisories, HiGHS MILP solver, What-If sandbox | ✅ Complete |
+| **I4 — Generative Cockpit** | Groq RAG copilot, AI shift briefing, 72h Gantt, unified cockpit | ✅ Complete |
+| **I5 — Platform & Trust** | Immutable audit trail, feedback loop tracker, shock scenario lab | ✅ Complete |
