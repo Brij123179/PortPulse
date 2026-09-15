@@ -17,4 +17,4 @@ The PortPulse hackathon presentation slide deck is located in this directory.
 3. **Architecture** — FastAPI / SQLite / React / HiGHS MILP / Groq LLM / Supabase RAG
 4. **Demo** — Live quayside spatial map, 72h Gantt, congestion shock lab, AI copilot
 5. **Results** — 33% MAE improvement, zero MILP constraint violations, 48/48 tests passing
-6. **Team** — PCPirates / Diya Shah
+6. **Team** — PCPirates 
