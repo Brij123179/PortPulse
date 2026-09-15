@@ -13,8 +13,8 @@
 | :--- | :--- |
 | **Team Name** | PCPirates |
 | **Track** | Industry Problem Statement L1 |
-| **Team Lead** | Diya Shah — diya@portpulse.local |
-| **Members** | Diya Shah |
+| **Team Lead** | Naitik Patel — 24it071@charusat.edu.in |
+| **Members** | Naitik Patel, Diya Shah |
 
 ---
 

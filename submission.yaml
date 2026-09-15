@@ -5,6 +5,9 @@ track: "Industry Problem Statement L1"
 
 team_name: "PCPirates"
 team_members:
+  - name: "Naitik Patel"
+    email: "24it071@charusat.edu.in"
+    role: "Team Lead"
   - name: "Diya Shah"
     email: "diya@portpulse.local"
     role: "Full-Stack AI & Systems Engineer"
