@@ -14,7 +14,7 @@
 | **Team Name** | PCPirates |
 | **Track** | Industry Problem Statement L1 |
 | **Team Lead** | Naitik Patel — 24it071@charusat.edu.in |
-| **Members** | Naitik Patel, Diya Shah |
+| **Members** | Naitik Patel, Diya Shah, Brij Patel, Rudra Dodiya |
 
 ---
 

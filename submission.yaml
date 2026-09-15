@@ -11,6 +11,12 @@ team_members:
   - name: "Diya Shah"
     email: "diya@portpulse.local"
     role: "Full-Stack AI & Systems Engineer"
+  - name: "Brij Patel"
+    email: ""
+    role: "Team Member"
+  - name: "Rudra Dodiya"
+    email: ""
+    role: "Team Member"
 
 links:
   repository: "https://github.com/diya2405/ibm-hackathon-pcpirates"
