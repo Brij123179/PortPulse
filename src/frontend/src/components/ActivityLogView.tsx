@@ -19,8 +19,10 @@ export const ActivityLogView: React.FC = () => {
         params.entity_type = selectedEntity;
       }
       const res = await api.getAuditLogs(params);
-      setLogs(res.items);
-      setTotal(res.total);
+      const rawList = res?.items ?? (res as any)?.events ?? [];
+      const items = Array.isArray(rawList) ? rawList : [];
+      setLogs(items);
+      setTotal(typeof res?.total === 'number' ? res.total : items.length);
     } catch (err: any) {
       console.error('Failed to load audit logs:', err);
       setError(err.message || 'Failed to retrieve operational audit logs.');
@@ -35,39 +37,47 @@ export const ActivityLogView: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchLogs]);
 
-  const filteredLogs = logs.filter((log) => {
+  const safeLogs = Array.isArray(logs) ? logs : [];
+  const filteredLogs = safeLogs.filter((log) => {
+    if (!log) return false;
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
+    const actor = (log.actor || '').toLowerCase();
+    const action = (log.action || '').toLowerCase();
+    const entityId = (log.entity_id || '').toLowerCase();
+    const correlationId = (log.correlation_id || '').toLowerCase();
+    const payload = (log.payload_snapshot || '').toLowerCase();
     return (
-      log.actor.toLowerCase().includes(term) ||
-      log.action.toLowerCase().includes(term) ||
-      log.entity_id.toLowerCase().includes(term) ||
-      log.correlation_id.toLowerCase().includes(term) ||
-      (log.payload_snapshot && log.payload_snapshot.toLowerCase().includes(term))
+      actor.includes(term) ||
+      action.includes(term) ||
+      entityId.includes(term) ||
+      correlationId.includes(term) ||
+      payload.includes(term)
     );
   });
 
-  const getActionBadgeColor = (action: string) => {
-    if (action.includes('CREATE') || action.includes('ACCEPT') || action.includes('APPROVED')) {
-      return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+  const getActionBadgeColor = (action?: string) => {
+    const act = (action || '').toUpperCase();
+    if (act.includes('CREATE') || act.includes('ACCEPT') || act.includes('APPROVED')) {
+      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30';
     }
-    if (action.includes('REJECT') || action.includes('DELETE') || action.includes('REJECTED')) {
-      return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+    if (act.includes('REJECT') || act.includes('DELETE') || act.includes('REJECTED')) {
+      return 'bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/30';
     }
-    if (action.includes('MODIFY') || action.includes('UPDATE')) {
-      return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+    if (act.includes('MODIFY') || act.includes('UPDATE') || act.includes('OVERRIDE')) {
+      return 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30';
     }
-    if (action.includes('SOLVER') || action.includes('OPTIMISATION')) {
-      return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+    if (act.includes('SOLVER') || act.includes('OPTIMISATION')) {
+      return 'bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/30';
     }
-    return 'bg-slate-700/50 text-slate-300 border-slate-600';
+    return 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30';
   };
 
   const getActorBadge = (actor: string) => {
     if (actor === 'admin') return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
-    if (actor === 'terminal_manager') return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-    if (actor === 'shift_supervisor') return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-    if (actor === 'vessel_planner') return 'bg-green-500/20 text-green-300 border-green-500/30';
+    if (actor === 'manager') return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+    if (actor === 'supervisor') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+    if (actor === 'planner') return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
     return 'bg-slate-700/50 text-slate-300 border-slate-600';
   };
 
@@ -113,17 +123,16 @@ export const ActivityLogView: React.FC = () => {
               <button
                 key={type}
                 onClick={() => setSelectedEntity(type)}
-                className={`px-2.5 py-1 rounded capitalize font-medium transition ${
-                  selectedEntity === type
+                className={`px-2.5 py-1 rounded capitalize font-medium transition ${selectedEntity === type
                     ? 'bg-blue-600 text-white font-bold shadow-sm'
                     : 'text-content-secondary hover:text-content-primary'
-                }`}
+                  }`}
               >
                 {type === 'ALL'
                   ? 'All'
                   : type === 'BERTH_ASSIGNMENT'
-                  ? 'Overrides'
-                  : type.toLowerCase()}
+                    ? 'Overrides'
+                    : type.toLowerCase()}
               </button>
             ))}
           </div>
@@ -181,7 +190,7 @@ export const ActivityLogView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border font-mono">
-              {loading && logs.length === 0 ? (
+              {loading && safeLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-content-muted">
                     Loading audit trail...
@@ -194,7 +203,7 @@ export const ActivityLogView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => {
+                filteredLogs.map((log, index) => {
                   let formattedPayload = '';
                   try {
                     if (log.payload_snapshot) {
@@ -208,20 +217,23 @@ export const ActivityLogView: React.FC = () => {
                     formattedPayload = log.payload_snapshot || '';
                   }
 
+                  const logKey = log?.id != null ? `log-${log.id}` : `log-${index}`;
+                  const ts = log?.timestamp ? new Date(log.timestamp).toLocaleString([], {
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  }) : 'Just now';
+
                   return (
                     <tr
-                      key={log.id}
+                      key={logKey}
                       onClick={() => setSelectedLog(log)}
                       className="hover:bg-surface-hover/60 cursor-pointer transition-colors"
                     >
                       <td className="p-3 text-content-muted text-[11px] whitespace-nowrap">
-                        {new Date(log.timestamp).toLocaleString([], {
-                          month: 'short',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
+                        {ts}
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <span
@@ -229,7 +241,7 @@ export const ActivityLogView: React.FC = () => {
                             log.actor
                           )}`}
                         >
-                          @{log.actor}
+                          @{log.actor || 'system'}
                         </span>
                       </td>
                       <td className="p-3 whitespace-nowrap">
@@ -238,15 +250,15 @@ export const ActivityLogView: React.FC = () => {
                             log.action
                           )}`}
                         >
-                          {log.action}
+                          {log.action || 'EVENT'}
                         </span>
                       </td>
                       <td className="p-3 whitespace-nowrap font-semibold text-content-primary">
-                        <span className="text-[10px] text-content-muted block font-normal">{log.entity_type}</span>
-                        {log.entity_id}
+                        <span className="text-[10px] text-content-muted block font-normal">{log.entity_type || 'SYSTEM'}</span>
+                        {log.entity_id || '-'}
                       </td>
-                      <td className="p-3 text-content-muted text-[11px] truncate max-w-[140px]" title={log.correlation_id}>
-                        {log.correlation_id}
+                      <td className="p-3 text-content-muted text-[11px] truncate max-w-[140px]" title={log.correlation_id || ''}>
+                        {log.correlation_id || '-'}
                       </td>
                       <td className="p-3 text-content-secondary text-[11px] truncate max-w-[260px]" title={log.payload_snapshot || ''}>
                         <div className="font-semibold text-content-primary mb-0.5">{getHumanReadableDescription(log)}</div>

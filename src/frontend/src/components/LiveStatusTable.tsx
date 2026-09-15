@@ -46,32 +46,35 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const safeVessels = Array.isArray(vessels) ? vessels : [];
+  const safeBerths = Array.isArray(berths) ? berths : [];
+
   // Status and Priority counts for quick filter pills
   const counts = useMemo(() => {
     return {
-      all: vessels.length,
-      anchored: vessels.filter((v) => v.status === 'ANCHORED').length,
-      berthed: vessels.filter((v) => v.status === 'BERTHED').length,
-      scheduled: vessels.filter((v) => v.status === 'SCHEDULED').length,
-      priority: vessels.filter((v) => Boolean(v.priority_flag)).length,
+      all: safeVessels.length,
+      anchored: safeVessels.filter((v) => v.status === 'ANCHORED').length,
+      berthed: safeVessels.filter((v) => v.status === 'BERTHED').length,
+      scheduled: safeVessels.filter((v) => v.status === 'SCHEDULED').length,
+      priority: safeVessels.filter((v) => Boolean(v.priority_flag)).length,
     };
-  }, [vessels]);
+  }, [safeVessels]);
 
   // Filter vessels
   const filteredVessels = useMemo(() => {
-    return vessels.filter((v) => {
+    return safeVessels.filter((v) => {
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
-        v.name.toLowerCase().includes(q) ||
-        v.id.toLowerCase().includes(q) ||
+        (v.name && v.name.toLowerCase().includes(q)) ||
+        (v.id && v.id.toLowerCase().includes(q)) ||
         (v.assigned_berth_id && v.assigned_berth_id.toLowerCase().includes(q));
       const matchesStatus = statusFilter === 'ALL' || v.status === statusFilter;
       const matchesClass = classFilter === 'ALL' || v.vessel_class === classFilter;
       const matchesPriority = !priorityOnly || Boolean(v.priority_flag);
       return matchesSearch && matchesStatus && matchesClass && matchesPriority;
     });
-  }, [vessels, searchQuery, statusFilter, classFilter, priorityOnly]);
+  }, [safeVessels, searchQuery, statusFilter, classFilter, priorityOnly]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -284,7 +287,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                   : 'text-content-secondary hover:text-content-primary'
               }`}
             >
-              Vessel Schedule ({vessels.length})
+              Vessel Schedule ({safeVessels.length})
             </button>
             <button
               onClick={() => setActiveTab('berths')}
@@ -294,7 +297,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                   : 'text-content-secondary hover:text-content-primary'
               }`}
             >
-              Berth Infrastructure ({berths.length})
+              Berth Infrastructure ({safeBerths.length})
             </button>
           </div>
 
@@ -604,7 +607,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                               >
                                 {Math.round((v.eta_confidence ?? 0.92) * 100)}% ML conf
                               </span>
-                              {v.delay_factors && v.delay_factors.length > 0 && (
+                              {Array.isArray(v.delay_factors) && v.delay_factors.length > 0 && (
                                 <span
                                   className="text-[10px] text-content-muted font-medium truncate max-w-[160px]"
                                   title={v.delay_factors.join(' · ')}
@@ -726,7 +729,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
         {/* Tab 2: Berth Infrastructure Grid */}
         {activeTab === 'berths' && (
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {berths.map((b) => (
+            {safeBerths.map((b) => (
               <div
                 key={b.id}
                 className="border border-surface-border rounded-lg p-4 bg-surface-bg hover:border-brand-500 transition-colors"

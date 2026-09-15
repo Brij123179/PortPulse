@@ -65,15 +65,17 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
   }
 
   const solverRes = optimisationData;
-  const assignments = solverRes?.assignments || [];
+  const assignments = Array.isArray(solverRes?.assignments) ? solverRes.assignments : [];
 
   // Group assignments by berth
   const assignmentsByBerth: Record<string, VesselAssignment[]> = {};
   assignments.forEach((a) => {
-    if (!assignmentsByBerth[a.assigned_berth_name]) {
-      assignmentsByBerth[a.assigned_berth_name] = [];
+    if (!a) return;
+    const bName = a.assigned_berth_name || a.assigned_berth_id || 'Berth General';
+    if (!assignmentsByBerth[bName]) {
+      assignmentsByBerth[bName] = [];
     }
-    assignmentsByBerth[a.assigned_berth_name].push(a);
+    assignmentsByBerth[bName].push(a);
   });
 
   return (
@@ -234,7 +236,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
                   : 'bg-surface-bg border border-surface-border text-content-secondary hover:text-content-primary'
               }`}
             >
-              {bName.replace(' Quay', '')}
+              {(bName || '').replace(' Quay', '')}
             </button>
           ))}
         </div>
@@ -303,7 +305,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
 
                     return (
                       <div
-                        key={a.vessel_id}
+                        key={`${a.vessel_id}-${a.start_time || Math.random()}`}
                         onClick={() => setSelectedAssignment(a)}
                         className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
                           isSelected

@@ -7,8 +7,9 @@ interface CascadeDelaySimulatorProps {
 }
 
 export const CascadeDelaySimulator: React.FC<CascadeDelaySimulatorProps> = ({ vessels }) => {
+  const safeVessels = Array.isArray(vessels) ? vessels : [];
   const [selectedVesselId, setSelectedVesselId] = useState<string>(
-    vessels.length > 0 ? vessels[0].id : ''
+    safeVessels.length > 0 ? safeVessels[0].id : ''
   );
   const [delayHours, setDelayHours] = useState<number>(4.0);
   const [simulating, setSimulating] = useState<boolean>(false);
@@ -58,7 +59,7 @@ export const CascadeDelaySimulator: React.FC<CascadeDelaySimulatorProps> = ({ ve
               onChange={(e) => setSelectedVesselId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-content-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
             >
-              {vessels.map((v) => (
+              {safeVessels.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name} ({v.vessel_class} · {v.id})
                 </option>
@@ -134,7 +135,7 @@ export const CascadeDelaySimulator: React.FC<CascadeDelaySimulatorProps> = ({ ve
           </div>
 
           {/* Impacted Vessels Table */}
-          {simulationResult.impacted_vessels.length > 0 && (
+          {Array.isArray(simulationResult.impacted_vessels) && simulationResult.impacted_vessels.length > 0 && (
             <div className="border border-surface-border rounded-xl overflow-hidden text-xs">
               <table className="w-full text-left">
                 <thead className="bg-surface-bg border-b border-surface-border font-semibold text-content-secondary">
@@ -148,7 +149,7 @@ export const CascadeDelaySimulator: React.FC<CascadeDelaySimulatorProps> = ({ ve
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-border">
-                  {simulationResult.impacted_vessels.map((iv, idx) => (
+                  {(simulationResult.impacted_vessels || []).map((iv, idx) => (
                     <tr key={idx} className="hover:bg-surface-hover">
                       <td className="py-2.5 px-4 font-semibold text-content-primary">
                         {iv.vessel_name} ({iv.vessel_id})

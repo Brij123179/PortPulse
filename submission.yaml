@@ -9,19 +9,20 @@ team_members:
     email: "24it071@charusat.edu.in"
     role: "Team Lead"
   - name: "Diya Shah"
-    email: "diya@portpulse.local"
+    email: "d25it118@charusat.edu.in"
     role: "Full-Stack AI & Systems Engineer"
   - name: "Brij Patel"
-    email: ""
+    email: "24it063@charusat.edu.in"
     role: "Team Member"
   - name: "Rudra Dodiya"
-    email: ""
+    email: "24it016@charusat.edu.in"
     role: "Team Member"
 
 links:
   repository: "https://github.com/diya2405/ibm-hackathon-pcpirates"
-  demo_video: "https://github.com/diya2405/ibm-hackathon-pcpirates#demo-video"
-  live_demo: "https://portpulse-frontend.vercel.app"
+  demo_video: "https://drive.google.com/file/d/1BLWRsNu7AvSJW6l2Fcy4yaJqxmv450by/view?usp=drivesdk"
+  live_demo: "https://portpulse-flame.vercel.app"
+  presentation: "https://canva.link/f7xcddko2qvs3in"
 
 summary: >
   PortPulse is a predictive twin of the container port that forecasts congestion hotspots

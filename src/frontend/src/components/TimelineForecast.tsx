@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { BerthHeatmapTrack, BerthHourRiskItem } from '../api/client';
 
 interface TimelineForecastProps {
@@ -48,16 +48,16 @@ function buildBuckets(berths: BerthHeatmapTrack[]): PortBucket[] {
     const criticalBerths: string[] = [];
     const allFactors: Array<{ feature_name: string; impact_pct: number }> = [];
 
-    berths.forEach(berth => {
-      berth.timeline
+    (berths || []).forEach(berth => {
+      (berth?.timeline || [])
         .filter(h => h.hour_offset >= startH && h.hour_offset < endH)
         .forEach((h: BerthHourRiskItem) => {
           if (h.risk_tier === 'RED') { red++; if (!criticalBerths.includes(berth.berth_name)) criticalBerths.push(berth.berth_name); }
           else if (h.risk_tier === 'AMBER') amber++;
           else green++;
-          totalOcc += h.occupancy_probability;
+          totalOcc += (h.occupancy_probability || 0);
           count++;
-          h.top_factors.forEach(f => allFactors.push(f));
+          (h.top_factors || []).forEach(f => allFactors.push(f));
         });
     });
 
@@ -86,7 +86,7 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
-  if (!berths || berths.length === 0) {
+  if (!Array.isArray(berths) || berths.length === 0) {
     return (
       <div style={{ color: 'var(--text-muted, #64748b)', fontSize: '0.82rem', padding: '12px 0' }}>
         No forecast data yet. Loading heatmap...
@@ -173,16 +173,16 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
             <span>🟡 Amber: <strong style={{ color: '#f59e0b' }}>{buckets[selectedIdx].amberCount}</strong></span>
             <span>Avg occupancy: <strong style={{ color: 'var(--text-primary, #e2e8f0)' }}>{Math.round(buckets[selectedIdx].avgOccupancy * 100)}%</strong></span>
           </div>
-          {buckets[selectedIdx].topBerths.length > 0 && (
+          {(buckets[selectedIdx]?.topBerths?.length || 0) > 0 && (
             <div style={{ marginTop: 6, color: 'var(--text-muted, #64748b)', fontSize: '0.68rem' }}>
               Critical berths: <strong style={{ color: '#ef4444' }}>{buckets[selectedIdx].topBerths.join(', ')}</strong>
             </div>
           )}
-          {buckets[selectedIdx].topFactors.length > 0 && (
+          {(buckets[selectedIdx]?.topFactors?.length || 0) > 0 && (
             <div style={{ marginTop: 4, color: 'var(--text-muted, #64748b)', fontSize: '0.68rem' }}>
               Top factor: <strong style={{ color: 'var(--accent-blue, #38bdf8)' }}>
-                {buckets[selectedIdx].topFactors[0].feature_name.replace(/_/g, ' ')}
-              </strong> (+{buckets[selectedIdx].topFactors[0].impact_pct}%)
+                {(buckets[selectedIdx].topFactors[0]?.feature_name || 'Carrier Density').replace(/_/g, ' ')}
+              </strong> (+{buckets[selectedIdx].topFactors[0]?.impact_pct || 0}%)
             </div>
           )}
         </div>
@@ -210,7 +210,7 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
             <span>🟡 Elevated hrs</span>
             <span style={{ color: '#f59e0b' }}>{tooltip.bucket.amberCount}</span>
           </div>
-          {tooltip.bucket.topBerths.length > 0 && (
+          {(tooltip.bucket.topBerths?.length || 0) > 0 && (
             <div className="timeline-tooltip-row" style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border-primary, rgba(255,255,255,0.08))' }}>
               <span>Critical berths</span>
               <span style={{ color: '#ef4444', fontSize: '0.62rem' }}>{tooltip.bucket.topBerths.join(', ')}</span>

@@ -58,11 +58,23 @@ export type TabType =
   | 'cascade'
   | 'ml_metrics';
 
+const ALL_OPERATIONAL_TABS: TabType[] = [
+  'plan',
+  'heatmap',
+  'recommendations',
+  'optimiser',
+  'map',
+  'live',
+  'cascade',
+  'audit',
+  'ml_metrics',
+];
+
 export const roleAllowedTabs: Record<string, TabType[]> = {
-  shift_supervisor: ['plan', 'recommendations', 'live', 'map', 'cascade'],
-  vessel_planner: ['optimiser', 'plan', 'live', 'map', 'cascade'],
-  terminal_manager: ['plan', 'heatmap', 'recommendations', 'optimiser', 'map', 'live', 'cascade', 'audit', 'ml_metrics'],
-  admin: ['plan', 'live', 'heatmap', 'recommendations', 'optimiser', 'map', 'cascade', 'audit', 'ml_metrics'],
+  shift_supervisor: ALL_OPERATIONAL_TABS,
+  vessel_planner: ALL_OPERATIONAL_TABS,
+  terminal_manager: ALL_OPERATIONAL_TABS,
+  admin: ALL_OPERATIONAL_TABS,
 };
 
 export const App: React.FC = () => {
@@ -199,15 +211,15 @@ export const App: React.FC = () => {
   };
 
   const allTabsConfig: { id: TabType; label: string; icon: React.ReactNode; isCore?: boolean }[] = [
-    { id: 'plan', label: '72h Operations Plan', icon: <CalendarDays className="w-4 h-4" />, isCore: true },
-    { id: 'heatmap', label: 'Congestion Heatmap', icon: <Layers className="w-4 h-4" />, isCore: true },
-    { id: 'recommendations', label: 'Prescriptive Actions', icon: <Compass className="w-4 h-4" />, isCore: true },
-    { id: 'optimiser', label: 'Berth Allocator & Sandbox', icon: <CalendarDays className="w-4 h-4" />, isCore: true },
-    { id: 'map', label: 'Terminal Map', icon: <MapPin className="w-4 h-4" /> },
-    { id: 'live', label: 'Live Queue', icon: <Activity className="w-4 h-4" /> },
-    { id: 'cascade', label: 'Delay Simulation', icon: <GitPullRequest className="w-4 h-4" /> },
-    { id: 'audit', label: 'Activity Log', icon: <FileText className="w-4 h-4" /> },
-    { id: 'ml_metrics', label: 'Forecast Benchmarks', icon: <Target className="w-4 h-4" /> },
+    { id: 'plan', label: '72h Plan', icon: <CalendarDays className="w-4 h-4 text-blue-500" />, isCore: true },
+    { id: 'heatmap', label: 'Congestion Heatmap', icon: <Layers className="w-4 h-4 text-amber-500" />, isCore: true },
+    { id: 'recommendations', label: 'Prescriptive Actions', icon: <Compass className="w-4 h-4 text-emerald-500" />, isCore: true },
+    { id: 'optimiser', label: 'Berth Allocator', icon: <CalendarDays className="w-4 h-4 text-purple-500" />, isCore: true },
+    { id: 'map', label: 'Terminal Map', icon: <MapPin className="w-4 h-4 text-sky-500" /> },
+    { id: 'live', label: 'Live Queue', icon: <Activity className="w-4 h-4 text-teal-500" /> },
+    { id: 'cascade', label: 'Delay Sim', icon: <GitPullRequest className="w-4 h-4 text-rose-500" /> },
+    { id: 'audit', label: 'Activity Log', icon: <FileText className="w-4 h-4 text-indigo-500" /> },
+    { id: 'ml_metrics', label: 'Benchmarks', icon: <Target className="w-4 h-4 text-cyan-500" /> },
   ];
 
   const allowedTabsList = roleAllowedTabs[role] || roleAllowedTabs.admin;
@@ -313,12 +325,14 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-black font-mono text-rose-500">
-                {heatmapData?.summary.red_tier_count ?? 0}
+                {heatmapData?.summary?.red_tier_count ?? 0}
               </span>
               <span className="text-xs text-content-secondary">RED hours</span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
-              {heatmapData?.summary.critical_berths.length ? `Quays: ${heatmapData.summary.critical_berths.join(', ')}` : 'No quays in Sev-1 clash'}
+              {Array.isArray(heatmapData?.summary?.critical_berths) && heatmapData.summary.critical_berths.length > 0
+                ? `Quays: ${heatmapData.summary.critical_berths.join(', ')}`
+                : 'No quays in Sev-1 clash'}
             </p>
           </div>
 
@@ -332,7 +346,7 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-black font-mono text-blue-500">
-                {recommendationsData?.recommendations.length ?? 0}
+                {Array.isArray(recommendationsData?.recommendations) ? recommendationsData.recommendations.length : 0}
               </span>
               <span className="text-xs text-content-secondary">pending review</span>
             </div>

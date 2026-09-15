@@ -22,13 +22,15 @@ interface WhatIfSimulatorProps {
 }
 
 export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berths }) => {
+  const safeVessels = Array.isArray(vessels) ? vessels : [];
+  const safeBerths = Array.isArray(berths) ? berths : [];
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [scenarioName, setScenarioName] = useState<string>('Peak Congestion Clearance Sandbox');
   const [targetVesselId, setTargetVesselId] = useState<string>(
-    vessels.length > 0 ? vessels[0].id : ''
+    safeVessels.length > 0 ? safeVessels[0].id : ''
   );
   const [targetBerthId, setTargetBerthId] = useState<string>(
-    berths.length > 1 ? berths[1].id : ''
+    safeBerths.length > 1 ? safeBerths[1].id : (safeBerths[0]?.id || '')
   );
   const [speedReduction, setSpeedReduction] = useState<number>(3.5);
   const [simulating, setSimulating] = useState<boolean>(false);
@@ -148,7 +150,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
             onChange={(e) => setTargetVesselId(e.target.value)}
             className="w-full bg-surface-bg border border-surface-border rounded-lg px-3 py-2 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            {vessels.map((v) => (
+            {safeVessels.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name} ({v.id})
               </option>
@@ -165,7 +167,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
             onChange={(e) => setTargetBerthId(e.target.value)}
             className="w-full bg-surface-bg border border-surface-border rounded-lg px-3 py-2 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            {berths.map((b) => (
+            {safeBerths.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name} ({b.draft_limit_m}m D)
               </option>
@@ -230,14 +232,14 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({ vessels, berth
                 Net Projected Savings
               </span>
               <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                +${simulationResult.total_demurrage_saved_usd.toLocaleString()}
+                +${(simulationResult.total_demurrage_saved_usd ?? 0).toLocaleString()}
               </span>
             </div>
           </div>
 
           {/* Side-by-Side Comparison Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {simulationResult.comparisons.map((c) => {
+            {(simulationResult.comparisons || []).map((c) => {
               return (
                 <div
                   key={c.metric_name}

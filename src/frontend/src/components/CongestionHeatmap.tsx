@@ -56,7 +56,14 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
     );
   }
 
-  const { summary, berths } = heatmapData;
+  const summary = heatmapData?.summary || {
+    red_tier_count: 0,
+    amber_tier_count: 0,
+    green_tier_count: 0,
+    critical_berths: [],
+    peak_congestion_window: 'Normal Operations'
+  };
+  const berths = Array.isArray(heatmapData?.berths) ? heatmapData.berths : [];
 
   return (
     <div className="space-y-6">
@@ -238,11 +245,20 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
 
                   {/* 24 Aggregated / Sampled Time Cells */}
                   {Array.from({ length: 24 }, (_, cellIdx) => {
-                    const mappedHourIndex = Math.min(
-                      b.timeline.length - 1,
+                    const timeline = Array.isArray(b?.timeline) ? b.timeline : [];
+                    const mappedHourIndex = timeline.length > 0 ? Math.min(
+                      timeline.length - 1,
                       Math.floor((cellIdx / 24) * horizon)
-                    );
-                    const item = b.timeline[mappedHourIndex] || b.timeline[0];
+                    ) : 0;
+                    const item = timeline[mappedHourIndex] || timeline[0] || {
+                      hour_offset: cellIdx,
+                      forecast_time: new Date().toISOString(),
+                      occupancy_probability: 0,
+                      confidence_low: 0,
+                      confidence_high: 0,
+                      risk_tier: 'GREEN' as const,
+                      top_factors: []
+                    };
 
                     const isRed = item.risk_tier === 'RED';
                     const isAmber = item.risk_tier === 'AMBER';

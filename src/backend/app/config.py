@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     PORTPULSE_PORT: int = 8000
     PORTPULSE_CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
     
-    # SQLite local dev file
-    PORTPULSE_DB_URL: str = "sqlite:///./portpulse.db"
+    # SQLite local dev file (use /tmp on Vercel/serverless where root is read-only)
+    PORTPULSE_DB_URL: str = "sqlite:////tmp/portpulse.db" if (os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")) else "sqlite:///./portpulse.db"
     PORTPULSE_DB_ECHO: bool = False
     
     # Security

@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { Sun, Moon, Anchor, RefreshCw, Database, Compass, UserCheck, Shield, LogOut } from 'lucide-react';
+import {
+  Sun,
+  Moon,
+  Anchor,
+  RefreshCw,
+  Database,
+  Compass,
+  UserCheck,
+  Shield,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react';
 
 export interface NavTabItem {
   id: string;
@@ -41,119 +54,152 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const { role, user, logout } = useAuth();
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Monitor horizontal scrollability of the tabs container
+  const updateScrollState = () => {
+    if (navContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = navContainerRef.current;
+      setCanScrollLeft(scrollLeft > 6);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 6);
+    }
+  };
+
+  useEffect(() => {
+    updateScrollState();
+    window.addEventListener('resize', updateScrollState);
+    return () => window.removeEventListener('resize', updateScrollState);
+  }, [visibleTabs]);
+
+  // Smooth scroll active tab into full visibility when switched
+  useEffect(() => {
+    if (navContainerRef.current) {
+      const activeEl = navContainerRef.current.querySelector('[data-active="true"]') as HTMLElement | null;
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+      setTimeout(updateScrollState, 350);
+    }
+  }, [activeTab]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (navContainerRef.current) {
+      navContainerRef.current.scrollBy({
+        left: direction === 'left' ? -280 : 280,
+        behavior: 'smooth',
+      });
+      setTimeout(updateScrollState, 320);
+    }
+  };
 
   return (
     <header className="no-print border-b border-surface-border bg-surface-card sticky top-0 z-30 transition-colors shadow-sm">
-      {/* Top Utility & Command Row */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20">
-            <Anchor className="w-5 h-5" />
+      {/* Row 1: Top Utility & Command Deck */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+        {/* Left: Brand & Telemetry Status */}
+        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <div className="bg-gradient-to-tr from-blue-700 to-blue-500 text-white p-2 sm:p-2.5 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25 ring-1 ring-blue-400/30">
+            <Anchor className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-lg sm:text-xl font-extrabold tracking-tight text-content-primary">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <span className="text-base sm:text-xl font-black tracking-tight text-content-primary">
                 Port<span className="text-blue-500">Pulse</span>
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold uppercase tracking-wider hidden sm:inline">
-                Operations Center
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold uppercase tracking-wider hidden md:inline">
+                Ops Cockpit
               </span>
             </div>
-            <p className="text-[11px] text-content-muted hidden sm:block">Container Congestion &amp; Port Operations Optimiser</p>
+            <p className="text-[10px] sm:text-[11px] text-content-muted hidden sm:block">
+              Container Congestion &amp; Berthing Optimiser
+            </p>
           </div>
         </div>
 
-        {/* Center: System Connectivity */}
-        <div className="hidden lg:flex items-center space-x-2 text-xs bg-surface-bg px-3 py-1.5 rounded-full border border-surface-border">
+        {/* Center: Live Terminal Connection Pill */}
+        <div className="hidden xl:flex items-center space-x-2 text-xs bg-surface-bg/80 px-3 py-1.5 rounded-full border border-surface-border shadow-inner">
           <span
-            className={`w-2 h-2 rounded-full ${
-              isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-            }`}
+            className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+              }`}
           />
-          <span className="text-content-secondary font-medium text-[11px]">
+          <span className="text-content-secondary font-semibold text-[11px] whitespace-nowrap">
             {isBackendConnected ? 'Terminal Systems Online' : 'Terminal Telemetry Offline'}
           </span>
         </div>
 
-        {/* Right Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-2.5">
-          {/* PortPulse AI Copilot Trigger (F-406) */}
+        {/* Right: Quick Action Controls */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          {/* PortPulse AI Copilot Trigger */}
           <button
             onClick={onOpenChat}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-all shadow-sm"
-            title="Open Grounded AI Operational Copilot (IBM watsonx.ai RAG)"
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-zinc-900 to-zinc-800 text-white hover:from-black hover:to-zinc-900 dark:from-zinc-100 dark:to-zinc-200 dark:text-zinc-900 dark:hover:from-white dark:hover:to-zinc-100 transition-all shadow-sm ring-1 ring-white/10"
+            title="Open Grounded AI Operational Copilot"
           >
-            <span className="text-xs">🤖</span>
-            <span className="hidden sm:inline">Ask AI</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-semibold">Ask AI</span>
           </button>
 
           {/* Guided Tour Trigger */}
           <button
             onClick={onOpenTour}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/30 transition-all shadow-sm"
-            title="Open Interactive System Walkthrough &amp; Operations Guide"
+            className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all"
+            title="Interactive Operations Walkthrough"
           >
             <Compass className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Tour &amp; Guide</span>
+            <span className="hidden lg:inline">Tour</span>
           </button>
 
           {/* Master Data Trigger */}
-          {role === 'admin' && (
-            <button
-              onClick={onOpenMasterData}
-              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary transition-colors"
-              title="Infrastructure &amp; Vessel Master Data"
-            >
-              <Database className="w-3.5 h-3.5 text-blue-500" />
-              <span className="hidden sm:inline">Master Data</span>
-            </button>
-          )}
+          <button
+            onClick={onOpenMasterData}
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary transition-colors"
+            title="Infrastructure &amp; Vessel Master Data"
+          >
+            <Database className="w-3.5 h-3.5 text-blue-500" />
+            <span className="hidden sm:inline">Master Data</span>
+          </button>
 
-          {/* Admin User Management Shortcut */}
+          {/* Admin User Management */}
           {role === 'admin' && (
             <button
               onClick={() => onOpenLogin('USERS')}
-              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition-all shadow-sm"
-              title="Manage Operators & Role Assignments"
+              className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20 transition-all"
+              title="Manage Operators & Roles"
             >
               <Shield className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Users</span>
+              <span className="hidden lg:inline">Users</span>
             </button>
           )}
 
-          {/* Authenticated Operator Badge & Sign In Trigger */}
+          {/* User Profile */}
           <button
             onClick={() => onOpenLogin('AUTH')}
-            className="flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 text-xs rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition shadow-sm"
-            title="Click to switch operational profile or view credentials"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition shadow-xs"
+            title="Switch Operational Profile"
           >
-            <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <div className="flex items-center space-x-1.5">
-              <span className="font-bold text-content-primary text-xs">@{user.username}</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                {user.displayName.split(' ')[0]}
-              </span>
-            </div>
+            <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span className="font-bold text-content-primary text-xs">@{user.username}</span>
           </button>
 
-          {/* Sign Out Button */}
+          {/* Sign Out */}
           <button
             onClick={logout}
-            className="flex items-center space-x-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-surface-border bg-surface-bg hover:bg-red-500/10 hover:border-red-500/30 text-content-secondary hover:text-red-500 transition shadow-sm"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-semibold rounded-lg border border-surface-border bg-surface-bg hover:bg-rose-500/10 hover:border-rose-500/30 text-content-secondary hover:text-rose-500 transition shadow-xs flex items-center space-x-1"
             title="Sign Out of Operations Cockpit"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Sign Out</span>
           </button>
 
-          {/* Refresh Action & Live Sync Indicator */}
-          <div className="flex items-center rounded-lg border border-surface-border bg-surface-bg p-0.5 shadow-sm">
+          {/* Refresh & Auto-Sync Pill */}
+          <div className="flex items-center rounded-lg border border-surface-border bg-surface-bg p-0.5 shadow-xs">
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
               className="p-1.5 rounded-md hover:bg-surface-hover text-content-secondary hover:text-content-primary transition-colors"
-              title="Refresh Live Data Now"
+              title="Refresh Live Telemetry"
               aria-label="Refresh Data"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-500' : ''}`} />
@@ -162,15 +208,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleAutoRefresh(!autoRefresh)}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-md transition-colors flex items-center space-x-1.5 ${
-                  autoRefresh
+                className={`px-1.5 py-1 text-[10px] font-semibold rounded-md transition-colors flex items-center space-x-1 ${autoRefresh
                     ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
                     : 'text-content-muted hover:text-content-primary hover:bg-surface-hover'
-                }`}
-                title={autoRefresh ? "Auto-sync active (60s). Click to pause." : "Auto-sync paused. Click to resume."}
+                  }`}
+                title={autoRefresh ? 'Auto-sync active (60s)' : 'Auto-sync paused'}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500 animate-pulse' : 'bg-content-muted'}`} />
-                <span className="font-mono text-[10px]">60s</span>
+                <span className="font-mono">60s</span>
               </button>
             )}
           </div>
@@ -178,12 +223,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Light / Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-1.5 sm:p-2 rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition-colors"
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-            title={`Toggle Theme (Current: ${theme})`}
+            title={`Toggle Theme (${theme})`}
           >
             {theme === 'light' ? (
-              <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-content-secondary" />
+              <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
             ) : (
               <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
             )}
@@ -191,29 +236,55 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Row 2: Integrated Navigation Tabs Strip (No Floating Box, Zero Horizontal Scrollbar) */}
-      <div className="border-t border-surface-border bg-surface-bg/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-3">
-          <nav className="flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto no-scrollbar py-0.5 w-full" aria-label="Main Navigation">
+      {/* Row 2: Executive Navigation Tabs Strip with Scroll Controls & High-Contrast Design */}
+      <div className="border-t border-surface-border bg-gradient-to-b from-surface-bg/40 to-surface-bg/80 relative backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2 relative flex items-center">
+          {/* Scroll Left Button */}
+          {canScrollLeft && (
+            <button
+              onClick={() => handleScroll('left')}
+              className="absolute left-1 sm:left-2 z-20 p-1.5 rounded-full bg-surface-card border border-surface-border shadow-lg text-content-primary hover:text-blue-500 hover:scale-110 transition-all"
+              title="Scroll tabs left"
+              aria-label="Scroll navigation tabs left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Navigation Tabs Track */}
+          <div
+            ref={navContainerRef}
+            onScroll={updateScrollState}
+            className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar py-0.5 px-1 w-full scroll-smooth"
+            aria-label="Operations Navigation"
+          >
             {visibleTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
+                  data-active={isActive}
                   onClick={() => onSelectTab(tab.id)}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
-                      : 'text-content-secondary hover:text-content-primary hover:bg-surface-card'
-                  }`}
+                  className={`group shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap select-none border ${isActive
+                      ? 'bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 text-white border-blue-500 shadow-md shadow-blue-500/30 ring-2 ring-blue-400/20'
+                      : 'bg-surface-card text-content-primary hover:text-blue-600 dark:hover:text-blue-400 hover:bg-surface-hover border-surface-border hover:border-blue-400/40 shadow-xs'
+                    }`}
                 >
-                  {tab.icon}
-                  <span>{tab.label}</span>
+                  <span
+                    className={`transition-colors ${isActive
+                        ? 'text-white'
+                        : 'text-content-secondary group-hover:text-blue-500'
+                      }`}
+                  >
+                    {tab.icon}
+                  </span>
+                  <span className="tracking-tight">{tab.label}</span>
                   {tab.isCore && (
                     <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-500'
-                      }`}
+                      className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider ${isActive
+                          ? 'bg-white/25 text-white'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                        }`}
                     >
                       Core
                     </span>
@@ -221,7 +292,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               );
             })}
-          </nav>
+          </div>
+
+          {/* Scroll Right Button */}
+          {canScrollRight && (
+            <button
+              onClick={() => handleScroll('right')}
+              className="absolute right-1 sm:right-2 z-20 p-1.5 rounded-full bg-surface-card border border-surface-border shadow-lg text-content-primary hover:text-blue-500 hover:scale-110 transition-all animate-pulse"
+              title="Scroll tabs right"
+              aria-label="Scroll navigation tabs right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </header>

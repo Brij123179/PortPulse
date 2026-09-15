@@ -63,7 +63,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
       setUsersLoading(true);
       setUserCreationError(null);
       const data = await api.listUsers();
-      setUsersList(data);
+      setUsersList(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setUserCreationError(err.message || 'Failed to retrieve operator list.');
     } finally {
@@ -370,7 +370,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               <div className="p-3 border-b border-surface-border flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-2 font-bold text-content-primary">
                   <Users className="w-4 h-4 text-content-muted" />
-                  <span>Registered Personnel ({usersList.length})</span>
+                  <span>Registered Personnel ({usersList?.length || 0})</span>
                 </div>
 
                 <button
@@ -402,7 +402,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                         <td className="p-2.5 text-content-secondary font-sans">{u.email}</td>
                         <td className="p-2.5">
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                            {u.role.replace('_', ' ').toUpperCase()}
+                            {(u.role || '').replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </td>
                         <td className="p-2.5 font-sans">

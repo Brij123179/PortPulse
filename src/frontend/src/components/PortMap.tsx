@@ -57,9 +57,9 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
 
   const getBerthRiskColor = (berthId: string) => {
     const track = getBerthForecast(berthId);
-    if (!track || !track.timeline.length) return 'border-slate-700 bg-slate-800/60';
+    if (!track || !Array.isArray(track.timeline) || track.timeline.length === 0) return 'border-slate-700 bg-slate-800/60';
     // Count red hours in next 24h
-    const next24 = track.timeline.slice(0, 24);
+    const next24 = (track.timeline || []).slice(0, 24);
     const redCount = next24.filter((h) => h.risk_tier === 'RED').length;
     const amberCount = next24.filter((h) => h.risk_tier === 'AMBER').length;
 
@@ -73,7 +73,7 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
     if (filterMode === 'available') return b.status === 'AVAILABLE';
     if (filterMode === 'high_risk') {
       const track = getBerthForecast(b.id);
-      return track?.timeline.slice(0, 24).some((h) => h.risk_tier === 'RED');
+      return Array.isArray(track?.timeline) && track.timeline.slice(0, 24).some((h) => h.risk_tier === 'RED');
     }
     return true;
   });
@@ -318,12 +318,12 @@ export const PortMap: React.FC<PortMapProps> = ({ onSelectVessel, onOpenOverride
                     )}
 
                     {/* Berth Mini-Heatmap 72h Timeline Strip */}
-                    {track && track.timeline && (
+                    {track && Array.isArray(track.timeline) && track.timeline.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-slate-800/80">
                         <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
                           <span>72h Congestion Heatmap:</span>
                           <span className="font-mono text-slate-300">
-                            {track.timeline.filter((h) => h.risk_tier === 'RED').length}h Red Risk
+                            {(track.timeline.filter((h) => h.risk_tier === 'RED') || []).length}h Red Risk
                           </span>
                         </div>
                         {/* Hour Blocks Strip (72 small segments grouped) */}

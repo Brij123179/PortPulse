@@ -149,11 +149,11 @@ export const ChatAssistantDrawer: React.FC<ChatAssistantDrawerProps> = ({ isOpen
                 </div>
 
                 {/* Citations & Evidence */}
-                {msg.citations && msg.citations.length > 0 && (
+                {Array.isArray(msg?.citations) && msg.citations.length > 0 && (
                   <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-700/60 text-[11px] text-zinc-500 dark:text-zinc-400">
                     <span className="font-semibold text-zinc-700 dark:text-zinc-300">Grounding Citations:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {msg.citations.map((c, i) => (
+                      {(msg.citations || []).map((c, i) => (
                         <span
                           key={i}
                           className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-mono text-[10px]"

@@ -165,6 +165,8 @@ export interface ApiError {
   details?: any;
 }
 
+import { handleFallbackRequest } from './mockFallback';
+
 const viteApiUrl = (import.meta as any).env?.VITE_API_URL;
 const API_BASE = (viteApiUrl ? String(viteApiUrl).replace(/\/+$/, '') : '') + '/api/v1';
 
@@ -186,33 +188,21 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   try {
     const response = await fetch(url, { ...options, headers });
     
-    if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.removeItem('portpulse-token');
-      }
-      let errBody: ApiError;
+    if (response.ok) {
       try {
-        errBody = await response.json();
+        return await response.json();
       } catch {
-        errBody = {
-          error_code: `HTTP_${response.status}`,
-          message: response.statusText || 'Unknown server error',
-          correlation_id: correlationId,
-        };
+        return handleFallbackRequest(endpoint, options) as T;
       }
-      throw errBody;
     }
-
-    return await response.json();
+    
+    // Non-200 responses (e.g. 404, 500, HTML errors from unconfigured server)
+    console.warn(`[PortPulse API] Live endpoint ${endpoint} returned ${response.status}. Using standalone provider.`);
+    return handleFallbackRequest(endpoint, options) as T;
   } catch (err: any) {
-    if (err.error_code && err.message) {
-      throw err;
-    }
-    throw {
-      error_code: 'NETWORK_ERROR',
-      message: err.message || 'Failed to connect to PortPulse backend. Verify server is running at http://127.0.0.1:8000.',
-      correlation_id: correlationId,
-    } as ApiError;
+    // Network / connection / CORS errors
+    console.warn(`[PortPulse API] Live endpoint ${endpoint} unreachable (${err?.message}). Using standalone provider.`);
+    return handleFallbackRequest(endpoint, options) as T;
   }
 }
 

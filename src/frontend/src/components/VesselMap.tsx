@@ -144,9 +144,9 @@ export const VesselMap: React.FC<VesselMapProps> = ({ onSelectVessel, onOpenOver
 
   // Heatmap color from current hour (first bucket)
   let heatColorHex = '#22c55e';
-  if (heatmapData && heatmapData.berths.length > 0) {
-    const redCount = heatmapData.summary.red_tier_count;
-    const amberCount = heatmapData.summary.amber_tier_count;
+  if (heatmapData && Array.isArray(heatmapData.berths) && heatmapData.berths.length > 0 && heatmapData.summary) {
+    const redCount = heatmapData.summary.red_tier_count || 0;
+    const amberCount = heatmapData.summary.amber_tier_count || 0;
     if (redCount >= 3) { heatColorHex = '#ef4444'; }
     else if (amberCount >= 6) { heatColorHex = '#f59e0b'; }
   }

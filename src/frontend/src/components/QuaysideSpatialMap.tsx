@@ -46,8 +46,8 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
     berthsConfig.forEach((b) => {
       map[b.id] = [];
     });
-    assignments.forEach((a) => {
-      const bId = a.assigned_berth_id;
+    (assignments || []).forEach((a) => {
+      const bId = a?.assigned_berth_id;
       if (bId && map[bId]) {
         map[bId].push(a);
       }
@@ -57,20 +57,20 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
 
   // Vessels with high wait times (held in queue/anchorage)
   const waitingVessels = useMemo(() => {
-    return assignments
-      .filter((a) => a.wait_time_hours > 0)
-      .sort((a, b) => b.wait_time_hours - a.wait_time_hours);
+    return (assignments || [])
+      .filter((a) => (a?.wait_time_hours ?? 0) > 0)
+      .sort((a, b) => (b?.wait_time_hours ?? 0) - (a?.wait_time_hours ?? 0));
   }, [assignments]);
 
-  const totalAnchoragePages = Math.max(1, Math.ceil(waitingVessels.length / ANCHORAGE_PER_PAGE));
+  const totalAnchoragePages = Math.max(1, Math.ceil((waitingVessels?.length || 0) / ANCHORAGE_PER_PAGE));
   const paginatedAnchorage = useMemo(() => {
     const start = (anchoragePage - 1) * ANCHORAGE_PER_PAGE;
-    return waitingVessels.slice(start, start + ANCHORAGE_PER_PAGE);
+    return (waitingVessels || []).slice(start, start + ANCHORAGE_PER_PAGE);
   }, [waitingVessels, anchoragePage]);
 
   const selectedVessel = useMemo(() => {
     if (!selectedVesselId) return null;
-    return assignments.find((a) => a.vessel_id === selectedVesselId) || null;
+    return (assignments || []).find((a) => a?.vessel_id === selectedVesselId) || null;
   }, [selectedVesselId, assignments]);
 
   return (
@@ -131,15 +131,15 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${
-                waitingVessels.length > 5
+                (waitingVessels?.length || 0) > 5
                   ? 'bg-rose-950/80 text-rose-300 border-rose-500/60 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.4)]'
                   : 'bg-amber-950/80 text-amber-300 border-amber-500/60'
               }`}>
-                {waitingVessels.length} In Queue
+                {waitingVessels?.length || 0} In Queue
               </span>
             </div>
 
-            {waitingVessels.length === 0 ? (
+            {(waitingVessels?.length || 0) === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 italic bg-slate-950/60 rounded-xl border border-dashed border-slate-800">
                 ✅ Zero queue delays detected. All scheduled vessels assigned direct berthing windows.
               </div>
@@ -170,7 +170,7 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
                             ? 'bg-rose-900/90 text-rose-200 border border-rose-500/60 shadow-sm'
                             : 'bg-amber-900/90 text-amber-200 border border-amber-500/60'
                         }`}>
-                          +{v.wait_time_hours.toFixed(1)}h Delay
+                          +{(v.wait_time_hours ?? 0).toFixed(1)}h Delay
                         </span>
                       </div>
 
@@ -196,7 +196,7 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
                 {totalAnchoragePages > 1 && (
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
                     <span className="text-slate-400 text-[11px]">
-                      Page {anchoragePage} of {totalAnchoragePages} ({waitingVessels.length} total)
+                      Page {anchoragePage} of {totalAnchoragePages} ({waitingVessels?.length || 0} total)
                     </span>
                     <div className="flex items-center space-x-1">
                       <button
@@ -337,8 +337,8 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
                                 ? 'text-amber-300'
                                 : 'text-emerald-300'
                             }`}>
-                              {currentVessel.wait_time_hours > 0
-                                ? `+${currentVessel.wait_time_hours.toFixed(1)}h Delay`
+                              {(currentVessel.wait_time_hours ?? 0) > 0
+                                ? `+${(currentVessel.wait_time_hours ?? 0).toFixed(1)}h Delay`
                                 : 'Direct Berth (0h)'}
                             </span>
                           </div>
@@ -450,7 +450,7 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
             <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
               <span className="text-slate-400 block text-[11px] uppercase font-bold tracking-wider">Expected Dwell</span>
               <div className="font-extrabold text-white text-base mt-1 font-mono">
-                {selectedVessel.expected_dwell_hours.toFixed(1)} Hours
+                {(selectedVessel.expected_dwell_hours ?? 24).toFixed(1)} Hours
               </div>
               <span className="text-[11px] text-amber-300 font-semibold mt-1 block">{selectedVessel.allocated_cranes} STS Cranes Ganged</span>
             </div>
@@ -458,13 +458,13 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
             <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
               <span className="text-slate-400 block text-[11px] uppercase font-bold tracking-wider">Predicted Wait Delay</span>
               <div className={`font-extrabold text-base mt-1 font-mono ${
-                selectedVessel.wait_time_hours > 5
+                (selectedVessel.wait_time_hours ?? 0) > 5
                   ? 'text-rose-400'
-                  : selectedVessel.wait_time_hours > 0
+                  : (selectedVessel.wait_time_hours ?? 0) > 0
                   ? 'text-amber-300'
                   : 'text-emerald-300'
               }`}>
-                {selectedVessel.wait_time_hours > 0 ? `+${selectedVessel.wait_time_hours.toFixed(1)} Hours` : '0.0h (Direct)'}
+                {(selectedVessel.wait_time_hours ?? 0) > 0 ? `+${(selectedVessel.wait_time_hours ?? 0).toFixed(1)} Hours` : '0.0h (Direct)'}
               </div>
               <span className="text-[11px] text-slate-400 mt-1 block">GradientBoosting ML Forecast</span>
             </div>

@@ -21,7 +21,8 @@ export const AnchorageQueueChart: React.FC<AnchorageQueueChartProps> = ({
 
   const { current_queue, peak_predicted_queue, timeline } = anchorageData;
   // Sample 24 points across the horizon
-  const sampledTimeline = timeline.filter((_, idx) => idx % 3 === 0);
+  const safeTimeline = Array.isArray(timeline) ? timeline : [];
+  const sampledTimeline = safeTimeline.filter((_, idx) => idx % 3 === 0);
 
   return (
     <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm space-y-4">

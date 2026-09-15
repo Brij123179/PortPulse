@@ -69,9 +69,9 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
         api.listBerths(),
         api.listVessels(100),
       ]);
-      setBerths(bList);
-      setVessels(vList);
-      if (bList.length > 0 && !newVesselBerth) {
+      setBerths(Array.isArray(bList) ? bList : []);
+      setVessels(Array.isArray(vList) ? vList : []);
+      if (Array.isArray(bList) && bList.length > 0 && !newVesselBerth) {
         setNewVesselBerth(bList[0].id);
       }
     } catch (err: any) {
@@ -204,7 +204,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
       setError(null);
       setSuccess(null);
       const res = await api.importBerthsCsv(csvBerthContent);
-      if (res.errors && res.errors.length > 0) {
+      if (Array.isArray(res.errors) && res.errors.length > 0) {
         setError(`Imported ${res.imported_count} new berth(s), updated ${res.updated_count}. Warnings:\n${res.errors.slice(0, 3).join('; ')}`);
       } else {
         setSuccess(`Import Success: ${res.imported_count} new berth(s) created with ${res.cranes_created || 0} cranes, ${res.updated_count} updated!`);
@@ -230,7 +230,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
       setError(null);
       setSuccess(null);
       const res = await api.importVesselsCsv(csvVesselContent);
-      if (res.errors && res.errors.length > 0) {
+      if (Array.isArray(res.errors) && res.errors.length > 0) {
         setError(`Imported ${res.imported_count} new vessel(s), updated ${res.updated_count}. Warnings:\n${res.errors.slice(0, 3).join('; ')}`);
       } else {
         setSuccess(`Import Success: ${res.imported_count} new vessel(s) created, ${res.updated_count} updated into manifest!`);
@@ -309,7 +309,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Berths Master ({berths.length})</span>
+            <span>Berths Master ({berths?.length || 0})</span>
           </button>
 
           <button
@@ -325,7 +325,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
             }`}
           >
             <Ship className="w-4 h-4" />
-            <span>Vessel Manifest ({vessels.length})</span>
+            <span>Vessel Manifest ({vessels?.length || 0})</span>
           </button>
 
           <button
@@ -462,7 +462,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
               {/* Berths Table */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-content-primary">Configured Terminal Quays ({berths.length})</h3>
+                  <h3 className="font-bold text-content-primary">Configured Terminal Quays ({berths?.length || 0})</h3>
                   {loading && <span className="text-content-muted text-[11px]">Loading...</span>}
                 </div>
                 <div className="border border-surface-border rounded-xl overflow-hidden shadow-sm">
@@ -636,7 +636,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
               {/* Vessels Table */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-content-primary">Fleet Manifest ({vessels.length} vessels)</h3>
+                  <h3 className="font-bold text-content-primary">Fleet Manifest ({vessels?.length || 0} vessels)</h3>
                   {loading && <span className="text-content-muted text-[11px]">Loading...</span>}
                 </div>
                 <div className="border border-surface-border rounded-xl overflow-hidden shadow-sm max-h-96 overflow-y-auto">
