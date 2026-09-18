@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
+import { GlobalPortSwitcher } from './GlobalPortSwitcher';
 
 export interface NavTabItem {
   id: string;
@@ -118,15 +119,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center: Live Terminal Connection Pill */}
-        <div className="hidden xl:flex items-center space-x-2 text-xs bg-surface-bg/80 px-3 py-1.5 rounded-full border border-surface-border shadow-inner">
-          <span
-            className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-              }`}
-          />
-          <span className="text-content-secondary font-semibold text-[11px] whitespace-nowrap">
-            {isBackendConnected ? 'Terminal Systems Online' : 'Terminal Telemetry Offline'}
-          </span>
+        {/* Center: Global Terminal Switcher & Live Connection Pill */}
+        <div className="flex items-center space-x-2.5">
+          <GlobalPortSwitcher />
+          <div className="hidden 2xl:flex items-center space-x-2 text-xs bg-surface-bg/80 px-3 py-1.5 rounded-full border border-surface-border shadow-inner">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                }`}
+            />
+            <span className="text-content-secondary font-semibold text-[11px] whitespace-nowrap">
+              {isBackendConnected ? 'Telemetry Online' : 'Telemetry Offline'}
+            </span>
+          </div>
         </div>
 
         {/* Right: Quick Action Controls */}

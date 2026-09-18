@@ -206,3 +206,110 @@
   font-size: 0.68rem; margin-bottom: 3px; color: #94a3b8;
 }
 .timeline-tooltip-row span:last-child { font-weight: 600; color: #e2e8f0; }
+
+/* ── Ultra-Premium Design System & Audio Visualizer Utilities ──────────────── */
+.glass-panel {
+  background: rgba(18, 22, 25, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-glow {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-glow:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 24px -4px rgba(56, 189, 248, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Equalizer soundwave animations for Voice AI */
+.equalizer-container {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 20px;
+}
+.equalizer-bar {
+  width: 3px;
+  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+  border-radius: 2px;
+  animation: eq-bounce 1s ease-in-out infinite alternate;
+}
+.equalizer-bar:nth-child(1) { height: 6px;  animation-delay: 0.05s; }
+.equalizer-bar:nth-child(2) { height: 14px; animation-delay: 0.25s; }
+.equalizer-bar:nth-child(3) { height: 18px; animation-delay: 0.10s; }
+.equalizer-bar:nth-child(4) { height: 10px; animation-delay: 0.35s; }
+.equalizer-bar:nth-child(5) { height: 16px; animation-delay: 0.20s; }
+.equalizer-bar:nth-child(6) { height: 8px;  animation-delay: 0.40s; }
+
+@keyframes eq-bounce {
+  0% { transform: scaleY(0.3); opacity: 0.6; }
+  100% { transform: scaleY(1.0); opacity: 1.0; }
+}
+
+/* Maritime radar sweep animation */
+.radar-sweep-indicator {
+  position: relative;
+  overflow: hidden;
+}
+.radar-sweep-indicator::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.15), transparent);
+  animation: radar-sweep 2.8s linear infinite;
+}
+@keyframes radar-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Subtle water shimmer */
+.water-shimmer {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(14, 165, 233, 0.04) 50%, rgba(59, 130, 246, 0.08) 100%);
+  background-size: 200% 200%;
+  animation: water-flow 8s ease infinite;
+}
+@keyframes water-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Neon border glow */
+.neon-border-glow {
+  box-shadow: 0 0 15px -3px rgba(14, 165, 233, 0.35), inset 0 0 8px -2px rgba(14, 165, 233, 0.2);
+}
+
+.neon-border-glow-amber {
+  box-shadow: 0 0 15px -3px rgba(245, 158, 11, 0.35), inset 0 0 8px -2px rgba(245, 158, 11, 0.2);
+}
+
+/* Modern sleek custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Tactile button micro-animation */
+.tactile-btn {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tactile-btn:active {
+  transform: scale(0.97);
+}
+
+

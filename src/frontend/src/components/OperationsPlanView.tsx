@@ -18,11 +18,14 @@ import {
   AlertTriangle,
   Brain,
   List,
-  Sparkles
+  Sparkles,
+  Scale,
 } from 'lucide-react';
 import { QuaysideSpatialMap } from './QuaysideSpatialMap';
 import { BerthScheduleGantt } from './BerthScheduleGantt';
 import { PredictionExplainabilityModal } from './PredictionExplainabilityModal';
+import { VoiceBriefingPlayer } from './VoiceBriefingPlayer';
+import { BimcoDemurrageCalculatorModal } from './BimcoDemurrageCalculatorModal';
 
 export type OperationsSubTab = 'MAP' | 'TABLE' | 'GANTT' | 'TESTING' | 'BRIEFING';
 
@@ -62,6 +65,8 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   const [viewProposedPlan, setViewProposedPlan] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [showProposedDetails, setShowProposedDetails] = useState(false);
+  const [bimcoModalOpen, setBimcoModalOpen] = useState(false);
+  const [selectedBimcoVessel, setSelectedBimcoVessel] = useState<{ id: string; name: string; dwellHours: number } | null>(null);
 
   const handleAutoOptimize = async () => {
     setAutoOptLoading(true);
@@ -257,6 +262,23 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-500' : ''}`} />
             <span>Sync Plan</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedBimcoVessel({
+                id: filteredAssignments[0]?.vessel_id || 'IMO9200001',
+                name: filteredAssignments[0]?.vessel_name || 'Maersk Mc-Kinney Moller',
+                dwellHours: filteredAssignments[0]?.expected_dwell_hours || 44.5,
+              });
+              setBimcoModalOpen(true);
+            }}
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition shadow-sm"
+            title="Open BIMCO Demurrage & Laytime Contract Calculator"
+          >
+            <Scale className="w-3.5 h-3.5" />
+            <span>BIMCO Calculator</span>
           </button>
 
           <button
@@ -829,14 +851,31 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                           </td>
 
                           <td className="p-3.5 text-right no-print">
-                            <button
-                              type="button"
-                              onClick={() => onOpenOverrideModal(item.vessel_id)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm"
-                              title="Manually override berth or docking time"
-                            >
-                              Reassign
-                            </button>
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBimcoVessel({
+                                    id: item.vessel_id,
+                                    name: item.vessel_name,
+                                    dwellHours: item.expected_dwell_hours || 44.5,
+                                  });
+                                  setBimcoModalOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg text-xs font-bold border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 transition"
+                                title={`Calculate BIMCO Demurrage & Laytime for ${item.vessel_name}`}
+                              >
+                                <Scale className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onOpenOverrideModal(item.vessel_id)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm"
+                                title="Manually override berth or docking time"
+                              >
+                                Reassign
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1015,6 +1054,12 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
       {/* SUB-TAB 5: AI SHIFT BRIEFING */}
       {activeSubTab === 'BRIEFING' && (
         <div className="no-print space-y-4 animate-in fade-in duration-150">
+          {/* Voice-Powered Harbor Controller Audio Dispatch */}
+          <VoiceBriefingPlayer
+            briefingText={aiBriefing?.briefing_markdown || ''}
+            title="Harbor Master VHF Voice Dispatch"
+          />
+
           <div className="bg-surface-card border border-surface-border p-6 rounded-2xl shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-surface-border">
               <div>
@@ -1080,6 +1125,15 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
         isOpen={explainModalOpen}
         onClose={() => setExplainModalOpen(false)}
         onNavigateTab={onNavigateTab}
+      />
+
+      {/* BIMCO Demurrage & Laytime Calculator Modal */}
+      <BimcoDemurrageCalculatorModal
+        isOpen={bimcoModalOpen}
+        onClose={() => setBimcoModalOpen(false)}
+        defaultVesselId={selectedBimcoVessel?.id || 'IMO9200001'}
+        defaultVesselName={selectedBimcoVessel?.name || 'Maersk Mc-Kinney Moller'}
+        defaultDwellHours={selectedBimcoVessel?.dwellHours || 44.5}
       />
     </div>
   );
