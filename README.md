@@ -1,6 +1,6 @@
 # 🚀 PortPulse — Container Congestion Predictor & Port Operations Optimiser
 
-![Validate Submission](https://github.com/diya2405/ibm-hackathon-pcpirates/actions/workflows/validate.yml/badge.svg)
+![Validate Submission](https://github.com/Brij123179/PortPulse/actions/workflows/validate.yml/badge.svg)
 
 > **IBM BoB AI Hackathon 2026 — Industry Problem Statement L1**
 > A predictive digital twin and prescriptive cockpit for maritime container terminals that predicts quayside and anchorage bottlenecks 72 hours in advance and generates constraint-guaranteed optimization advisories.
@@ -56,11 +56,37 @@ Shift supervisors and terminal managers at container ports bear the direct cost:
 
 ## 💡 Solution
 
-PortPulse is a full-stack predictive-prescriptive port operations platform. It corrects carrier ETA bias using an optimized GradientBoosting regressor (**0.88h MAE**, 54.8% improvement over naive baseline), computes hour-by-hour 72-hour berth occupancy probabilities, and runs a HiGHS MILP solver that generates constraint-guaranteed berth and crane schedules with **zero hard constraint violations**.
+PortPulse is a full-stack predictive-prescriptive port operations platform. It corrects carrier ETA bias using an optimized GradientBoosting regressor with Huber loss (**0.66h MAE**, 63.2% improvement over naive baseline, **95.88% delay detection accuracy**, **99.18% precision**, **0.940 F1-score**), computes hour-by-hour 72-hour berth occupancy probabilities, and runs a HiGHS MILP solver that generates constraint-guaranteed berth and crane schedules with **zero hard constraint violations**.
 
 Operators interact through a zero-scroll cockpit with a live quayside spatial map, 72h Gantt timeline, congestion shock testing lab, and a Groq LLM + Supabase RAG copilot grounded in 6 authoritative maritime standards — turning reactive spreadsheet planning into proactive, AI-verified decision-making.
 
 > See [`docs/solution-overview.md`](docs/solution-overview.md) for architecture detail.
+
+---
+
+## 📊 Machine Learning Model Benchmarks (Huber v3)
+
+Evaluated on a **strict 70% temporal train / 30% held-out test split** (1,755 training samples, 753 test samples) to guarantee zero future data leakage.
+
+### Operational Delay Detection (Classification $\ge 1.0\text{h}$)
+
+| Metric | Score | Naive Baseline | Operational Interpretation |
+| :--- | :---: | :---: | :--- |
+| **Accuracy** | **`95.88%`** | `34.4%` | **`+61.48%`** improvement over baseline |
+| **Precision** | **`99.18%`** | `34.4%` | **`~0.8%`** false positive rate (near-zero false alarms) |
+| **Recall (Sensitivity)** | **`89.30%`** | `100.0%` | Identifies **`89.3%`** of all genuine delay disruptions |
+| **Specificity** | **`98.98%`** | `0.0%` | Accurately clears on-time vessels |
+| **F1-Score** | **`0.940`** | `0.512` | Harmonic balance between Precision and Recall |
+| **ROC-AUC Score** | **`0.946`** | `0.500` | Outstanding threshold discrimination |
+
+### Continuous Arrival & Dwell Prediction (Regression)
+
+| Metric | Naive Baseline | PortPulse Model v3 | Performance Gain |
+| :--- | :---: | :---: | :---: |
+| **Mean Absolute Error (MAE)** | `1.78` hours | **`0.66` hours** (~39.6 min) | **`+63.2%` Gain** |
+| **Root Mean Squared Error (RMSE)** | `2.18` hours | **`1.16` hours** | **`+46.6%` Error Reduction** |
+| **Goodness of Fit ($R^2$)** | `0.000` | **`0.713`** | Explains >71% of real dwell variance |
+| **Residual Uncertainty ($\sigma$)** | `±2.18` hours | **`±0.45` hours** | Calibrated 80% confidence interval |
 
 ---
 
