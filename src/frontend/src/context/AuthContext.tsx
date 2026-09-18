@@ -77,6 +77,7 @@ interface AuthContextType {
   role: UserRole;
   user: UserProfile;
   token: string | null;
+  decodedToken: any;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   quickLogin: (targetRole: UserRole) => Promise<{ success: boolean; error?: string }>;
@@ -96,12 +97,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('portpulse-token');
   });
 
+  const [decodedToken, setDecodedToken] = useState<any>(null);
+
+  useEffect(() => {
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length >= 2) {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          setDecodedToken(payload);
+        }
+      } catch {
+        setDecodedToken(null);
+      }
+    } else {
+      setDecodedToken(null);
+    }
+  }, [token]);
+
   // Keep local storage in sync
   useEffect(() => {
     if (role) {
       localStorage.setItem('portpulse-role', role);
     }
   }, [role]);
+
+  // Auto-authenticate default session with signed JWT if none exists
+  useEffect(() => {
+    if (!token) {
+      const activeRole = (localStorage.getItem('portpulse-role') as UserRole) || 'shift_supervisor';
+      const profile = ROLE_PROFILES[activeRole];
+      if (profile && profile.defaultPassword) {
+        login(profile.username, profile.defaultPassword).catch(() => {});
+      }
+    }
+  }, []);
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -168,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         user: ROLE_PROFILES[role] || ROLE_PROFILES.shift_supervisor,
         token,
+        decodedToken,
         isAuthenticated: !!token,
         login,
         quickLogin,

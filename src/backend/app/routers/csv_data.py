@@ -62,8 +62,11 @@ def export_berths_csv(
     csv_data = output.getvalue()
     return Response(
         content=csv_data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=portpulse_berths.csv"}
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=portpulse_berths.csv",
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        }
     )
 
 
@@ -102,8 +105,11 @@ def export_vessels_csv(
     csv_data = output.getvalue()
     return Response(
         content=csv_data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=portpulse_vessels.csv"}
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=portpulse_vessels.csv",
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        }
     )
 
 
@@ -146,8 +152,11 @@ def export_operations_plan_csv(
     csv_data = output.getvalue()
     return Response(
         content=csv_data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=portpulse_72h_operations_plan.csv"}
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=portpulse_72h_operations_plan.csv",
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        }
     )
 
 

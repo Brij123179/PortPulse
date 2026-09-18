@@ -219,10 +219,40 @@ export default async function handler(req, res) {
       });
     }
 
-    if (path === "master-data/export/vessels.csv" || path === "optimiser/export/operations-plan.csv") {
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", "attachment; filename=export.csv");
-      return res.status(200).send("id,name,class,carrier,length_m,draft_m,status\nV-101,Ever Given,ULCV,Evergreen,399,15.7,BERTHED\nV-102,MSC Oscar,ULCV,MSC,395,15.2,BERTHED\nV-106,HMM Algeciras,ULCV,HMM,399,16.2,ANCHORED\n");
+    if (path === "master-data/export/berths.csv") {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=portpulse_berths.csv");
+      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+      let csv = "id,name,length_m,draft_limit_m,crane_slots,operational_cranes,contractual_priority_rules,status\n";
+      INITIAL_BERTHS.forEach(b => {
+        csv += `${b.id},"${b.name}",${b.length_m},${b.draft_limit_m},${b.crane_slots},${b.operational_cranes || b.crane_slots},STANDARD,${b.status}\n`;
+      });
+      return res.status(200).send(csv);
+    }
+
+    if (path === "master-data/export/vessels.csv") {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=portpulse_vessels.csv");
+      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+      let csv = "id,name,vessel_class,cargo_volume_teu,draft_m,length_m,carrier_eta,corrected_eta,priority_flag,assigned_berth_id,status\n";
+      INITIAL_VESSELS.forEach(v => {
+        csv += `${v.id},"${v.name}",${v.vessel_class},${v.cargo_volume},${v.draft_m},${v.length_m},${v.carrier_eta || ""},${v.corrected_eta || ""},${Boolean(v.priority_flag)},${v.assigned_berth_id || ""},${v.status}\n`;
+      });
+      return res.status(200).send(csv);
+    }
+
+    if (path === "optimiser/export/operations-plan.csv") {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=portpulse_72h_operations_plan.csv");
+      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+      let csv = "vessel_id,vessel_name,vessel_class,length_m,draft_m,assigned_berth_id,assigned_berth_name,start_time,end_time,allocated_cranes,expected_dwell_hours,wait_time_hours,demurrage_cost_usd\n";
+      INITIAL_VESSELS.slice(0, 10).forEach((v, idx) => {
+        const b = INITIAL_BERTHS[idx % INITIAL_BERTHS.length];
+        const start = new Date(Date.now() + idx * 4 * 3600000).toISOString();
+        const end = new Date(Date.now() + (idx * 4 + 14) * 3600000).toISOString();
+        csv += `${v.id},"${v.name}",${v.vessel_class},${v.length_m},${v.draft_m},${b.id},"${b.name}",${start},${end},${b.operational_cranes || 3},14.0,${v.predicted_delay_hours || 0.0},0.0\n`;
+      });
+      return res.status(200).send(csv);
     }
 
     // 4. Heatmap & Risk

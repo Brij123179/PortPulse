@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import List, Optional
-from fastapi import Depends, HTTPException, Security, status, Header
+from fastapi import Depends, HTTPException, Security, status, Header, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -62,13 +62,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def get_current_user(
     auth: Optional[HTTPAuthorizationCredentials] = Security(security_bearer),
+    token: Optional[str] = Query(None, description="JWT token for direct browser links"),
     x_user_role: Optional[str] = Header(None, alias="X-User-Role"),
     x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
     x_username: Optional[str] = Header(None, alias="X-User-Name"),
 ) -> CurrentUser:
     """
-    Authenticates user via JWT Bearer token.
-    For local development and testing convenience, also accepts X-User-Role header if no token provided.
+    Authenticates user via JWT Bearer token (from header or query parameter).
+    For local development and testing convenience, also accepts X-User-Role header or defaults to shift_supervisor if no token provided.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,9 +77,10 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if auth and auth.credentials:
+    raw_token = auth.credentials if (auth and auth.credentials) else token
+    if raw_token:
         try:
-            payload = jwt.decode(auth.credentials, settings.PORTPULSE_SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jwt.decode(raw_token, settings.PORTPULSE_SECRET_KEY, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
             role_str: str = payload.get("role")
             user_id: int = payload.get("user_id", 1)
@@ -92,11 +94,12 @@ def get_current_user(
         except JWTError:
             raise credentials_exception
 
-    # Dev / test header bypass (only permitted in non-production environments when enabled)
+    # Dev / test header/navigation bypass (only permitted in non-production environments when enabled)
     allow_bypass = settings.PORTPULSE_DEV_AUTH_BYPASS and (settings.PORTPULSE_ENV in ("development", "test"))
-    if allow_bypass and x_user_role:
+    if allow_bypass:
+        role_candidate = x_user_role or "shift_supervisor"
         try:
-            role = UserRole(x_user_role.lower())
+            role = UserRole(role_candidate.lower())
             return CurrentUser(
                 id=x_user_id or 1,
                 username=x_username or f"dev_{role.value}",

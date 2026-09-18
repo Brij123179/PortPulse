@@ -549,7 +549,34 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
     return briefing;
   }
 
-  // 12. Master data CSV Imports
+  // 12. Master data CSV Exports & Imports
+  if (cleanEndpoint === '/master-data/export/berths.csv') {
+    let csv = 'id,name,length_m,draft_limit_m,crane_slots,operational_cranes,contractual_priority_rules,status\n';
+    localBerths.forEach((b) => {
+      csv += `${b.id},"${b.name}",${b.length_m},${b.draft_limit_m},${b.crane_slots},${b.operational_cranes || b.crane_slots},STANDARD,${b.status}\n`;
+    });
+    return csv;
+  }
+
+  if (cleanEndpoint === '/master-data/export/vessels.csv') {
+    let csv = 'id,name,vessel_class,cargo_volume_teu,draft_m,length_m,carrier_eta,corrected_eta,priority_flag,assigned_berth_id,status\n';
+    localVessels.forEach((v) => {
+      csv += `${v.id},"${v.name}",${v.vessel_class},${v.cargo_volume},${v.draft_m},${v.length_m},${v.carrier_eta || ''},${v.corrected_eta || ''},${Boolean(v.priority_flag)},${v.assigned_berth_id || ''},${v.status}\n`;
+    });
+    return csv;
+  }
+
+  if (cleanEndpoint === '/optimiser/export/operations-plan.csv') {
+    let csv = 'vessel_id,vessel_name,vessel_class,length_m,draft_m,assigned_berth_id,assigned_berth_name,start_time,end_time,allocated_cranes,expected_dwell_hours,wait_time_hours,demurrage_cost_usd\n';
+    localVessels.slice(0, 10).forEach((v, idx) => {
+      const b = localBerths[idx % localBerths.length];
+      const start = new Date(Date.now() + idx * 4 * 3600000).toISOString();
+      const end = new Date(Date.now() + (idx * 4 + 14) * 3600000).toISOString();
+      csv += `${v.id},"${v.name}",${v.vessel_class},${v.length_m},${v.draft_m},${b.id},"${b.name}",${start},${end},${b.operational_cranes || 3},14.0,${v.predicted_delay_hours || 0.0},0.0\n`;
+    });
+    return csv;
+  }
+
   if (cleanEndpoint === '/master-data/import/berths' && method === 'POST') {
     return {
       status: 'SUCCESS',

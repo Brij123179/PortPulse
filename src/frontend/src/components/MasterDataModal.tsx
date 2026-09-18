@@ -58,6 +58,7 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
   const [csvBerthContent, setCsvBerthContent] = useState('');
   const [csvVesselContent, setCsvVesselContent] = useState('');
   const [csvImporting, setCsvImporting] = useState(false);
+  const [downloadingCsv, setDownloadingCsv] = useState<string | null>(null);
 
   const isAdmin = role === 'admin';
 
@@ -266,6 +267,46 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
         setCsvVesselContent(event.target?.result as string);
       };
       reader.readAsText(file);
+    }
+  };
+
+  // CSV Export Handlers
+  const handleDownloadBerths = async () => {
+    setDownloadingCsv('berths');
+    try {
+      await api.downloadBerthsCsv(berths);
+      setSuccess('Quay Berths CSV downloaded successfully.');
+      setTimeout(() => setSuccess(null), 3500);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to download berths CSV');
+    } finally {
+      setDownloadingCsv(null);
+    }
+  };
+
+  const handleDownloadVessels = async () => {
+    setDownloadingCsv('vessels');
+    try {
+      await api.downloadVesselsCsv(vessels);
+      setSuccess('Vessel Manifest CSV downloaded successfully.');
+      setTimeout(() => setSuccess(null), 3500);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to download vessels CSV');
+    } finally {
+      setDownloadingCsv(null);
+    }
+  };
+
+  const handleDownloadOperationsPlan = async () => {
+    setDownloadingCsv('operations-plan');
+    try {
+      await api.downloadOperationsPlanCsv(72);
+      setSuccess('72-Hour Operations Plan CSV downloaded successfully.');
+      setTimeout(() => setSuccess(null), 3500);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to download operations plan CSV');
+    } finally {
+      setDownloadingCsv(null);
     }
   };
 
@@ -712,50 +753,65 @@ export const MasterDataModal: React.FC<MasterDataModalProps> = ({
                   Download real-time port schedules and master configurations for ERP integration, port authority reporting, and spreadsheet analysis.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <a
-                    href={api.getExportBerthsUrl()}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-lg bg-surface-card border border-surface-border hover:border-blue-500 transition flex items-center justify-between shadow-sm group"
+                  <button
+                    type="button"
+                    onClick={handleDownloadBerths}
+                    disabled={downloadingCsv !== null}
+                    className="p-3 rounded-lg bg-surface-card border border-surface-border hover:border-blue-500 transition flex items-center justify-between shadow-sm group text-left disabled:opacity-60 cursor-pointer"
+                    title="Download quay berths as CSV"
                   >
                     <div>
-                      <div className="font-bold text-content-primary group-hover:text-blue-500">
+                      <div className="font-bold text-content-primary group-hover:text-blue-500 transition-colors">
                         Quay Berths (CSV)
                       </div>
                       <div className="text-[11px] text-content-muted">Dimensions &amp; crane slots</div>
                     </div>
-                    <Download className="w-4 h-4 text-content-muted group-hover:text-blue-500" />
-                  </a>
+                    {downloadingCsv === 'berths' ? (
+                      <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 text-content-muted group-hover:text-blue-500 transition-colors" />
+                    )}
+                  </button>
 
-                  <a
-                    href={api.getExportVesselsUrl()}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-lg bg-surface-card border border-surface-border hover:border-blue-500 transition flex items-center justify-between shadow-sm group"
+                  <button
+                    type="button"
+                    onClick={handleDownloadVessels}
+                    disabled={downloadingCsv !== null}
+                    className="p-3 rounded-lg bg-surface-card border border-surface-border hover:border-blue-500 transition flex items-center justify-between shadow-sm group text-left disabled:opacity-60 cursor-pointer"
+                    title="Download vessel manifest as CSV"
                   >
                     <div>
-                      <div className="font-bold text-content-primary group-hover:text-blue-500">
+                      <div className="font-bold text-content-primary group-hover:text-blue-500 transition-colors">
                         Vessel Manifest (CSV)
                       </div>
                       <div className="text-[11px] text-content-muted">ETA, cargo, draft &amp; status</div>
                     </div>
-                    <Download className="w-4 h-4 text-content-muted group-hover:text-blue-500" />
-                  </a>
+                    {downloadingCsv === 'vessels' ? (
+                      <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 text-content-muted group-hover:text-blue-500 transition-colors" />
+                    )}
+                  </button>
 
-                  <a
-                    href={api.getExportOperationsPlanUrl()}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-lg bg-surface-card border border-surface-border hover:border-blue-500 transition flex items-center justify-between shadow-sm group"
+                  <button
+                    type="button"
+                    onClick={handleDownloadOperationsPlan}
+                    disabled={downloadingCsv !== null}
+                    className="p-3 rounded-lg bg-surface-card border border-surface-border hover:border-blue-500 transition flex items-center justify-between shadow-sm group text-left disabled:opacity-60 cursor-pointer"
+                    title="Download 72-Hour Operations Plan as CSV"
                   >
                     <div>
-                      <div className="font-bold text-content-primary group-hover:text-blue-500">
+                      <div className="font-bold text-content-primary group-hover:text-blue-500 transition-colors">
                         72h Operations Plan (CSV)
                       </div>
                       <div className="text-[11px] text-content-muted">Gantt assignments &amp; demurrage</div>
                     </div>
-                    <Download className="w-4 h-4 text-content-muted group-hover:text-blue-500" />
-                  </a>
+                    {downloadingCsv === 'operations-plan' ? (
+                      <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 text-content-muted group-hover:text-blue-500 transition-colors" />
+                    )}
+                  </button>
                 </div>
               </div>
 

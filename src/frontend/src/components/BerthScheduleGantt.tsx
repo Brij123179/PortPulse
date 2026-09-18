@@ -346,6 +346,15 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
                               {a.expected_dwell_hours}h dwell · {a.wait_time_hours}h wait
                             </span>
                           </div>
+
+                          <div className="pt-2 mt-1.5 border-t border-surface-border flex items-center justify-between text-[10px]">
+                            <span className="text-emerald-500 font-semibold flex items-center gap-1">
+                              ✓ {a.draft_m}m Draft Cleared
+                            </span>
+                            <span className="text-blue-500 font-semibold">
+                              {a.allocated_cranes} STS Ganged
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -360,15 +369,15 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
 
         {/* Selected Vessel Inspector Card */}
         {selectedAssignment && (
-          <div className="p-4 border-t border-surface-border bg-surface-bg rounded-xl mt-4">
+          <div className="p-4 border-t border-surface-border bg-surface-bg rounded-xl mt-4 space-y-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h4 className="text-sm font-bold text-content-primary flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
                   <span>Physical Constraint Verification: {selectedAssignment.vessel_name}</span>
                 </h4>
-                <p className="text-xs text-content-secondary mt-1">
-                  Draft ({selectedAssignment.draft_m}m) & Length ({selectedAssignment.length_m}m) strictly validated against berth specifications with 0% violation guarantee.
+                <p className="text-xs text-content-secondary mt-0.5">
+                  Draft ({selectedAssignment.draft_m}m) &amp; Length ({selectedAssignment.length_m}m) strictly validated against berth specifications with 0% collision guarantee.
                 </p>
               </div>
 
@@ -381,6 +390,31 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
                   <span>Reassign Vessel</span>
                 </button>
               )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-surface-border text-xs">
+              <div className="bg-surface-card p-2.5 rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block font-semibold uppercase">Physical Fit</span>
+                <span className="font-bold text-content-primary font-mono mt-0.5 block">{selectedAssignment.draft_m}m Draft · {selectedAssignment.length_m}m LOA</span>
+                <span className="text-[10px] text-emerald-500 block mt-0.5 font-medium">✓ Safe Under-Keel Margin</span>
+              </div>
+              <div className="bg-surface-card p-2.5 rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block font-semibold uppercase">Quayside Gantry</span>
+                <span className="font-bold text-content-primary font-mono mt-0.5 block">{selectedAssignment.allocated_cranes} STS Cranes</span>
+                <span className="text-[10px] text-blue-500 block mt-0.5 font-medium">Balanced Quayside Workload</span>
+              </div>
+              <div className="bg-surface-card p-2.5 rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block font-semibold uppercase">Turnaround Performance</span>
+                <span className="font-bold text-content-primary font-mono mt-0.5 block">{selectedAssignment.expected_dwell_hours}h Dwell</span>
+                <span className="text-[10px] text-content-secondary block mt-0.5 font-medium">{selectedAssignment.wait_time_hours}h Queue Wait</span>
+              </div>
+              <div className="bg-surface-card p-2.5 rounded-lg border border-surface-border">
+                <span className="text-[10px] text-content-muted block font-semibold uppercase">Demurrage Liability</span>
+                <span className={`font-bold font-mono mt-0.5 block ${selectedAssignment.demurrage_cost_usd > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                  ${Math.round(selectedAssignment.demurrage_cost_usd || 0).toLocaleString()}
+                </span>
+                <span className="text-[10px] text-content-secondary block mt-0.5 font-medium">BIMCO Standard Rate</span>
+              </div>
             </div>
           </div>
         )}

@@ -43,6 +43,9 @@ class HeatmapSummary(BaseModel):
     green_tier_count: int
     critical_berths: List[str]
     peak_congestion_window: str
+    baseline_red_tier_count: Optional[int] = None
+    red_hours_resolved_count: Optional[int] = None
+    is_optimized: Optional[bool] = False
 
 
 class HeatmapResponse(BaseModel):

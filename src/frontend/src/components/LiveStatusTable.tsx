@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  Download,
 } from 'lucide-react';
 
 interface LiveStatusTableProps {
@@ -114,6 +115,26 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
       onTriggerEvent(`Error resetting baseline: ${err.message || 'Action failed'}`);
     } finally {
       setInjectingEvent(null);
+    }
+  };
+
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const handleExportTableCsv = async () => {
+    setExportingCsv(true);
+    try {
+      if (activeTab === 'vessels') {
+        const toExport = filteredVessels.length > 0 ? filteredVessels : safeVessels;
+        await api.downloadVesselsCsv(toExport);
+        onTriggerEvent(`Exported ${toExport.length} vessels to CSV.`);
+      } else {
+        await api.downloadBerthsCsv(safeBerths);
+        onTriggerEvent(`Exported ${safeBerths.length} berths to CSV.`);
+      }
+    } catch (err: any) {
+      onTriggerEvent(`Failed to export CSV: ${err?.message || 'Download failed'}`);
+    } finally {
+      setExportingCsv(false);
     }
   };
 
@@ -372,6 +393,33 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Export CSV Button for Vessels */}
+              <button
+                type="button"
+                onClick={handleExportTableCsv}
+                disabled={exportingCsv}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition text-xs font-semibold shadow-sm disabled:opacity-50 cursor-pointer"
+                title="Download vessel schedule manifest as CSV"
+              >
+                <Download className={`w-3.5 h-3.5 ${exportingCsv ? 'animate-bounce text-blue-500' : 'text-emerald-500'}`} />
+                <span>{exportingCsv ? 'Exporting...' : 'Export CSV'}</span>
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'berths' && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportTableCsv}
+                disabled={exportingCsv}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition text-xs font-semibold shadow-sm disabled:opacity-50 cursor-pointer"
+                title="Download quay berth infrastructure specifications as CSV"
+              >
+                <Download className={`w-3.5 h-3.5 ${exportingCsv ? 'animate-bounce text-blue-500' : 'text-emerald-500'}`} />
+                <span>{exportingCsv ? 'Exporting...' : 'Export CSV'}</span>
+              </button>
             </div>
           )}
         </div>

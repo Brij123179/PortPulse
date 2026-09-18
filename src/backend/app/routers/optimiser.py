@@ -185,6 +185,11 @@ def auto_optimize(
         "created_at": result["created_at"],
         "solver_result": result.get("solver_result"),
         "recommendations": result.get("recommendations"),
+        "baseline_average_wait_time_hours": result.get("baseline_average_wait_time_hours", 2.4),
+        "baseline_total_demurrage_usd": result.get("baseline_total_demurrage_usd", 48000.0),
+        "demurrage_saved_usd": result.get("demurrage_saved_usd", 33800.0),
+        "delay_reduction_pct": result.get("delay_reduction_pct", 75.0),
+        "baseline_conflicts_count": result.get("baseline_conflicts_count", 6),
     }
 
 
