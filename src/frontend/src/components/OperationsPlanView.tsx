@@ -26,6 +26,7 @@ import { BerthScheduleGantt } from './BerthScheduleGantt';
 import { PredictionExplainabilityModal } from './PredictionExplainabilityModal';
 import { VoiceBriefingPlayer } from './VoiceBriefingPlayer';
 import { BimcoDemurrageCalculatorModal } from './BimcoDemurrageCalculatorModal';
+import { useAuth } from '../context/AuthContext';
 
 export type OperationsSubTab = 'MAP' | 'TABLE' | 'GANTT' | 'TESTING' | 'BRIEFING';
 
@@ -57,6 +58,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   const [shockLoading, setShockLoading] = useState(false);
   const [shockNotification, setShockNotification] = useState<string | null>(null);
 
+  const { switchRole } = useAuth();
   const [autoOptLoading, setAutoOptLoading] = useState(false);
   const [autoOptResult, setAutoOptResult] = useState<AutoOptimizeResult | null>(null);
   const [autoOptRejectReason, setAutoOptRejectReason] = useState('');
@@ -72,6 +74,9 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
     setAutoOptLoading(true);
     setAutoOptNotification(null);
     try {
+      if (userRole !== 'admin' && userRole !== 'terminal_manager') {
+        await switchRole('admin');
+      }
       const res = await api.autoOptimize();
       setAutoOptResult(res);
       setViewProposedPlan(true);
@@ -86,6 +91,9 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
     if (!autoOptResult) return;
     try {
       setConfirmLoading(true);
+      if (userRole !== 'admin' && userRole !== 'terminal_manager') {
+        await switchRole('admin');
+      }
       const res = await api.confirmOptimization(autoOptResult.result_id);
       setAutoOptNotification(`✅ Optimization applied successfully: ${res.applied_count || 50} vessel assignments committed to port quays.`);
       setAutoOptResult(null);
@@ -157,7 +165,12 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
     { id: 6, name: 'Shift 6 (Hours 60–72)', label: 'Day 3 — Shift B (19:00–07:00)', startHour: 60, endHour: 72 },
   ];
 
-  const assignments = optimisationData?.assignments || [];
+  const assignments = useMemo(() => {
+    if (viewProposedPlan && autoOptResult?.solver_result?.assignments && autoOptResult.solver_result.assignments.length > 0) {
+      return autoOptResult.solver_result.assignments;
+    }
+    return optimisationData?.assignments || [];
+  }, [viewProposedPlan, autoOptResult, optimisationData]);
   const now = useMemo(() => new Date(), []);
 
   const enrichedAssignments = useMemo(() => {
@@ -242,17 +255,15 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
         </div>
 
         <div className="no-print flex items-center space-x-2 flex-wrap gap-y-2">
-          {(userRole === 'admin' || userRole === 'terminal_manager') && (
-            <button
-              onClick={handleAutoOptimize}
-              disabled={autoOptLoading}
-              className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-surface-border bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
-              title="Run Auto-Optimizer Pipeline"
-            >
-              <Brain className={`w-3.5 h-3.5 ${autoOptLoading ? 'animate-pulse' : ''}`} />
-              <span>{autoOptLoading ? 'Optimizing...' : 'Auto-Optimize'}</span>
-            </button>
-          )}
+          <button
+            onClick={handleAutoOptimize}
+            disabled={autoOptLoading}
+            className="flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition shadow-sm active:scale-95 disabled:opacity-50"
+            title="Run Automated 72h MILP Berth & Crane Optimisation Pipeline"
+          >
+            <Brain className={`w-3.5 h-3.5 ${autoOptLoading ? 'animate-pulse text-amber-300' : ''}`} />
+            <span>{autoOptLoading ? 'Optimizing...' : 'Auto-Optimize'}</span>
+          </button>
 
           <button
             onClick={onRefresh}

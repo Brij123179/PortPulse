@@ -388,6 +388,69 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
     return response;
   }
 
+  // Auto-Optimizer Pipeline (Phase 3)
+  if (cleanEndpoint === '/optimiser/auto-optimize' && method === 'POST') {
+    const mockAssignments = localVessels.map((v, i) => ({
+      vessel_id: v.id,
+      vessel_name: v.name,
+      vessel_class: v.vessel_class,
+      length_m: v.length_m,
+      draft_m: v.draft_m,
+      assigned_berth_id: v.assigned_berth_id || `B-0${(i % 10) + 1}`,
+      assigned_berth_name: v.assigned_berth_name || `Berth ${(i % 10) + 1}`,
+      start_time: new Date(Date.now() + i * 7200000).toISOString(),
+      end_time: new Date(Date.now() + i * 7200000 + 28800000).toISOString(),
+      allocated_cranes: v.length_m > 300 ? 3 : 2,
+      expected_dwell_hours: 24,
+      wait_time_hours: 0.2,
+      demurrage_cost_usd: 0,
+    }));
+
+    return {
+      result_id: `OPT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      correlation_id: `auto-opt-${Date.now()}`,
+      status: 'PENDING_APPROVAL',
+      ml_status: 'READY',
+      solver_status: 'OPTIMAL',
+      assignments_count: 50,
+      recommendations_count: 3,
+      average_wait_time_hours: 0.8,
+      total_demurrage_usd: 12000,
+      crane_utilization_pct: 82.0,
+      created_at: new Date().toISOString(),
+      solver_result: {
+        correlation_id: `opt-${Date.now()}`,
+        solver_status: 'OPTIMAL',
+        solve_time_seconds: 0.38,
+        horizon_hours: 72,
+        vessels_scheduled: 50,
+        average_wait_time_hours: 0.8,
+        total_port_demurrage_usd: 12000,
+        crane_utilization_pct: 82.0,
+        assignments: mockAssignments,
+        violated_constraints: [],
+      },
+      recommendations: [],
+    };
+  }
+
+  if (cleanEndpoint.startsWith('/optimiser/auto-optimize/') && cleanEndpoint.endsWith('/confirm') && method === 'POST') {
+    return {
+      status: 'CONFIRMED',
+      result_id: 'OPT-APPLIED',
+      applied_count: 50,
+      message: 'Successfully applied 50 vessel assignments committed to port quays.',
+    };
+  }
+
+  if (cleanEndpoint.startsWith('/optimiser/auto-optimize/') && cleanEndpoint.endsWith('/reject') && method === 'POST') {
+    return {
+      status: 'REJECTED',
+      result_id: 'OPT-REJECTED',
+      message: 'Optimization proposal rejected.',
+    };
+  }
+
   if (cleanEndpoint === '/optimiser/override' && method === 'POST') {
     const result: OverrideValidationResult = {
       correlation_id: `ovr-${Date.now()}`,

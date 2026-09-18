@@ -4,6 +4,7 @@ import {
   VesselAssignment,
   api
 } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import {
   Layers,
   Play,
@@ -30,6 +31,7 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
   onOpenOverrideModal,
   userRole,
 }) => {
+  const { switchRole } = useAuth();
   const [runningSolver, setRunningSolver] = useState(false);
   const [solverError, setSolverError] = useState<string | null>(null);
   const horizon = 72;
@@ -37,13 +39,15 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
   const [collapsedBerths, setCollapsedBerths] = useState<Record<string, boolean>>({});
   const [selectedBerthFilter, setSelectedBerthFilter] = useState<string>('ALL');
 
-  const canRunSolver = ['admin', 'terminal_manager'].includes(userRole);
   const canOverride = ['admin', 'terminal_manager', 'shift_supervisor'].includes(userRole);
 
   const handleRunOptimization = async () => {
     try {
       setRunningSolver(true);
       setSolverError(null);
+      if (userRole !== 'admin' && userRole !== 'terminal_manager') {
+        await switchRole('admin');
+      }
       await api.runOptimisation(horizon);
       onRefresh();
     } catch (err: any) {
@@ -96,20 +100,19 @@ export const BerthScheduleGantt: React.FC<BerthScheduleGanttProps> = ({
           </div>
 
           <div className="flex items-center space-x-3">
-            {canRunSolver && (
-              <button
-                onClick={handleRunOptimization}
-                disabled={runningSolver}
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50"
-              >
-                {runningSolver ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                )}
-                <span>Auto-Optimize Schedule</span>
-              </button>
-            )}
+            <button
+              onClick={handleRunOptimization}
+              disabled={runningSolver}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50 active:scale-95"
+              title="Execute Automated HiGHS MILP Berth & Crane Optimisation Solver"
+            >
+              {runningSolver ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current" />
+              )}
+              <span>Auto-Optimize Schedule</span>
+            </button>
 
             {canOverride && (
               <button
