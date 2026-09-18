@@ -1,0 +1,22 @@
+port_name,country,berth_code,length_m,draft_m,crane_capacity,channel_depth_m,anchorage_capacity
+Rotterdam Gateway,Netherlands,RT-B1,450.0,16.5,4,20.0,25
+Rotterdam Gateway,Netherlands,RT-B2,420.0,16.0,4,20.0,25
+Singapore Tuas,Singapore,SG-B1,480.0,17.0,5,21.0,40
+Singapore Tuas,Singapore,SG-B2,400.0,15.5,4,21.0,40
+Shanghai Yangshan,China,SH-B1,500.0,17.5,6,22.0,50
+Shanghai Yangshan,China,SH-B2,450.0,16.5,5,22.0,50
+Ningbo-Zhoushan,China,NB-B1,460.0,17.0,5,21.5,45
+Busan New Port,South Korea,BN-B1,440.0,16.5,4,19.5,35
+Los Angeles Pier 400,United States,LA-B1,440.0,16.0,4,18.5,30
+Los Angeles Pier 400,United States,LA-B2,380.0,15.0,3,18.5,30
+Long Beach Pier T,United States,LB-B1,420.0,16.0,4,18.5,28
+Hamburg Waltershof,Germany,HH-B1,360.0,14.5,3,15.8,18
+Hamburg Waltershof,Germany,HH-B2,320.0,14.0,3,15.8,18
+Antwerp Gateway,Belgium,AN-B1,400.0,15.5,4,17.0,25
+Tianjin Container Terminal,China,TJ-B1,410.0,15.5,4,17.5,22
+Tianjin Container Terminal,China,TJ-B2,350.0,14.0,3,17.5,22
+Jebel Ali Terminal 3,UAE,JA-B1,450.0,16.5,5,20.0,30
+Tanjung Pelepas,Malaysia,TP-B1,420.0,16.0,4,19.0,30
+Colombo CICT,Sri Lanka,CB-B1,400.0,16.0,4,18.0,25
+Jawaharlal Nehru Port (JNPA),India,JN-B1,380.0,15.0,3,16.5,20
+Mundra Port CT4,India,MD-B1,400.0,16.0,4,17.5,25

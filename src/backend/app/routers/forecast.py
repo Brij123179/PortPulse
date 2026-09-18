@@ -79,3 +79,17 @@ def get_ml_metrics(
     Returns comparative evaluation metrics proving trained models beat the naive baselines.
     """
     return risk_engine.get_evaluation_metrics(db)
+
+
+@router.post("/forecast/retrain", response_model=MLMetricsResponse)
+def retrain_ml_models(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user)
+):
+    """
+    Forces immediate retraining of ML models against current historical turnaround records,
+    evaluates test accuracy, and refreshes the in-memory cache and serialized checkpoints.
+    """
+    risk_engine.retrain_and_predict(db)
+    return risk_engine.get_evaluation_metrics(db)
+

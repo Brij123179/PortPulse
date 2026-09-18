@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OptimisationRunResponse, api, apiClient, ShiftBriefingResponse, VesselAssignment, AutoOptimizeResult } from '../api/client';
+import { OptimisationRunResponse, api, apiClient, ShiftBriefingResponse, AutoOptimizeResult } from '../api/client';
 import {
   CalendarDays,
   Download,

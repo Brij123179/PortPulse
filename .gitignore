@@ -52,7 +52,9 @@ PORTPULSE_CREDENTIALS_AND_SYSTEM_REPORT.md
 *.db
 *.sqlite3
 *.sqlite
-data/
+data/external/
+!data/derived/
+!data/historical_turnaround_dataset.csv
 *.log
 
 # IDE

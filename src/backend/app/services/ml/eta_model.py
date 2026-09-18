@@ -1,7 +1,9 @@
 import math
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Tuple, Any
 import numpy as np
+import joblib
 from sklearn.ensemble import GradientBoostingRegressor
 from sqlalchemy.orm import Session
 
@@ -17,24 +19,57 @@ CLASS_DWELL_MAP = {
     3: 36.0,  # ULCV
 }
 
+SAVED_MODELS_DIR = os.path.join(os.path.dirname(__file__), "saved_models")
+MODEL_FILE_PATH = os.path.join(SAVED_MODELS_DIR, "eta_model.joblib")
+
 
 class ETACorrectionModel:
     """
     F-201 / 06_ml_engineering.md §3.2:
     Vessel ETA correction model using Gradient Boosted Trees on tabular features.
     Extracts SHAP-style feature attributions (F-206) and uncertainty bands (F-207).
+    Supports persistent model checkpoints and high-volume training data.
     """
 
     def __init__(self):
         self.model = GradientBoostingRegressor(
-            n_estimators=60,
-            max_depth=3,
-            learning_rate=0.08,
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.06,
+            subsample=0.85,
             random_state=42
         )
         self.is_fitted = False
         self.residual_std = 0.85
         self.evaluation_metrics = {}
+        self._load_saved_model()
+
+    def _load_saved_model(self):
+        """Loads pre-trained model artifact from disk if available."""
+        if os.path.exists(MODEL_FILE_PATH):
+            try:
+                data = joblib.load(MODEL_FILE_PATH)
+                self.model = data.get("model", self.model)
+                self.residual_std = data.get("residual_std", 0.85)
+                self.evaluation_metrics = data.get("evaluation_metrics", {})
+                self.is_fitted = True
+                logger.info(f"Loaded pre-trained ETA model from {MODEL_FILE_PATH}")
+            except Exception as e:
+                logger.warning(f"Could not load pre-trained model ({e}); will fit on demand.")
+
+    def _save_model(self):
+        """Persists trained model artifact to disk."""
+        try:
+            os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
+            joblib.dump({
+                "model": self.model,
+                "residual_std": self.residual_std,
+                "evaluation_metrics": self.evaluation_metrics,
+                "saved_at": datetime.now(timezone.utc).isoformat()
+            }, MODEL_FILE_PATH)
+            logger.info(f"Saved trained ETA model to {MODEL_FILE_PATH}")
+        except Exception as e:
+            logger.warning(f"Failed to persist model to disk: {e}")
 
     def fit_and_evaluate(self, db: Session) -> Dict[str, Any]:
         """
@@ -64,6 +99,7 @@ class ETACorrectionModel:
         residuals = y_test - y_pred
         mae = float(np.mean(np.abs(residuals)))
         rmse = float(np.sqrt(np.mean(residuals ** 2)))
+        r2 = float(self.model.score(X_test, y_test))
         self.residual_std = max(0.5, float(np.std(residuals)))
 
         # Naive baseline comparison
@@ -74,7 +110,7 @@ class ETACorrectionModel:
         improvement_rmse = max(0.0, ((b_rmse - rmse) / b_rmse) * 100.0) if b_rmse > 0 else 0.0
 
         self.evaluation_metrics = {
-            "model_name": "GradientBoosting-ETA-v1",
+            "model_name": "GradientBoosting-ETA-v2-Optimized",
             "sample_count": len(records),
             "train_samples": len(train_records),
             "test_samples": len(test_records),
@@ -84,8 +120,10 @@ class ETACorrectionModel:
             "model_rmse_hours": round(rmse, 2),
             "baseline_rmse_hours": round(baseline_eval["rmse"], 2),
             "rmse_improvement_pct": round(improvement_rmse, 1),
+            "r2_score": round(r2, 3),
             "beats_baseline": mae < baseline_eval["mae"],
         }
+        self._save_model()
         logger.info("ETA Model trained and evaluated against naive baseline", extra={"extra_data": self.evaluation_metrics})
         return self.evaluation_metrics
 
@@ -96,7 +134,12 @@ class ETACorrectionModel:
             cls_idx = CLASS_MAP.get(r.vessel_class, 1)
             hour = r.arrival_time.hour
             weekday = r.arrival_time.weekday()
-            # Feature vector: [vessel_class, hour, weekday, scheduled_dwell]
+            sin_hour = math.sin(2 * math.pi * hour / 24.0)
+            cos_hour = math.cos(2 * math.pi * hour / 24.0)
+            is_weekend = 1.0 if weekday >= 5 else 0.0
+            yard_delay = 1.0 if r.delay_cause == "YARD_CONGESTION" else 0.0
+
+            # Feature vector: [vessel_class, hour, weekday, scheduled_dwell, crane_outage, weather_outage, sin_hour, cos_hour, is_weekend, yard_delay]
             features = [
                 float(cls_idx),
                 float(hour),
@@ -104,6 +147,10 @@ class ETACorrectionModel:
                 float(r.scheduled_dwell_hours),
                 float(1.0 if r.delay_cause == "CRANE_OUTAGE" else 0.0),
                 float(1.0 if r.delay_cause == "WEATHER" else 0.0),
+                float(sin_hour),
+                float(cos_hour),
+                float(is_weekend),
+                float(yard_delay),
             ]
             delay_hours = r.delay_minutes / 60.0
             X_list.append(features)
@@ -129,9 +176,16 @@ class ETACorrectionModel:
         dwell_approx = CLASS_DWELL_MAP.get(int(cls_idx), 22.0)
         crane_outage = 1.0 if features_dict["crane_breakdowns"] > 0 else 0.0
         weather_outage = 1.0 if features_dict["tidal_restriction"] > 0 else 0.0
+        sin_hour = math.sin(2 * math.pi * hour / 24.0)
+        cos_hour = math.cos(2 * math.pi * hour / 24.0)
+        is_weekend = 1.0 if weekday >= 5 else 0.0
+        yard_delay = 1.0 if features_dict.get("yard_utilization", 0.65) > 0.85 else 0.0
 
         if self.is_fitted:
-            x = np.array([[cls_idx, hour, weekday, dwell_approx, crane_outage, weather_outage]])
+            x = np.array([[
+                cls_idx, hour, weekday, dwell_approx, crane_outage, weather_outage,
+                sin_hour, cos_hour, is_weekend, yard_delay
+            ]])
             base_pred = max(0.0, float(self.model.predict(x)[0]))
         else:
             logger.warning("ETACorrectionModel.predict called before fitting; using baseline heuristic fallback")

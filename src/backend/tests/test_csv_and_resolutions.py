@@ -158,3 +158,30 @@ def test_cannot_delete_berthed_vessel(client, admin_token):
         )
         assert del_res.status_code == 400
         assert "actively berthed" in del_res.json().get("message", del_res.json().get("detail", ""))
+
+
+def test_import_turnaround_csv_and_retrain(client, admin_token):
+    csv_payload = (
+        "vessel_id,vessel_class,berth_id,actual_arrival_time,departure_time,scheduled_dwell_hours,actual_dwell_hours,delay_cause,delay_minutes,shift_id\n"
+        "TEST-TURN-01,Panamax,B-05,2026-03-01T10:00:00Z,2026-03-02T12:00:00Z,22.0,26.0,CRANE_OUTAGE,240,SHIFT_A\n"
+        "TEST-TURN-02,Feeder,B-08,2026-03-01T14:00:00Z,2026-03-02T04:00:00Z,14.0,14.0,NONE,0,SHIFT_B\n"
+    )
+    res = client.post(
+        "/api/v1/master-data/import/turnaround?retrain_model=true",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"csv_content": csv_payload}
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] in ["success", "partial_success"]
+    assert data["imported_count"] == 2
+
+    # Verify retrain endpoint works
+    retrain_res = client.post("/api/v1/forecast/retrain", headers={"Authorization": f"Bearer {admin_token}"})
+    assert retrain_res.status_code == 200
+    metrics = retrain_res.json()
+    assert len(metrics["models"]) > 0
+    assert metrics["models"][0]["trained_model_score"] < metrics["models"][0]["naive_baseline_score"]
+    assert metrics["models"][0]["improvement_pct"] > 10.0
+
+

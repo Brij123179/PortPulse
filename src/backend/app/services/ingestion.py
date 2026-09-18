@@ -237,17 +237,73 @@ class PortDataGenerator:
         return vessel_count
 
     def _seed_historical_turnaround(self, db: Session, days: int = 365) -> int:
-        """Seeds 1 synthetic year of turnaround logs (F-103) for ML training in I2."""
-        now = datetime.now(timezone.utc)
+        """Seeds expanded turnaround logs (F-103) for ML training and validation."""
+        import os
+        import csv
+
+        # Check if pre-generated rich historical dataset exists
+        dataset_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data", "historical_turnaround_dataset.csv")
         record_count = 0
-        total_records = min(600, days * 2)  # 600 records across 1 year
-        delay_causes = ["NONE"] * 65 + ["YARD_CONGESTION"] * 15 + ["CRANE_OUTAGE"] * 10 + ["WEATHER"] * 10
+
+        if os.path.exists(dataset_path):
+            logger.info(f"Loading turnaround records from curated dataset: {dataset_path}")
+            try:
+                with open(dataset_path, mode="r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        v_id = row.get("vessel_id")
+                        v_class = row.get("vessel_class") or "Panamax"
+                        berth_id = row.get("berth_id") or "B-05"
+                        
+                        try:
+                            arr_dt = datetime.fromisoformat(row["actual_arrival_time"])
+                        except Exception:
+                            arr_dt = datetime.now(timezone.utc)
+                        try:
+                            dep_dt = datetime.fromisoformat(row["departure_time"])
+                        except Exception:
+                            dep_dt = arr_dt + timedelta(hours=float(row.get("actual_dwell_hours", 24.0)))
+
+                        record = TurnaroundRecord(
+                            vessel_id=v_id,
+                            vessel_class=v_class,
+                            berth_id=berth_id,
+                            arrival_time=arr_dt,
+                            departure_time=dep_dt,
+                            actual_dwell_hours=float(row.get("actual_dwell_hours", 24.0)),
+                            scheduled_dwell_hours=float(row.get("scheduled_dwell_hours", 22.0)),
+                            delay_cause=row.get("delay_cause", "NONE"),
+                            delay_minutes=int(float(row.get("delay_minutes", 0))),
+                            shift_id=row.get("shift_id", "SHIFT_A"),
+                            recorded_at=dep_dt
+                        )
+                        db.add(record)
+                        record_count += 1
+                        if record_count >= 2500:
+                            break
+
+                db.flush()
+                logger.info(f"Loaded {record_count} historical turnaround records from dataset.")
+                return record_count
+            except Exception as e:
+                logger.warning(f"Failed to read dataset file ({e}), falling back to generator.", exc_info=True)
+
+        now = datetime.now(timezone.utc)
+        total_records = 2500
+        delay_causes = (
+            ["NONE"] * 65 +
+            ["CRANE_OUTAGE"] * 12 +
+            ["WEATHER"] * 10 +
+            ["YARD_CONGESTION"] * 8 +
+            ["PILOT_UNAVAILABLE"] * 3 +
+            ["TIDAL_WINDOW_MISSED"] * 2
+        )
 
         classes = list(VESSEL_CLASSES.keys())
         shifts = ["SHIFT_A (06:00-14:00)", "SHIFT_B (14:00-22:00)", "SHIFT_C (22:00-06:00)"]
 
         for i in range(total_records):
-            days_ago = self.rng.uniform(1, days)
+            days_ago = self.rng.uniform(1, 730)  # Past 2 years
             arrival_time = now - timedelta(days=days_ago)
             v_class = self.rng.choice(classes)
             specs = VESSEL_CLASSES[v_class]
@@ -256,12 +312,21 @@ class PortDataGenerator:
             scheduled_dwell = max(8.0, scheduled_dwell)
 
             cause = self.rng.choice(delay_causes)
-            if cause != "NONE":
-                delay_min = self.rng.randint(45, 360)
-                actual_dwell = round(scheduled_dwell + (delay_min / 60.0), 1)
-            else:
+            if cause == "NONE":
                 delay_min = 0
                 actual_dwell = round(scheduled_dwell + self.rng.uniform(-0.8, 0.5), 1)
+            elif cause == "CRANE_OUTAGE":
+                delay_min = self.rng.randint(60, 420)
+                actual_dwell = round(scheduled_dwell + (delay_min / 60.0), 1)
+            elif cause == "WEATHER":
+                delay_min = self.rng.randint(60, 480)
+                actual_dwell = round(scheduled_dwell + (delay_min / 60.0), 1)
+            elif cause == "YARD_CONGESTION":
+                delay_min = self.rng.randint(45, 300)
+                actual_dwell = round(scheduled_dwell + (delay_min / 60.0), 1)
+            else:
+                delay_min = self.rng.randint(30, 240)
+                actual_dwell = round(scheduled_dwell + (delay_min / 60.0), 1)
 
             # Berths matching class constraints
             if v_class == "ULCV":

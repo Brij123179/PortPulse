@@ -56,7 +56,7 @@ Shift supervisors and terminal managers at container ports bear the direct cost:
 
 ## 💡 Solution
 
-PortPulse is a full-stack predictive-prescriptive port operations platform. It corrects carrier ETA bias using a GradientBoosting regressor (**1.17h MAE**, 33% improvement over naive baseline), computes hour-by-hour 72-hour berth occupancy probabilities, and runs a HiGHS MILP solver that generates constraint-guaranteed berth and crane schedules with **zero hard constraint violations**.
+PortPulse is a full-stack predictive-prescriptive port operations platform. It corrects carrier ETA bias using an optimized GradientBoosting regressor (**0.88h MAE**, 54.8% improvement over naive baseline), computes hour-by-hour 72-hour berth occupancy probabilities, and runs a HiGHS MILP solver that generates constraint-guaranteed berth and crane schedules with **zero hard constraint violations**.
 
 Operators interact through a zero-scroll cockpit with a live quayside spatial map, 72h Gantt timeline, congestion shock testing lab, and a Groq LLM + Supabase RAG copilot grounded in 6 authoritative maritime standards — turning reactive spreadsheet planning into proactive, AI-verified decision-making.
 
@@ -83,29 +83,29 @@ Operators interact through a zero-scroll cockpit with a live quayside spatial ma
 | **IBM Technologies** | IBM BoB AI (development), Groq LLM Inference (`openai/gpt-oss-120b`) |
 | **Databases** | SQLite (local), Supabase PostgreSQL (RAG vector store) |
 | **ML / Optimisation** | scikit-learn GradientBoosting, SciPy HiGHS MILP solver, Markov occupancy matrix |
-| **Other** | GitHub Actions, JWT, bcrypt, pytest (48 tests), Vercel, Render |
+| **Other** | GitHub Actions, JWT, bcrypt, pytest (63 tests), Vercel, Render |
 
 ---
 
 ## 📁 Repository Structure
 
 ```
+├── data/                       # Ground-truth datasets & reference benchmarks
+│   ├── historical_turnaround_dataset.csv  # 3,500+ turnaround records
+│   └── derived/                # Calibrated carrier biases, dwells, & port specs
+├── scripts/                    # Offline training and preparation utilities
+│   ├── train_model.py          # Dedicated ML training & cross-validation pipeline
+│   ├── prepare_reference_data.py # Reference distribution generator (25 carriers)
+│   └── seed_supabase_rag.py    # Supabase vector store seeding
 ├── src/                        # All source code
 │   ├── backend/                # FastAPI Python backend
 │   │   ├── app/                # Routers, services, models, schemas
-│   │   ├── tests/              # 48 automated tests (pytest)
+│   │   ├── tests/              # 63 automated tests (pytest)
 │   │   └── requirements.txt
 │   └── frontend/               # React + TypeScript + Vite cockpit
 │       └── src/components/     # All UI components
 ├── docs/                       # Written documentation
-│   ├── problem-statement.md
-│   ├── solution-overview.md
-│   ├── architecture.md
-│   └── setup-guide.md
 ├── demo/                       # Demo artifacts
-│   ├── screenshots/            # App screenshots
-│   ├── demo-video-link.txt     # Link to demo video
-│   └── live-demo-url.txt       # Live deployment URL
 ├── presentation/               # Slide deck
 ├── submission.yaml             # Structured submission metadata
 └── README.md
@@ -117,8 +117,8 @@ Operators interact through a zero-scroll cockpit with a live quayside spatial ma
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/diya2405/ibm-hackathon-pcpirates.git
-cd ibm-hackathon-pcpirates
+git clone https://github.com/Brij123179/PortPulse.git
+cd PortPulse
 
 # 2. Backend — install dependencies
 cd src/backend
@@ -129,14 +129,18 @@ python -m venv .venv
 # source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. Configure environment
+# 3. Model Training & Offline Calibration (Optional — pre-trained model included)
+python ../../scripts/prepare_reference_data.py
+python ../../scripts/train_model.py
+
+# 4. Configure environment
 cp src/.env.example src/.env
 # Edit src/.env with your Supabase and Groq credentials (optional — runs fully on SQLite without them)
 
-# 4. Run the backend
+# 5. Run the backend
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
-# 5. Run the frontend (new terminal)
+# 6. Run the frontend (new terminal)
 cd src/frontend
 npm install
 npm run dev

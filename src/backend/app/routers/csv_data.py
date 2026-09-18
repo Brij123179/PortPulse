@@ -8,10 +8,11 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.auth import CurrentUser, get_current_user, require_roles, UserRole
-from app.models.entities import Berth, Crane, Vessel
+from app.models.entities import Berth, Crane, Vessel, TurnaroundRecord
 from app.services.audit import AuditService
 from app.services.optimiser.solver import berth_optimiser
 from app.services.event_bus import event_bus, EventType
+from app.services.ml.risk_engine import risk_engine
 
 router = APIRouter(prefix="/api/v1", tags=["CSV Import & Export Engine"])
 
@@ -462,3 +463,99 @@ async def import_vessels_csv(
         errors=errors,
         message=f"Processed {imported + updated} vessels ({imported} new created, {updated} updated)."
     )
+
+
+@router.post("/master-data/import/turnaround", response_model=CsvImportResult)
+async def import_turnaround_csv(
+    request: Request,
+    retrain_model: bool = False,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles([
+        UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.VESSEL_PLANNER, UserRole.SHIFT_SUPERVISOR
+    ]))
+):
+    """
+    Imports historical turnaround records from CSV dataset.
+    Optionally triggers immediate ML model re-training on new data.
+    """
+    csv_text = await extract_csv_text(request)
+    if not csv_text.strip():
+        raise HTTPException(status_code=400, detail="No CSV data provided.")
+
+    rows = parse_csv_stream(csv_text)
+    if not rows:
+        raise HTTPException(status_code=400, detail="CSV is empty or missing headers.")
+
+    imported = 0
+    errors = []
+
+    for idx, row in enumerate(rows, start=1):
+        try:
+            with db.begin_nested():
+                v_id = str(row.get("vessel_id") or row.get("id") or f"HIST-V{idx:04d}").strip()
+                v_class = str(row.get("vessel_class") or row.get("class") or "Panamax").strip()
+                berth_id = str(row.get("berth_id") or row.get("berth") or "B-05").strip()
+
+                arr_raw = str(row.get("actual_arrival_time") or row.get("arrival_time") or row.get("arrival") or "")
+                dep_raw = str(row.get("departure_time") or row.get("departure") or "")
+
+                try:
+                    arr_dt = datetime.fromisoformat(arr_raw.replace("Z", "+00:00")) if arr_raw else datetime.now(timezone.utc)
+                except Exception:
+                    arr_dt = datetime.now(timezone.utc)
+
+                actual_dwell = safe_float(row.get("actual_dwell_hours") or row.get("actual_dwell"), 24.0)
+                sched_dwell = safe_float(row.get("scheduled_dwell_hours") or row.get("scheduled_dwell"), 22.0)
+
+                try:
+                    dep_dt = datetime.fromisoformat(dep_raw.replace("Z", "+00:00")) if dep_raw else (arr_dt + timedelta(hours=actual_dwell))
+                except Exception:
+                    dep_dt = arr_dt + timedelta(hours=actual_dwell)
+
+                delay_cause = str(row.get("delay_cause") or row.get("cause") or "NONE").strip().upper()
+                delay_minutes = safe_int(row.get("delay_minutes") or row.get("delay"), 0)
+                shift_id = str(row.get("shift_id") or row.get("shift") or "SHIFT_A").strip()
+
+                record = TurnaroundRecord(
+                    vessel_id=v_id,
+                    vessel_class=v_class,
+                    berth_id=berth_id,
+                    arrival_time=arr_dt,
+                    departure_time=dep_dt,
+                    actual_dwell_hours=actual_dwell,
+                    scheduled_dwell_hours=sched_dwell,
+                    delay_cause=delay_cause,
+                    delay_minutes=delay_minutes,
+                    shift_id=shift_id,
+                    recorded_at=dep_dt
+                )
+                db.add(record)
+                imported += 1
+
+        except Exception as e:
+            errors.append(f"Row {idx}: Error processing row: {str(e)}")
+
+    db.commit()
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        action="IMPORT_TURNAROUND_CSV",
+        entity_type="TURNAROUND_RECORD",
+        entity_id="BATCH",
+        payload_snapshot={"imported": imported, "retrain_model": retrain_model, "error_count": len(errors)}
+    )
+
+    if retrain_model:
+        risk_engine.retrain_and_predict(db)
+
+    event_bus.publish(EventType.DATA_CHANGED, entity_type="TURNAROUND_RECORD", action="CSV_IMPORT")
+
+    return CsvImportResult(
+        status="success" if not errors else "partial_success",
+        imported_count=imported,
+        updated_count=0,
+        errors=errors,
+        message=f"Imported {imported} historical turnaround records." + (" ML models retrained." if retrain_model else "")
+    )
+
