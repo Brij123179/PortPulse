@@ -19,7 +19,7 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { GlobalPortSwitcher } from './GlobalPortSwitcher';
+import { GlobalPortSwitcher, PortTerminalSpec } from './GlobalPortSwitcher';
 
 export interface NavTabItem {
   id: string;
@@ -41,6 +41,8 @@ interface NavbarProps {
   visibleTabs: NavTabItem[];
   autoRefresh: boolean;
   onToggleAutoRefresh: (val: boolean) => void;
+  currentPort?: PortTerminalSpec;
+  onSelectPort?: (port: PortTerminalSpec) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -56,6 +58,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   visibleTabs,
   autoRefresh,
   onToggleAutoRefresh,
+  currentPort,
+  onSelectPort,
 }) => {
   const { theme, toggleTheme } = useTheme();
   const { role, user, logout, token, decodedToken } = useAuth();
@@ -128,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Center: Global Terminal Switcher & Live Connection Pill */}
         <div className="flex items-center space-x-2.5">
-          <GlobalPortSwitcher />
+          <GlobalPortSwitcher selectedPort={currentPort} onSelectPort={onSelectPort} />
           <div className="hidden 2xl:flex items-center space-x-2 text-xs bg-surface-bg/80 px-3 py-1.5 rounded-full border border-surface-border shadow-inner">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'

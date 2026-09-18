@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Navbar } from './components/Navbar';
 import { LiveStatusTable } from './components/LiveStatusTable';
 import { MasterDataModal } from './components/MasterDataModal';
@@ -18,6 +18,17 @@ import { LoginPage } from './components/LoginPage';
 import { OperationsPlanView } from './components/OperationsPlanView';
 import { ChatAssistantDrawer } from './components/ChatAssistantDrawer';
 import { useAuth } from './context/AuthContext';
+import {
+  PORT_TERMINALS,
+  PortTerminalSpec,
+  adaptBerths,
+  adaptVessels,
+  adaptSummary,
+  adaptOptimisationData,
+  adaptHeatmapData,
+  adaptAnchorageData,
+  adaptRecommendations,
+} from './utils/portData';
 import {
   api,
   LiveStatusSummary,
@@ -83,6 +94,19 @@ export const App: React.FC = () => {
   // Navigation Tabs (scoped to user's permitted role)
   const [activeTab, setActiveTab] = useState<TabType>('plan');
 
+  // Active Operating Terminal
+  const [currentPort, setCurrentPort] = useState<PortTerminalSpec>(() => {
+    const savedId = localStorage.getItem('portpulse_selected_port_id');
+    const found = PORT_TERMINALS.find((p) => p.id === savedId);
+    return found || PORT_TERMINALS[1]; // Default Rotterdam World Gateway
+  });
+
+  const handleSelectPort = (port: PortTerminalSpec) => {
+    setCurrentPort(port);
+    localStorage.setItem('portpulse_selected_port_id', port.id);
+    showToast(`Switched operational context to ${port.flag} ${port.name}`);
+  };
+
   // Enforce role-based tab gating on role change
   useEffect(() => {
     const allowed = roleAllowedTabs[role] || roleAllowedTabs.admin;
@@ -127,6 +151,24 @@ export const App: React.FC = () => {
   // Notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showExplainer, setShowExplainer] = useState(true);
+
+  // Dynamic port-adapted operational datasets
+  const berthMapping = useMemo(() => {
+    const map: Record<string, string> = {};
+    currentPort.berths.forEach((b, idx) => {
+      const defaultId = `B-${String(idx + 1).padStart(2, '0')}`;
+      map[defaultId] = b.id;
+    });
+    return map;
+  }, [currentPort]);
+
+  const displaySummary = useMemo(() => adaptSummary(summary, currentPort), [summary, currentPort]);
+  const displayBerths = useMemo(() => adaptBerths(berths, currentPort), [berths, currentPort]);
+  const displayVessels = useMemo(() => adaptVessels(vessels, currentPort, berthMapping), [vessels, currentPort, berthMapping]);
+  const displayOptimisationData = useMemo(() => adaptOptimisationData(optimisationData, currentPort, berthMapping), [optimisationData, currentPort, berthMapping]);
+  const displayHeatmapData = useMemo(() => adaptHeatmapData(heatmapData, currentPort, berthMapping), [heatmapData, currentPort, berthMapping]);
+  const displayAnchorageData = useMemo(() => adaptAnchorageData(anchorageData, currentPort), [anchorageData, currentPort]);
+  const displayRecommendations = useMemo(() => adaptRecommendations(recommendationsData, currentPort, berthMapping), [recommendationsData, currentPort, berthMapping]);
 
   const fetchLiveStatus = useCallback(async (isSilent = false) => {
     try {
@@ -271,6 +313,8 @@ export const App: React.FC = () => {
         visibleTabs={visibleTabs}
         autoRefresh={autoRefresh}
         onToggleAutoRefresh={setAutoRefresh}
+        currentPort={currentPort}
+        onSelectPort={handleSelectPort}
       />
 
       {/* Toast Notification Banner */}
@@ -325,13 +369,13 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-black font-mono text-rose-500">
-                {heatmapData?.summary?.red_tier_count ?? 0}
+                {displayHeatmapData?.summary?.red_tier_count ?? 0}
               </span>
               <span className="text-xs text-content-secondary">RED hours</span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
-              {Array.isArray(heatmapData?.summary?.critical_berths) && heatmapData.summary.critical_berths.length > 0
-                ? `Quays: ${heatmapData.summary.critical_berths.join(', ')}`
+              {Array.isArray(displayHeatmapData?.summary?.critical_berths) && displayHeatmapData.summary.critical_berths.length > 0
+                ? `Quays: ${displayHeatmapData.summary.critical_berths.join(', ')}`
                 : 'No quays in Sev-1 clash'}
             </p>
           </div>
@@ -346,7 +390,7 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-black font-mono text-blue-500">
-                {Array.isArray(recommendationsData?.recommendations) ? recommendationsData.recommendations.length : 0}
+                {Array.isArray(displayRecommendations?.recommendations) ? displayRecommendations.recommendations.length : 0}
               </span>
               <span className="text-xs text-content-secondary">pending review</span>
             </div>
@@ -365,10 +409,10 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-black font-mono text-amber-500">
-                {anchorageData?.current_queue ?? summary?.anchored_vessels ?? 0}
+                {displayAnchorageData?.current_queue ?? displaySummary.anchored_vessels}
               </span>
               <span className="text-xs text-content-secondary">
-                (Peak {anchorageData?.peak_predicted_queue ?? 0})
+                (Peak {displayAnchorageData?.peak_predicted_queue ?? 0})
               </span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
@@ -386,12 +430,12 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-black font-mono text-emerald-500">
-                {summary?.occupied_berths ?? 0} / {summary?.total_berths ?? 10}
+                {displaySummary.occupied_berths} / {displaySummary.total_berths}
               </span>
               <span className="text-xs text-content-secondary">occupied</span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
-              {optimisationData?.crane_utilization_pct ? `${optimisationData.crane_utilization_pct}% STS cranes active` : '10 operational quays'}
+              {displayOptimisationData?.crane_utilization_pct ? `${displayOptimisationData.crane_utilization_pct}% STS cranes active` : `${currentPort.craneCount * 5} operational cranes`}
             </p>
           </div>
 
@@ -408,12 +452,12 @@ export const App: React.FC = () => {
               </div>
               <div className="mt-2 flex items-baseline space-x-2">
                 <span className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
-                  {optimisationData?.average_wait_time_hours ?? 16.4}h
+                  {displayOptimisationData?.average_wait_time_hours ?? currentPort.metricsBaseline.opt_wait_hours}h
                 </span>
                 <span className="text-xs text-content-secondary">per vessel</span>
               </div>
               <p className="mt-1 text-[11px] text-content-muted truncate">
-                Total Demurrage: ${Math.round((optimisationData?.total_port_demurrage_usd ?? 849000) / 1000)}k
+                Total Demurrage: ${Math.round((displayOptimisationData?.total_port_demurrage_usd ?? currentPort.metricsBaseline.opt_demurrage_usd) / 1000)}k
               </p>
             </div>
           ) : (
@@ -464,7 +508,9 @@ export const App: React.FC = () => {
         {/* Core Feature 4: 72-Hour Port Operations Plan (Dedicated Shift Supervisor View) */}
         {!loading && activeTab === 'plan' && (
           <OperationsPlanView
-            optimisationData={optimisationData}
+            optimisationData={displayOptimisationData}
+            berths={displayBerths}
+            currentPort={currentPort}
             loading={prescriptiveLoading}
             onRefresh={() => {
               fetchLiveStatus();
@@ -484,6 +530,10 @@ export const App: React.FC = () => {
         {/* Tab 1: Terminal Map */}
         {!loading && activeTab === 'map' && (
           <VesselMap
+            currentPort={currentPort}
+            berths={displayBerths}
+            vessels={displayVessels}
+            heatmapData={displayHeatmapData}
             onSelectVessel={(vId) => handleOpenOverride(vId)}
             onOpenOverride={(vId) => handleOpenOverride(vId)}
           />
@@ -492,9 +542,9 @@ export const App: React.FC = () => {
         {/* Tab 2: Live Operations Manifest */}
         {!loading && activeTab === 'live' && (
           <LiveStatusTable
-            summary={summary}
-            vessels={vessels}
-            berths={berths}
+            summary={displaySummary}
+            vessels={displayVessels}
+            berths={displayBerths}
             onTriggerEvent={showToast}
             onRefresh={() => fetchLiveStatus(false)}
           />
@@ -504,11 +554,11 @@ export const App: React.FC = () => {
         {!loading && activeTab === 'heatmap' && (
           <div className="space-y-6">
             <TimelineForecast
-              berths={heatmapData?.berths || []}
-              generatedAt={heatmapData?.generated_at}
+              berths={displayHeatmapData?.berths || []}
+              generatedAt={displayHeatmapData?.generated_at}
             />
             <CongestionHeatmap
-              heatmapData={heatmapData}
+              heatmapData={displayHeatmapData}
               loading={heatmapLoading}
               onRefresh={() => fetchLiveStatus(false)}
             />
@@ -518,7 +568,7 @@ export const App: React.FC = () => {
         {/* Tab 4: Prescriptive Operational Interventions */}
         {!loading && activeTab === 'recommendations' && (
           <RecommendationFeed
-            recommendationsData={recommendationsData}
+            recommendationsData={displayRecommendations}
             loading={prescriptiveLoading}
             onRefresh={fetchPrescriptiveData}
             userRole={role}
@@ -529,13 +579,13 @@ export const App: React.FC = () => {
         {!loading && activeTab === 'optimiser' && (
           <div className="space-y-6">
             <BerthScheduleGantt
-              optimisationData={optimisationData}
+              optimisationData={displayOptimisationData}
               loading={prescriptiveLoading}
               onRefresh={fetchPrescriptiveData}
               onOpenOverrideModal={handleOpenOverride}
               userRole={role}
             />
-            <WhatIfSimulator vessels={vessels} berths={berths} />
+            <WhatIfSimulator vessels={displayVessels} berths={displayBerths} />
           </div>
         )}
 
@@ -544,7 +594,7 @@ export const App: React.FC = () => {
 
         {/* Tab 7: Cascading Delay Simulation */}
         {!loading && activeTab === 'cascade' && (
-          <CascadeDelaySimulator vessels={vessels} />
+          <CascadeDelaySimulator vessels={displayVessels} />
         )}
 
         {/* Tab 8: Predictive Forecast Accuracy & Baselines */}
@@ -555,8 +605,8 @@ export const App: React.FC = () => {
       <ManualOverrideModal
         isOpen={overrideModalOpen}
         onClose={() => setOverrideModalOpen(false)}
-        vessels={vessels}
-        berths={berths}
+        vessels={displayVessels}
+        berths={displayBerths}
         initialVesselId={overrideTargetVesselId}
         onOverrideSuccess={() => {
           showToast('Manual override verified and applied to master schedule.');

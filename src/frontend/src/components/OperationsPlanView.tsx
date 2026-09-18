@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OptimisationRunResponse, api, apiClient, ShiftBriefingResponse, AutoOptimizeResult } from '../api/client';
+import { OptimisationRunResponse, BerthStatusItem, api, apiClient, ShiftBriefingResponse, AutoOptimizeResult } from '../api/client';
+import { PortTerminalSpec } from '../utils/portData';
 import {
   CalendarDays,
   Download,
@@ -38,6 +39,8 @@ interface OperationsPlanViewProps {
   userRole: string;
   onNavigateTab?: (tab: string) => void;
   onAutoOptimizeComplete?: () => void;
+  currentPort?: PortTerminalSpec;
+  berths?: BerthStatusItem[];
 }
 
 export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
@@ -48,6 +51,8 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   userRole,
   onNavigateTab,
   onAutoOptimizeComplete,
+  currentPort,
+  berths,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<OperationsSubTab>('MAP');
   const [selectedShift, setSelectedShift] = useState<number | 'ALL'>('ALL');
@@ -251,8 +256,14 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
       {/* Top Header & Global Actions */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-1">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-content-primary tracking-tight flex items-center space-x-3">
+          <h2 className="text-xl sm:text-2xl font-black text-content-primary tracking-tight flex items-center space-x-3 flex-wrap gap-y-1">
             <span>72-Hour Tactical Operations Plan</span>
+            {currentPort && (
+              <span className="text-xs px-2.5 py-1 rounded-xl bg-surface-card border border-surface-border text-content-primary font-bold shadow-xs flex items-center space-x-1.5">
+                <span className="text-base">{currentPort.flag}</span>
+                <span>{currentPort.name}</span>
+              </span>
+            )}
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold border border-blue-500/30 uppercase tracking-wider">
               HiGHS MILP Optimised
             </span>
@@ -669,7 +680,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-black text-content-primary">
-                {optimisationData?.vessels_scheduled ?? (assignments?.length || 50)}
+                {currentPort?.metricsBaseline.scheduled_vessels ?? optimisationData?.vessels_scheduled ?? (assignments?.length || 50)}
               </span>
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                 kpiMode === 'optimized'
@@ -701,12 +712,14 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             <div className="mt-2 flex items-baseline justify-between">
               <span className={`text-2xl font-black font-mono ${kpiMode === 'optimized' ? 'text-blue-500' : 'text-rose-500'}`}>
                 {kpiMode === 'optimized'
-                  ? `${(optimisationData?.average_wait_time_hours ?? 5.3).toFixed(1)}h`
-                  : `${(autoOptResult?.baseline_average_wait_time_hours ?? 13.8).toFixed(1)}h`}
+                  ? `${(currentPort?.metricsBaseline.opt_wait_hours ?? optimisationData?.average_wait_time_hours ?? 5.3).toFixed(1)}h`
+                  : `${(currentPort?.metricsBaseline.unmanaged_wait_hours ?? autoOptResult?.baseline_average_wait_time_hours ?? 13.8).toFixed(1)}h`}
               </span>
               {kpiMode === 'optimized' && (
                 <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                  ↓ 61.6%
+                  ↓ {currentPort
+                    ? (((currentPort.metricsBaseline.unmanaged_wait_hours - currentPort.metricsBaseline.opt_wait_hours) / currentPort.metricsBaseline.unmanaged_wait_hours) * 100).toFixed(1)
+                    : '61.6'}%
                 </span>
               )}
             </div>
@@ -716,7 +729,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               {kpiMode === 'optimized' ? (
                 <>
                   <TrendingDown className="w-3 h-3 mr-1" />
-                  Within target operating buffer (vs 13.8h baseline)
+                  Within target operating buffer (vs {currentPort?.metricsBaseline.unmanaged_wait_hours ?? 13.8}h baseline)
                 </>
               ) : (
                 'Uncoordinated FIFO anchorage queuing backlog'
@@ -739,16 +752,16 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             <div className="mt-2 flex items-baseline justify-between">
               <span className={`text-2xl font-black ${kpiMode === 'optimized' ? 'text-amber-500' : 'text-slate-400'}`}>
                 {kpiMode === 'optimized'
-                  ? `${(optimisationData?.crane_utilization_pct ?? 95.0).toFixed(1)}%`
-                  : '58.2%'}
+                  ? `${(currentPort?.metricsBaseline.opt_crane_util ?? optimisationData?.crane_utilization_pct ?? 95.0).toFixed(1)}%`
+                  : `${(currentPort?.metricsBaseline.unmanaged_crane_util ?? 58.2).toFixed(1)}%`}
               </span>
               <span className="text-[10px] font-mono text-content-muted">
-                {kpiMode === 'optimized' ? '20/20 STS' : 'Idle Cranes'}
+                {kpiMode === 'optimized' ? `${(currentPort?.craneCount ?? 4) * 5}/${(currentPort?.craneCount ?? 4) * 5} STS` : 'Idle Cranes'}
               </span>
             </div>
             <span className="text-[10px] text-content-muted mt-1 block">
               {kpiMode === 'optimized'
-                ? 'STS Gangs allocated optimally across 10 quays'
+                ? `STS Gangs allocated optimally across ${currentPort?.berths?.length ?? 10} quays`
                 : 'Unbalanced crane idling during vessel congestion'}
             </span>
           </div>
@@ -768,12 +781,14 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             <div className="mt-2 flex items-baseline justify-between">
               <span className={`text-2xl font-black font-mono ${kpiMode === 'optimized' ? 'text-rose-500' : 'text-rose-600'}`}>
                 ${kpiMode === 'optimized'
-                  ? Math.round(optimisationData?.total_port_demurrage_usd ?? 336988).toLocaleString()
-                  : Math.round(autoOptResult?.baseline_total_demurrage_usd ?? 618229).toLocaleString()}
+                  ? Math.round(currentPort?.metricsBaseline.opt_demurrage_usd ?? optimisationData?.total_port_demurrage_usd ?? 336988).toLocaleString()
+                  : Math.round(currentPort?.metricsBaseline.unmanaged_demurrage_usd ?? autoOptResult?.baseline_total_demurrage_usd ?? 618229).toLocaleString()}
               </span>
               {kpiMode === 'optimized' && (
                 <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                  -$281k
+                  -${currentPort
+                    ? Math.round((currentPort.metricsBaseline.unmanaged_demurrage_usd - currentPort.metricsBaseline.opt_demurrage_usd) / 1000)
+                    : 281}k
                 </span>
               )}
             </div>
@@ -781,12 +796,19 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               kpiMode === 'optimized' ? 'text-emerald-500' : 'text-rose-500'
             }`}>
               {kpiMode === 'optimized'
-                ? 'Minimized by HiGHS MILP (Saved $281,241 USD)'
+                ? `Minimized by HiGHS MILP (Saved $${Math.round((currentPort?.metricsBaseline.unmanaged_demurrage_usd ?? 618229) - (currentPort?.metricsBaseline.opt_demurrage_usd ?? 336988)).toLocaleString()} USD)`
                 : 'Severe laytime overrun without intelligent berthing'}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Global Optimization Notifications */}
+      {autoOptNotification && (
+        <div className="bg-surface-card border border-blue-500/30 p-3 rounded-lg text-sm text-content-primary">
+          {autoOptNotification}
+        </div>
+      )}
 
       {/* Shock Event Notification Toast */}
       {shockNotification && (
@@ -874,6 +896,8 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             assignments={filteredAssignments}
             selectedShift={selectedShift}
             onOpenOverrideModal={onOpenOverrideModal}
+            berths={berths}
+            currentPort={currentPort}
           />
         </div>
       )}

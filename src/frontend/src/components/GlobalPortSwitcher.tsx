@@ -1,96 +1,26 @@
 import React, { useState } from 'react';
 import { Globe2, Wind, Waves, Gauge, ChevronDown, Check, ShieldCheck, AlertCircle } from 'lucide-react';
+import { PORT_TERMINALS, PortTerminalSpec } from '../utils/portData';
 
-export interface PortTerminalSpec {
-  id: string;
-  name: string;
-  country: string;
-  flag: string;
-  quayLengthM: number;
-  draftLimitM: number;
-  craneCount: number;
-  anchorageCapacity: number;
-  channelDepthM: number;
-  liveWindKnots: number;
-  liveWaveHeightM: number;
-  liveTideHeightM: number;
-  status: 'OPTIMAL' | 'MODERATE' | 'CAUTION';
-}
-
-export const PORT_TERMINALS: PortTerminalSpec[] = [
-  {
-    id: 'SG-TUAS',
-    name: 'Singapore Tuas Gateway',
-    country: 'Singapore',
-    flag: '🇸🇬',
-    quayLengthM: 480.0,
-    draftLimitM: 17.0,
-    craneCount: 5,
-    anchorageCapacity: 40,
-    channelDepthM: 21.0,
-    liveWindKnots: 12.4,
-    liveWaveHeightM: 0.8,
-    liveTideHeightM: 2.6,
-    status: 'OPTIMAL',
-  },
-  {
-    id: 'NL-ROTTERDAM',
-    name: 'Rotterdam World Gateway',
-    country: 'Netherlands',
-    flag: '🇳🇱',
-    quayLengthM: 450.0,
-    draftLimitM: 16.5,
-    craneCount: 4,
-    anchorageCapacity: 25,
-    channelDepthM: 20.0,
-    liveWindKnots: 18.2,
-    liveWaveHeightM: 1.4,
-    liveTideHeightM: 1.9,
-    status: 'OPTIMAL',
-  },
-  {
-    id: 'US-LA-400',
-    name: 'Los Angeles Pier 400',
-    country: 'United States',
-    flag: '🇺🇸',
-    quayLengthM: 440.0,
-    draftLimitM: 16.0,
-    craneCount: 4,
-    anchorageCapacity: 30,
-    channelDepthM: 18.5,
-    liveWindKnots: 15.0,
-    liveWaveHeightM: 1.1,
-    liveTideHeightM: 1.5,
-    status: 'OPTIMAL',
-  },
-  {
-    id: 'IN-JNPA',
-    name: 'Jawaharlal Nehru Port (JNPA)',
-    country: 'India',
-    flag: '🇮🇳',
-    quayLengthM: 400.0,
-    draftLimitM: 16.0,
-    craneCount: 4,
-    anchorageCapacity: 25,
-    channelDepthM: 17.5,
-    liveWindKnots: 22.5,
-    liveWaveHeightM: 1.8,
-    liveTideHeightM: 3.2,
-    status: 'MODERATE',
-  },
-];
+export { PORT_TERMINALS };
+export type { PortTerminalSpec };
 
 interface GlobalPortSwitcherProps {
+  selectedPort?: PortTerminalSpec;
   onSelectPort?: (port: PortTerminalSpec) => void;
 }
 
-export const GlobalPortSwitcher: React.FC<GlobalPortSwitcherProps> = ({ onSelectPort }) => {
-  const [selectedPort, setSelectedPort] = useState<PortTerminalSpec>(PORT_TERMINALS[1]); // Default Rotterdam
+export const GlobalPortSwitcher: React.FC<GlobalPortSwitcherProps> = ({
+  selectedPort: controlledPort,
+  onSelectPort,
+}) => {
+  const [internalPort, setInternalPort] = useState<PortTerminalSpec>(PORT_TERMINALS[1]); // Default Rotterdam
+  const selectedPort = controlledPort || internalPort;
   const [isOpen, setIsOpen] = useState(false);
   const [showTelemetryModal, setShowTelemetryModal] = useState(false);
 
   const handleSelect = (p: PortTerminalSpec) => {
-    setSelectedPort(p);
+    setInternalPort(p);
     setIsOpen(false);
     if (onSelectPort) onSelectPort(p);
   };
@@ -144,11 +74,10 @@ export const GlobalPortSwitcher: React.FC<GlobalPortSwitcherProps> = ({ onSelect
                   key={p.id}
                   type="button"
                   onClick={() => handleSelect(p)}
-                  className={`w-full text-left p-2.5 rounded-xl transition flex items-center justify-between text-xs ${
-                    isSelected
+                  className={`w-full text-left p-2.5 rounded-xl transition flex items-center justify-between text-xs ${isSelected
                       ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/30'
                       : 'hover:bg-surface-hover text-content-primary'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center space-x-2.5">
                     <span className="text-base">{p.flag}</span>

@@ -14,9 +14,11 @@ interface QuaysideSpatialMapProps {
   assignments: any[];
   selectedShift: number | 'ALL';
   onOpenOverrideModal: (vesselId?: string) => void;
+  berths?: any[];
+  currentPort?: any;
 }
 
-// 10 Standard Berths configuration
+// 10 Standard Berths fallback configuration
 const BERTHS_CONFIG = [
   { id: 'B-01', name: 'Berth 01 Quay', maxDraft: 16.5, length: 420, suitableFor: 'ULCV / Mega-Ships' },
   { id: 'B-02', name: 'Berth 02 Quay', maxDraft: 16.0, length: 400, suitableFor: 'ULCV / Post-Panamax' },
@@ -34,11 +36,24 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
   assignments,
   selectedShift,
   onOpenOverrideModal,
+  berths,
+  currentPort,
 }) => {
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
   const [anchoragePage, setAnchoragePage] = useState<number>(1);
   const ANCHORAGE_PER_PAGE = 4;
-  const berthsConfig = BERTHS_CONFIG;
+  const berthsConfig = useMemo(() => {
+    if (berths && berths.length > 0) {
+      return berths.map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        maxDraft: b.draft_limit_m ?? b.maxDraft ?? 15.0,
+        length: b.length_m ?? b.length ?? 380,
+        suitableFor: b.suitable_for ?? (b.length_m >= 420 ? 'ULCV / Mega-Ships' : b.length_m >= 380 ? 'Post-Panamax' : 'Panamax / Feeder'),
+      }));
+    }
+    return BERTHS_CONFIG;
+  }, [berths]);
 
   // Map assignments to berths
   const berthMap = useMemo(() => {
@@ -89,7 +104,7 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
               </span>
             </h3>
             <p className="text-xs text-slate-300">
-              Interactive quayside shoreline with active berths, crane allocations, anchorage holding basins, and live congestion tracking
+              {currentPort ? `${currentPort.flag} ${currentPort.name} quayside shoreline` : 'Interactive quayside shoreline'} with active berths, crane allocations, anchorage holding basins, and live congestion tracking
             </p>
           </div>
         </div>
