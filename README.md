@@ -26,24 +26,6 @@
 
 ---
 
-### 📸 Application Screenshots Gallery
-
-| 1. Baseline ML Verification | 2. Port Infrastructure & Fleet Master Data |
-| :---: | :---: |
-| ![Forecast Benchmarks](demo/screenshots/01_forecast_benchmarks.png) | ![Fleet Master Data](demo/screenshots/02_fleet_master_data.png) |
-
-| 3. Enterprise RBAC & Users | 4. Watsonx / RAG Grounded Copilot |
-| :---: | :---: |
-| ![Personnel RBAC](demo/screenshots/03_personnel_rbac.png) | ![AI Copilot Assistant](demo/screenshots/04_ai_copilot_assistant.png) |
-
-| 5. Operational Activity & Immutable Audit Trail |
-| :---: |
-| ![Audit Trail](demo/screenshots/05_audit_trail_activity_log.png) |
-
----
-
----
-
 ## 🎯 Problem Statement
 
 Container port terminals allocate berths, cranes, and yard space manually using spreadsheets and reactive judgment — responding to congestion only *after* vessels are already idling offshore. There is no forward-looking system that fuses vessel schedule data, berth/crane capacity, and historical turnaround patterns into a 72-hour predictive view.
