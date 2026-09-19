@@ -22,7 +22,7 @@
 - 🌐 **Live Cloud Cockpit**: [https://portpulse-flame.vercel.app](https://portpulse-flame.vercel.app)
 - 🎥 **Video Demonstration**: [Watch on Google Drive](https://drive.google.com/file/d/1BLWRsNu7AvSJW6l2Fcy4yaJqxmv450by/view?usp=drivesdk)
 - 📊 **Pitch Deck (Canva)**: [View Interactive Deck](https://canva.link/f7xcddko2qvs3in)
-- 📑 **Presentation PDF**: [Port Pulse.pdf](presentation/Port%20Pulse.pdf)
+- 📑 **Presentation PDF**: [slides.pdf](presentation/slides.pdf)
 
 ---
 

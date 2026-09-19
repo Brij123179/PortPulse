@@ -4,7 +4,7 @@
 
 - **Interactive Presentation Deck**: [Open in Canva](https://canva.link/f7xcddko2qvs3in)
 - **Direct Link**: `https://canva.link/f7xcddko2qvs3in`
-- **Offline PDF Deck**: [Port Pulse.pdf](./Port%20Pulse.pdf)
+- **Offline PDF Deck**: [slides.pdf](./slides.pdf)
 
 ---
 
