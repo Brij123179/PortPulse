@@ -1,6 +1,6 @@
 # 🚀 PortPulse — Container Congestion Predictor & Port Operations Optimiser
 
-![Validate Submission](https://github.com/Brij123179/PortPulse/actions/workflows/validate.yml/badge.svg)
+![Validate Submission](https://github.com/diya2405/ibm-hackathon-pcpirates/actions/workflows/validate.yml/badge.svg)
 
 > **IBM BoB AI Hackathon 2026 — Industry Problem Statement L1**
 > A predictive digital twin and prescriptive cockpit for maritime container terminals that predicts quayside and anchorage bottlenecks 72 hours in advance and generates constraint-guaranteed optimization advisories.
@@ -22,7 +22,7 @@
 - 🌐 **Live Cloud Cockpit**: [https://portpulse-flame.vercel.app](https://portpulse-flame.vercel.app)
 - 🎥 **Video Demonstration**: [Watch on Google Drive](https://drive.google.com/file/d/1BLWRsNu7AvSJW6l2Fcy4yaJqxmv450by/view?usp=drivesdk)
 - 📊 **Pitch Deck (Canva)**: [View Interactive Deck](https://canva.link/f7xcddko2qvs3in)
-- 📑 **Presentation PDF**: [Port Pulse.pdf](presentation/Port%20Pulse.pdf)
+- 📑 **Presentation PDF**: [slides.pdf](presentation/slides.pdf)
 
 ---
 
@@ -125,8 +125,8 @@ Evaluated on a **strict 70% temporal train / 30% held-out test split** (1,755 tr
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/Brij123179/PortPulse.git
-cd PortPulse
+git clone https://github.com/diya2405/ibm-hackathon-pcpirates.git
+cd ibm-hackathon-pcpirates
 
 # 2. Backend — install dependencies
 cd src/backend
