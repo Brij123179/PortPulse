@@ -28,6 +28,7 @@ from app.services.optimiser.override_guard import override_guard
 from app.services.optimiser.whatif_simulator import whatif_simulator
 from app.services.optimiser.shock_simulator import vessel_delay_shock_simulator
 from app.services.audit import AuditService
+from app.services.ml.risk_engine import risk_engine
 from app.services.ml.feedback import feedback_tracker
 
 router = APIRouter(prefix="/api/v1", tags=["Prescriptive Layer & Optimisation"])
@@ -255,6 +256,13 @@ def manual_override(
             "warnings": res.warnings
         }
     )
+    if res.is_valid:
+        try:
+            risk_engine.clear_cache()
+            risk_engine.re_evaluate_all_predictions(db, trigger="MANUAL_OVERRIDE")
+        except Exception:
+            risk_engine.clear_cache()
+
     return res
 
 

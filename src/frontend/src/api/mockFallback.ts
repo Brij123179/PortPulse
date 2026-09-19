@@ -148,6 +148,8 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
   // 4. Congestion Heatmap
   if (cleanEndpoint === '/risk/heatmap' || cleanEndpoint === '/forecast/heatmap' || cleanEndpoint === '/forecast/berths') {
     const isOptimized = !endpoint.includes('optimized=false');
+    const horizonMatch = endpoint.match(/[?&]horizon=(\d+)/);
+    const horizon = horizonMatch ? Math.min(168, Math.max(12, parseInt(horizonMatch[1], 10))) : 72;
 
     interface ScheduleSlot {
       vesselId: string;
@@ -214,7 +216,28 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
       ],
     };
 
-    const activeSchedule = isOptimized ? optimizedSchedules : baselineSchedules;
+    const baseSched = isOptimized ? optimizedSchedules : baselineSchedules;
+    const activeSchedule: Record<string, ScheduleSlot[]> = {};
+    Object.keys(baseSched).forEach(k => {
+      activeSchedule[k] = baseSched[k].map(s => ({ ...s }));
+    });
+
+    // Synchronize with any vessel assignment updates or overrides in localVessels
+    localVessels.forEach(v => {
+      if (v.assigned_berth_id) {
+        for (const bId of Object.keys(activeSchedule)) {
+          const idx = activeSchedule[bId].findIndex(s => s.vesselId === v.id);
+          if (idx !== -1 && bId !== v.assigned_berth_id) {
+            const [slot] = activeSchedule[bId].splice(idx, 1);
+            if (!activeSchedule[v.assigned_berth_id]) {
+              activeSchedule[v.assigned_berth_id] = [];
+            }
+            activeSchedule[v.assigned_berth_id].push(slot);
+            break;
+          }
+        }
+      }
+    });
 
     let redCount = 0;
     let amberCount = 0;
@@ -226,7 +249,7 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
       const hasCraneBreakdown = b.operational_cranes < b.crane_slots;
       const isUnderMaintenance = b.status === 'MAINTENANCE';
 
-      const timeline = Array.from({ length: 72 }, (_, i) => {
+      const timeline = Array.from({ length: horizon }, (_, i) => {
         if (isUnderMaintenance) {
           greenCount++;
           return {
@@ -434,7 +457,7 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
       correlation_id: `hm-${Date.now()}`,
       model_version: 'GBM-V3.4-Ensemble',
       generated_at: new Date().toISOString(),
-      horizon_hours: 72,
+      horizon_hours: horizon,
       summary: {
         red_tier_count: redCount,
         amber_tier_count: amberCount,
@@ -443,8 +466,8 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
         peak_congestion_window: isOptimized
           ? 'Nominal Operations (AI Deconflicted)'
           : 'T+16h to T+32h (ULCV Dual-Vessel Clash)',
-        baseline_red_tier_count: isOptimized ? 24 : undefined,
-        red_hours_resolved_count: isOptimized ? 24 : undefined,
+        baseline_red_tier_count: isOptimized ? Math.round(24 * (horizon / 72)) : undefined,
+        red_hours_resolved_count: isOptimized ? Math.round(24 * (horizon / 72)) : undefined,
         is_optimized: isOptimized,
       } as any,
       berths: berthsHeatmap,
@@ -454,19 +477,25 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
 
   // 5. Anchorage Forecast
   if (cleanEndpoint === '/forecast/anchorage') {
-    const timeline = Array.from({ length: 72 }, (_, i) => ({
+    const isOptimized = !endpoint.includes('optimized=false');
+    const horizonMatch = endpoint.match(/[?&]horizon=(\d+)/);
+    const horizon = horizonMatch ? Math.min(168, Math.max(12, parseInt(horizonMatch[1], 10))) : 72;
+
+    const timeline = Array.from({ length: horizon }, (_, i) => ({
       hour_offset: i,
       forecast_time: new Date(Date.now() + i * 3600000).toISOString(),
-      predicted_queue: Math.round(12 + Math.sin(i / 6) * 4 + (i > 24 && i < 48 ? 6 : 0)),
-      confidence_low: Math.max(0, Math.round(10 + Math.sin(i / 6) * 3)),
-      confidence_high: Math.round(16 + Math.sin(i / 6) * 4),
+      predicted_queue: isOptimized
+        ? Math.max(1, Math.round(4 + Math.sin(i / 6) * 1.5))
+        : Math.round(12 + Math.sin(i / 6) * 4 + (i > 24 && i < 48 ? 6 : 0)),
+      confidence_low: Math.max(0, Math.round((isOptimized ? 2 : 10) + Math.sin(i / 6) * 1.5)),
+      confidence_high: Math.round((isOptimized ? 6 : 16) + Math.sin(i / 6) * 2),
     }));
 
     const response: AnchorageForecastResponse = {
       correlation_id: `anc-${Date.now()}`,
-      horizon_hours: 72,
-      current_queue: 12,
-      peak_predicted_queue: 19,
+      horizon_hours: horizon,
+      current_queue: isOptimized ? 4 : 12,
+      peak_predicted_queue: isOptimized ? 6 : 19,
       timeline,
     };
     return response;

@@ -129,15 +129,17 @@ export const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showExplainer, setShowExplainer] = useState(true);
   const [heatmapPlanMode, setHeatmapPlanMode] = useState<'optimized' | 'baseline'>('optimized');
+  const [heatmapHorizon, setHeatmapHorizon] = useState<24 | 48 | 72>(72);
 
-  const fetchLiveStatus = useCallback(async (isSilent = false, overridePlanMode?: 'optimized' | 'baseline') => {
+  const fetchLiveStatus = useCallback(async (isSilent = false, overridePlanMode?: 'optimized' | 'baseline', overrideHorizon?: 24 | 48 | 72) => {
     try {
       if (!isSilent) setIsRefreshing(true);
       const activeMode = overridePlanMode ?? heatmapPlanMode;
+      const activeHorizon = overrideHorizon ?? heatmapHorizon;
       const [tableData, hmData, ancData] = await Promise.all([
         api.getLiveStatusTable(),
-        api.getHeatmap(72, activeMode === 'optimized'),
-        api.getAnchorageQueue(72),
+        api.getHeatmap(activeHorizon, activeMode === 'optimized'),
+        api.getAnchorageQueue(activeHorizon, activeMode === 'optimized'),
       ]);
 
       setSummary(tableData.summary);
@@ -158,20 +160,37 @@ export const App: React.FC = () => {
       setIsRefreshing(false);
       setHeatmapLoading(false);
     }
-  }, [heatmapPlanMode]);
+  }, [heatmapPlanMode, heatmapHorizon]);
 
   const handleHeatmapPlanModeChange = useCallback(async (mode: 'optimized' | 'baseline') => {
     setHeatmapPlanMode(mode);
     setHeatmapLoading(true);
     try {
-      const hmData = await api.getHeatmap(72, mode === 'optimized');
+      const hmData = await api.getHeatmap(heatmapHorizon, mode === 'optimized');
       setHeatmapData(hmData);
     } catch (err: any) {
       console.error('Failed to switch heatmap plan mode:', err);
     } finally {
       setHeatmapLoading(false);
     }
-  }, []);
+  }, [heatmapHorizon]);
+
+  const handleHeatmapHorizonChange = useCallback(async (h: 24 | 48 | 72) => {
+    setHeatmapHorizon(h);
+    setHeatmapLoading(true);
+    try {
+      const [hmData, ancData] = await Promise.all([
+        api.getHeatmap(h, heatmapPlanMode === 'optimized'),
+        api.getAnchorageQueue(h, heatmapPlanMode === 'optimized'),
+      ]);
+      setHeatmapData(hmData);
+      setAnchorageData(ancData);
+    } catch (err: any) {
+      console.error('Failed to switch heatmap horizon:', err);
+    } finally {
+      setHeatmapLoading(false);
+    }
+  }, [heatmapPlanMode]);
 
   const fetchPrescriptiveData = useCallback(async () => {
     try {
@@ -622,6 +641,8 @@ export const App: React.FC = () => {
               onRefresh={() => fetchLiveStatus(false)}
               planMode={heatmapPlanMode}
               onPlanModeChange={handleHeatmapPlanModeChange}
+              horizon={heatmapHorizon}
+              onHorizonChange={handleHeatmapHorizonChange}
             />
           </div>
         )}

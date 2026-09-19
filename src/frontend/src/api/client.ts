@@ -566,8 +566,8 @@ export const api = {
   getHeatmap: (horizon = 72, optimized = true) =>
     apiFetch<HeatmapResponse>(`/risk/heatmap?horizon=${horizon}&optimized=${optimized}`),
 
-  getAnchorageQueue: (horizon = 72) =>
-    apiFetch<AnchorageForecastResponse>(`/forecast/anchorage?horizon=${horizon}`),
+  getAnchorageQueue: (horizon = 72, optimized = true) =>
+    apiFetch<AnchorageForecastResponse>(`/forecast/anchorage?horizon=${horizon}&optimized=${optimized}`),
 
   simulateCascadeDelay: (vesselId: string, delayHours: number) =>
     apiFetch<CascadeSimulationResponse>('/simulate/cascade', {

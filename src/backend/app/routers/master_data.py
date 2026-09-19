@@ -9,8 +9,17 @@ from app.schemas.berth import BerthCreate, BerthUpdate, BerthResponse, YardCapac
 from app.schemas.vessel import VesselCreate, VesselUpdate, VesselResponse
 from app.schemas.common import SuccessResponse
 from app.core.logging import correlation_id_ctx
+from app.services.ml.risk_engine import risk_engine
 
 router = APIRouter(prefix="/api/v1/master-data", tags=["Master Data CRUD"])
+
+
+def _trigger_risk_refresh(db: Session, trigger_name: str):
+    try:
+        risk_engine.clear_cache()
+        risk_engine.re_evaluate_all_predictions(db, trigger=trigger_name)
+    except Exception:
+        risk_engine.clear_cache()
 
 
 # --- BERTHS ---
@@ -45,6 +54,7 @@ def create_berth(
         entity_id=res.id,
         payload_snapshot={"name": res.name, "length_m": res.length_m, "draft_limit_m": res.draft_limit_m, "crane_slots": res.crane_slots}
     )
+    _trigger_risk_refresh(db, "CREATE_BERTH")
     return res
 
 
@@ -67,6 +77,7 @@ def update_berth(
         entity_id=res.id,
         payload_snapshot=berth_update.model_dump(exclude_unset=True)
     )
+    _trigger_risk_refresh(db, "UPDATE_BERTH")
     return res
 
 
@@ -87,6 +98,7 @@ def delete_berth(
         entity_type="BERTH",
         entity_id=berth_id
     )
+    _trigger_risk_refresh(db, "DELETE_BERTH")
     return SuccessResponse(
         status="success",
         message=f"Berth '{berth_id}' removed successfully.",
@@ -131,6 +143,7 @@ def create_vessel(
         entity_id=res.id,
         payload_snapshot={"name": res.name, "id": res.id, "cargo_volume": res.cargo_volume, "assigned_berth_id": res.assigned_berth_id}
     )
+    _trigger_risk_refresh(db, "CREATE_VESSEL")
     return res
 
 
@@ -153,6 +166,7 @@ def update_vessel(
         entity_id=res.id,
         payload_snapshot=vessel_update.model_dump(exclude_unset=True)
     )
+    _trigger_risk_refresh(db, "UPDATE_VESSEL")
     return res
 
 
@@ -173,6 +187,7 @@ def delete_vessel(
         entity_type="VESSEL",
         entity_id=vessel_id
     )
+    _trigger_risk_refresh(db, "DELETE_VESSEL")
     return SuccessResponse(
         status="success",
         message=f"Vessel '{vessel_id}' deleted successfully.",

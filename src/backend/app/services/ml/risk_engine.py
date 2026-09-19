@@ -28,35 +28,23 @@ class PortRiskEngine:
         self.occupancy_forecaster = BerthOccupancyForecaster(self.eta_model)
         self.models_initialized = False
         self.initialization_error: Optional[str] = None
-        self._forecast_cache: Optional[Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]] = None
-        self._forecast_cache_time: Optional[datetime] = None
-        self._forecast_cache_horizon: Optional[int] = None
-        self._forecast_cache_optimized: Optional[bool] = None
+        self._forecast_cache: Dict[Tuple[int, bool], Tuple[datetime, Any]] = {}
 
     def clear_cache(self):
         """Clears in-memory forecast cache."""
-        self._forecast_cache = None
-        self._forecast_cache_time = None
-        self._forecast_cache_horizon = None
-        self._forecast_cache_optimized = None
+        self._forecast_cache.clear()
 
     def _get_cached_forecast_72h(self, db: Session, horizon_hours: int = 72, optimized: bool = True) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
-        """Returns cached 72h forecast if recent (< 25s) to avoid repeated remote database simulations."""
+        """Returns cached forecast if recent (< 10s) and parameters match, otherwise recalculates."""
         now = datetime.now(timezone.utc)
-        if (
-            self._forecast_cache is not None
-            and self._forecast_cache_horizon == horizon_hours
-            and self._forecast_cache_optimized == optimized
-            and self._forecast_cache_time is not None
-            and (now - self._forecast_cache_time).total_seconds() < 25.0
-        ):
-            return self._forecast_cache
+        cache_key = (horizon_hours, optimized)
+        if cache_key in self._forecast_cache:
+            cache_time, cached_data = self._forecast_cache[cache_key]
+            if (now - cache_time).total_seconds() < 10.0:
+                return cached_data
 
         result = self.occupancy_forecaster.forecast_72h(db, horizon_hours=horizon_hours, optimized=optimized)
-        self._forecast_cache = result
-        self._forecast_cache_time = now
-        self._forecast_cache_horizon = horizon_hours
-        self._forecast_cache_optimized = optimized
+        self._forecast_cache[cache_key] = (now, result)
         return result
 
     def initialize_models(self, db: Session):
@@ -240,11 +228,11 @@ class PortRiskEngine:
             berths=tracks
         )
 
-    def get_anchorage_forecast(self, db: Session, horizon_hours: int = 72) -> AnchorageForecastResponse:
+    def get_anchorage_forecast(self, db: Session, horizon_hours: int = 72, optimized: bool = True) -> AnchorageForecastResponse:
         self.initialize_models(db)
         corr_id = correlation_id_ctx.get() or "anchorage-query"
 
-        _, queue_timeline = self._get_cached_forecast_72h(db, horizon_hours=horizon_hours)
+        _, queue_timeline = self._get_cached_forecast_72h(db, horizon_hours=horizon_hours, optimized=optimized)
 
         items = [
             AnchorageHourItem(

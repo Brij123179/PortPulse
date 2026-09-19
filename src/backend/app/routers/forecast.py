@@ -44,13 +44,14 @@ def get_berth_occupancy_forecast(
 @router.get("/forecast/anchorage", response_model=AnchorageForecastResponse)
 def get_anchorage_queue_forecast(
     horizon: int = Query(72, ge=12, le=168),
+    optimized: bool = Query(True, description="Whether to evaluate AI-optimized schedule or unmanaged baseline"),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user)
 ):
     """
     F-204: Predicts number of vessels waiting in offshore anchorage queue over the horizon.
     """
-    return risk_engine.get_anchorage_forecast(db, horizon_hours=horizon)
+    return risk_engine.get_anchorage_forecast(db, horizon_hours=horizon, optimized=optimized)
 
 
 @router.post("/simulate/cascade", response_model=CascadeSimulationResponse)
