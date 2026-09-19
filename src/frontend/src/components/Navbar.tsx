@@ -12,8 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  BookOpen,
-  X,
 } from 'lucide-react';
 
 export interface NavTabItem {
@@ -55,7 +53,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [showPitchModal, setShowPitchModal] = useState(false);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -97,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="no-print border-b border-surface-border bg-surface-card/95 backdrop-blur-md sticky top-0 z-30 transition-colors shadow-xs">
+    <header className="no-print border-b border-surface-border bg-surface-card/95 backdrop-blur-md sticky top-0 z-40 transition-colors shadow-xs">
       {/* Row 1: Top Utility & Command Deck */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-15 flex items-center justify-between gap-2">
         {/* Left: Brand & Telemetry Status */}
@@ -165,16 +162,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="hidden lg:inline">Master Data</span>
               </button>
 
-              {/* Presentation Pitch Guide */}
-              <button
-                onClick={() => setShowPitchModal(true)}
-                className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition"
-                title="Open Judge Presentation & 60-Second Pitch Guide"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden xl:inline">Pitch Guide</span>
-              </button>
-
               {/* Guided Tour Trigger */}
               <button
                 onClick={onOpenTour}
@@ -209,8 +196,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Sign Out */}
             <button
-              onClick={() => logout()}
-              className="p-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-xl border border-surface-border bg-surface-bg hover:bg-rose-500/10 hover:border-rose-500/30 text-content-secondary hover:text-rose-600 dark:hover:text-rose-400 transition flex items-center space-x-1"
+              onClick={() => {
+                logout();
+                window.history.pushState({}, '', '/login');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="p-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-xl border border-surface-border bg-surface-bg hover:bg-rose-500/10 hover:border-rose-500/30 text-content-secondary hover:text-rose-600 dark:hover:text-rose-400 transition flex items-center space-x-1 cursor-pointer"
               title="Sign Out of Operations Cockpit"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -336,126 +327,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Quick Pitch & Presentation Guide Modal */}
-      {showPitchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-surface-card border border-surface-border rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-surface-border pb-3">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-content-primary">
-                    🎤 PortPulse Pitch &amp; Presentation Cheat Sheet
-                  </h3>
-                  <p className="text-xs text-content-secondary">
-                    Use this 60-second talk track to impress hackathon judges and stakeholders
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPitchModal(false)}
-                className="p-1.5 rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Section 1: The Elevator Pitch */}
-            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/25 space-y-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
-                1. The 30-Second Hook
-              </span>
-              <p className="text-xs text-content-primary leading-relaxed font-medium">
-                &ldquo;Container ports allocate berths, cranes, and yard space using reactive spreadsheets — causing vessels to idle offshore at <strong>$1,040 to $3,125 per hour</strong> in demurrage fines. PortPulse is a predictive digital twin that forecasts congestion 72 hours ahead and prescribes optimal berth allocations with <strong>zero hard constraint violations</strong>.&rdquo;
-              </p>
-            </div>
-
-            {/* Section 2: Key Numbers to Quote */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-content-secondary uppercase tracking-wider block">
-                2. Key Verified Benchmarks to Quote
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-3 rounded-xl bg-surface-bg border border-surface-border">
-                  <span className="text-[10px] text-content-muted block font-semibold">ETA Prediction MAE</span>
-                  <span className="text-base font-extrabold text-blue-500 font-mono">0.66 Hours</span>
-                  <span className="text-[10px] text-emerald-500 block font-bold">+63.2% vs Naive</span>
-                </div>
-                <div className="p-3 rounded-xl bg-surface-bg border border-surface-border">
-                  <span className="text-[10px] text-content-muted block font-semibold">Delay Detection</span>
-                  <span className="text-base font-extrabold text-emerald-500 font-mono">95.88%</span>
-                  <span className="text-[10px] text-emerald-500 block font-bold">99.18% Precision</span>
-                </div>
-                <div className="p-3 rounded-xl bg-surface-bg border border-surface-border">
-                  <span className="text-[10px] text-content-muted block font-semibold">Hard Violations</span>
-                  <span className="text-base font-extrabold text-purple-500 font-mono">Zero</span>
-                  <span className="text-[10px] text-content-muted block font-medium">Draft &amp; Length Safe</span>
-                </div>
-                <div className="p-3 rounded-xl bg-surface-bg border border-surface-border">
-                  <span className="text-[10px] text-content-muted block font-semibold">Demurrage Saved</span>
-                  <span className="text-base font-extrabold text-amber-500 font-mono">&gt;$30,000</span>
-                  <span className="text-[10px] text-emerald-500 block font-bold">Per Congestion Shock</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: 3-Step Demo Walkthrough */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-content-secondary uppercase tracking-wider block">
-                3. The 3-Click Live Demo Flow
-              </span>
-              <div className="space-y-2 text-xs">
-                <div className="p-2.5 rounded-lg bg-surface-bg border border-surface-border flex items-start space-x-3">
-                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                    1
-                  </span>
-                  <div>
-                    <span className="font-bold text-content-primary">Show Quayside Harbor Map:</span>
-                    <p className="text-content-secondary mt-0.5">
-                      Point out true-to-scale vessel footprints, physical draft clearance, and live occupancy rings (green/amber/crimson).
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-surface-bg border border-surface-border flex items-start space-x-3">
-                  <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                    2
-                  </span>
-                  <div>
-                    <span className="font-bold text-content-primary">Inject a Disruption (Congestion Testing Lab):</span>
-                    <p className="text-content-secondary mt-0.5">
-                      Click <em>&ldquo;Inject Mega-Ship Surge&rdquo;</em> or <em>&ldquo;Crane Outage&rdquo;</em>. Show how delays immediately spike from 0.6h to 3.8h.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-surface-bg border border-surface-border flex items-start space-x-3">
-                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                    3
-                  </span>
-                  <div>
-                    <span className="font-bold text-content-primary">Click &ldquo;Auto-Optimize&rdquo; (AI Self-Healing):</span>
-                    <p className="text-content-secondary mt-0.5">
-                      Watch the solver deconflict the harbor, reduce wait times by 75%, and save $30k+ in demurrage with 100% draft and length compliance.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setShowPitchModal(false)}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm"
-              >
-                Got It, Ready to Present!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

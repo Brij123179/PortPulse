@@ -81,6 +81,24 @@ export const roleAllowedTabs: Record<string, TabType[]> = {
 export const App: React.FC = () => {
   const { role, token, isAuthenticated } = useAuth();
 
+  // URL routing tracking (supports /login, ?page=login, and SPA navigation)
+  const [routePath, setRoutePath] = useState<string>(() => {
+    return (window.location.pathname || '').toLowerCase();
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoutePath((window.location.pathname || '').toLowerCase());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const isExplicitLoginRoute = 
+    routePath.startsWith('/login') || 
+    window.location.search.includes('page=login') || 
+    window.location.search.includes('view=login');
+
   // Navigation Tabs (scoped to user's permitted role)
   const [activeTab, setActiveTab] = useState<TabType>('plan');
 
@@ -285,10 +303,17 @@ export const App: React.FC = () => {
   const allowedTabsList = roleAllowedTabs[role] || roleAllowedTabs.admin;
   const visibleTabs = allTabsConfig.filter((tab) => allowedTabsList.includes(tab.id));
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isExplicitLoginRoute) {
     return (
       <LoginPage
+        isAlreadyAuthenticated={isAuthenticated}
+        onNavigateToCockpit={() => {
+          window.history.pushState({}, '', '/');
+          setRoutePath('/');
+        }}
         onLoginSuccess={() => {
+          window.history.pushState({}, '', '/');
+          setRoutePath('/');
           fetchLiveStatus();
           fetchPrescriptiveData();
         }}
@@ -612,7 +637,6 @@ export const App: React.FC = () => {
             berths={berths}
             vessels={vessels}
             heatmapData={heatmapData}
-            onSelectVessel={(vId) => handleOpenOverride(vId)}
             onOpenOverride={(vId) => handleOpenOverride(vId)}
           />
         )}

@@ -228,9 +228,9 @@ export const VesselMap: React.FC<VesselMapProps> = ({
         </div>
       </div>
 
-      <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-slate-950" style={{ height: 580 }}>
+      <div className="relative isolate w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-slate-950" style={{ height: 580 }}>
         {/* ── Active Terminal HUD Badge (Top-Left) ── */}
-        <div className="absolute top-3 left-3 z-[1000] bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl px-3 py-2 shadow-2xl flex items-center space-x-2.5 text-xs pointer-events-auto">
+        <div className="absolute top-3 left-3 z-10 bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl px-3 py-2 shadow-2xl flex items-center space-x-2.5 text-xs pointer-events-auto">
           <span className="text-xl">🇺🇸</span>
           <div>
             <div className="flex items-center space-x-1.5">
@@ -453,7 +453,12 @@ export const VesselMap: React.FC<VesselMapProps> = ({
         </MapContainer>
 
         {/* ── Floating Controls & Legend (Top-Right) ── */}
-        <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 pointer-events-auto max-w-[210px]">
+        <div 
+          className="absolute top-3 right-3 z-20 flex flex-col gap-2 pointer-events-auto max-w-[210px]"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <div className="bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl p-3 shadow-2xl text-xs space-y-2.5">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
@@ -461,7 +466,10 @@ export const VesselMap: React.FC<VesselMapProps> = ({
                 <span>⚡</span> Map Layers
               </span>
               <button
-                onClick={fetchData}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fetchData();
+                }}
                 className="text-[10px] text-sky-400 hover:text-sky-300 font-medium px-1.5 py-0.5 rounded hover:bg-slate-800 transition-colors"
                 title="Refresh telemetry"
               >
@@ -471,7 +479,10 @@ export const VesselMap: React.FC<VesselMapProps> = ({
 
             {/* Toggle Options */}
             <div className="space-y-1.5">
-              <label className="flex items-center justify-between text-slate-300 hover:text-white cursor-pointer select-none">
+              <label 
+                className="flex items-center justify-between text-slate-300 hover:text-white cursor-pointer select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <span className="flex items-center gap-2">
                   <span className="w-2.5 h-0.5 bg-amber-400 rounded"></span>
                   Vessel Trails
@@ -479,12 +490,19 @@ export const VesselMap: React.FC<VesselMapProps> = ({
                 <input
                   type="checkbox"
                   checked={showTrails}
-                  onChange={e => setShowTrails(e.target.checked)}
+                  onChange={e => {
+                    e.stopPropagation();
+                    setShowTrails(e.target.checked);
+                  }}
+                  onClick={e => e.stopPropagation()}
                   className="accent-sky-500 rounded cursor-pointer w-3.5 h-3.5"
                 />
               </label>
 
-              <label className="flex items-center justify-between text-slate-300 hover:text-white cursor-pointer select-none">
+              <label 
+                className="flex items-center justify-between text-slate-300 hover:text-white cursor-pointer select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                   Congestion Heatmap
@@ -492,12 +510,19 @@ export const VesselMap: React.FC<VesselMapProps> = ({
                 <input
                   type="checkbox"
                   checked={showHeatmap}
-                  onChange={e => setShowHeatmap(e.target.checked)}
+                  onChange={e => {
+                    e.stopPropagation();
+                    setShowHeatmap(e.target.checked);
+                  }}
+                  onClick={e => e.stopPropagation()}
                   className="accent-sky-500 rounded cursor-pointer w-3.5 h-3.5"
                 />
               </label>
 
-              <label className="flex items-center justify-between text-slate-300 hover:text-white cursor-pointer select-none">
+              <label 
+                className="flex items-center justify-between text-slate-300 hover:text-white cursor-pointer select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-sky-400"></span>
                   Berth Labels
@@ -505,7 +530,11 @@ export const VesselMap: React.FC<VesselMapProps> = ({
                 <input
                   type="checkbox"
                   checked={showLabels}
-                  onChange={e => setShowLabels(e.target.checked)}
+                  onChange={e => {
+                    e.stopPropagation();
+                    setShowLabels(e.target.checked);
+                  }}
+                  onClick={e => e.stopPropagation()}
                   className="accent-sky-500 rounded cursor-pointer w-3.5 h-3.5"
                 />
               </label>
@@ -558,7 +587,7 @@ export const VesselMap: React.FC<VesselMapProps> = ({
 
         {/* ── Vessel Info Drawer ── */}
         {selectedVessel && (
-          <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl p-4 shadow-2xl max-w-xs w-full space-y-2 pointer-events-auto animate-in slide-in-from-bottom duration-200">
+          <div className="absolute bottom-4 left-4 z-20 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl p-4 shadow-2xl max-w-xs w-full space-y-2 pointer-events-auto animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
               <h4 className="font-bold text-slate-100 text-sm">{selectedVessel.name}</h4>
               <button

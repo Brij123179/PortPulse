@@ -120,7 +120,7 @@ export const VesselDelayShockSimulator: React.FC<VesselDelayShockSimulatorProps>
   };
 
   const filteredAffectedVessels = useMemo(() => {
-    if (!simulationResult) return [];
+    if (!simulationResult || !Array.isArray(simulationResult.affected_vessels)) return [];
     if (manifestFilter === 'PRIMARY') {
       return simulationResult.affected_vessels.filter(v => v.impact_category === 'PRIMARY_SHOCK');
     }
@@ -614,7 +614,7 @@ export const VesselDelayShockSimulator: React.FC<VesselDelayShockSimulatorProps>
                     </span>
                   </div>
                   <h4 className="text-sm sm:text-base font-extrabold text-content-primary tracking-tight mt-1">
-                    Quayside Domino Cascade &amp; Affected Vessel Ledger ({simulationResult.affected_vessels.length} Ships)
+                    Quayside Domino Cascade &amp; Affected Vessel Ledger ({(simulationResult.affected_vessels || []).length} Ships)
                   </h4>
                   <p className="text-xs text-content-secondary mt-0.5">
                     <strong className="text-content-primary">Purpose:</strong> Lists each vessel directly or collaterally delayed by the primary shock, identifying affected berths, delayed arrival windows, and individual demurrage liabilities.
@@ -632,7 +632,7 @@ export const VesselDelayShockSimulator: React.FC<VesselDelayShockSimulatorProps>
                       : 'text-content-secondary hover:text-content-primary'
                   }`}
                 >
-                  All Ships ({simulationResult.affected_vessels.length})
+                  All Ships ({(simulationResult.affected_vessels || []).length})
                 </button>
                 <button
                   type="button"
@@ -643,7 +643,7 @@ export const VesselDelayShockSimulator: React.FC<VesselDelayShockSimulatorProps>
                       : 'text-content-secondary hover:text-content-primary'
                   }`}
                 >
-                  Collateral Ships ({simulationResult.affected_vessels.filter(v => v.impact_category !== 'PRIMARY_SHOCK').length})
+                  Collateral Ships ({(simulationResult.affected_vessels || []).filter(v => v.impact_category !== 'PRIMARY_SHOCK').length})
                 </button>
                 <button
                   type="button"
@@ -770,7 +770,7 @@ export const VesselDelayShockSimulator: React.FC<VesselDelayShockSimulatorProps>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {simulationResult.fleet_chain_impacts.map((fleet) => (
+              {(simulationResult.fleet_chain_impacts || []).map((fleet) => (
                 <div
                   key={fleet.fleet_name}
                   className="p-6 rounded-2xl border border-surface-border/80 bg-surface-bg/70 space-y-4 shadow-sm hover:shadow-md hover:border-surface-hover transition"
@@ -852,7 +852,7 @@ export const VesselDelayShockSimulator: React.FC<VesselDelayShockSimulatorProps>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {simulationResult.mitigation_recommendations.map((action, idx) => (
+                {(simulationResult.mitigation_recommendations || []).map((action, idx) => (
                   <div
                     key={idx}
                     className="p-5 rounded-2xl bg-surface-card border border-surface-border text-xs sm:text-sm space-y-3.5 flex flex-col justify-between shadow-sm hover:border-emerald-500/40 transition"

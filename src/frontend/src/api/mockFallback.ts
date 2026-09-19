@@ -776,6 +776,243 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
     return result;
   }
 
+  // Operational Shock Lab: Vessel Delay Domino Simulator
+  if (cleanEndpoint === '/optimiser/shock-simulation/vessel-delay' && method === 'POST') {
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(String(options.body || '{}'));
+    } catch {
+      parsed = {};
+    }
+    const vesselName = (parsed.vessel_name || 'Ever Given').trim();
+    const delayHours = Math.max(0.5, Number(parsed.delay_hours || 12));
+    const delayCause = parsed.delay_cause || 'ENGINE_BREAKDOWN';
+
+    const matched = localVessels.find(v =>
+      v.name.toLowerCase().includes(vesselName.toLowerCase()) ||
+      vesselName.toLowerCase().includes(v.name.toLowerCase()) ||
+      v.id.toLowerCase() === vesselName.toLowerCase()
+    ) || localVessels[0];
+
+    const vUpper = matched.name.toUpperCase();
+    let carrier = 'Regional Feeder Line';
+    let fleet = 'Independent Regional Fleet';
+    if (vUpper.includes('MAERSK')) { carrier = 'Maersk Line'; fleet = '2M Alliance'; }
+    else if (vUpper.includes('MSC')) { carrier = 'Mediterranean Shipping Co (MSC)'; fleet = '2M Alliance'; }
+    else if (vUpper.includes('CMA CGM')) { carrier = 'CMA CGM Group'; fleet = 'Ocean Alliance'; }
+    else if (vUpper.includes('EVER')) { carrier = 'Evergreen Marine'; fleet = 'Ocean Alliance'; }
+    else if (vUpper.includes('COSCO')) { carrier = 'COSCO Shipping Lines'; fleet = 'Ocean Alliance'; }
+    else if (vUpper.includes('OOCL')) { carrier = 'OOCL'; fleet = 'Ocean Alliance'; }
+    else if (vUpper.includes('HMM')) { carrier = 'HMM (Hyundai Merchant Marine)'; fleet = 'THE / Premier Alliance'; }
+    else if (vUpper.includes('ONE')) { carrier = 'Ocean Network Express (ONE)'; fleet = 'THE / Premier Alliance'; }
+    else if (vUpper.includes('YANG MING')) { carrier = 'Yang Ming Marine Transport'; fleet = 'THE / Premier Alliance'; }
+
+    const origEta = new Date(Date.now() + 3600000 * 2);
+    const delayedEta = new Date(origEta.getTime() + delayHours * 3600000);
+
+    const hourlyRate = matched.vessel_class === 'ULCV' ? 1150 : matched.vessel_class === 'Post-Panamax' ? 750 : 380;
+    const primaryDemurrage = Math.round(delayHours * hourlyRate);
+
+    const collateral1Delay = Math.round(delayHours * 0.75 * 10) / 10;
+    const collateral2Delay = Math.round(delayHours * 0.55 * 10) / 10;
+    const collateral3Delay = Math.round(delayHours * 0.40 * 10) / 10;
+    const collateral4Delay = Math.round(delayHours * 0.25 * 10) / 10;
+
+    const col1Demurrage = Math.round(collateral1Delay * 1100);
+    const col2Demurrage = Math.round(collateral2Delay * 700);
+    const col3Demurrage = Math.round(collateral3Delay * 650);
+    const col4Demurrage = Math.round(collateral4Delay * 350);
+
+    const totalAdditionalWaitHours = Math.round((delayHours + collateral1Delay + collateral2Delay + collateral3Delay + collateral4Delay) * 10) / 10;
+    const totalDemurrage = primaryDemurrage + col1Demurrage + col2Demurrage + col3Demurrage + col4Demurrage;
+    const bunkerWasteUsd = Math.round(totalAdditionalWaitHours * 0.15 * 650);
+    const co2ExcessTonnes = Math.round(totalAdditionalWaitHours * 0.15 * 3.114 * 10) / 10;
+    const berthDisruptionUsd = Math.round(totalAdditionalWaitHours * 250 + (delayHours * 420));
+    const totalDamagesUsd = totalDemurrage + bunkerWasteUsd + berthDisruptionUsd;
+
+    const affectedVessels = [
+      {
+        vessel_id: matched.id,
+        vessel_name: matched.name,
+        vessel_class: matched.vessel_class,
+        carrier: carrier,
+        fleet: fleet,
+        assigned_berth_id: matched.assigned_berth_id || 'B-01',
+        assigned_berth_name: matched.assigned_berth_name || 'Berth 1 - Deepwater ULCV',
+        original_start_time: origEta.toISOString(),
+        delayed_start_time: delayedEta.toISOString(),
+        wait_increase_hours: delayHours,
+        demurrage_impact_usd: primaryDemurrage,
+        impact_category: 'PRIMARY_SHOCK',
+        impact_reason: `Primary Injected Disruption: ${delayCause.replace(/_/g, ' ')} resulting in +${delayHours}h schedule slippage.`,
+        severity: delayHours >= 12 ? 'CRITICAL' : delayHours >= 6 ? 'HIGH' : 'MODERATE',
+      },
+      {
+        vessel_id: 'V-106',
+        vessel_name: 'HMM Algeciras',
+        vessel_class: 'ULCV',
+        carrier: 'HMM (Hyundai Merchant Marine)',
+        fleet: 'THE / Premier Alliance',
+        assigned_berth_id: 'B-01',
+        assigned_berth_name: 'Berth 1 - Deepwater ULCV',
+        original_start_time: new Date(origEta.getTime() + 14400000).toISOString(),
+        delayed_start_time: new Date(origEta.getTime() + 14400000 + collateral1Delay * 3600000).toISOString(),
+        wait_increase_hours: collateral1Delay,
+        demurrage_impact_usd: col1Demurrage,
+        impact_category: 'BERTH_COLLISION_CASCADE',
+        impact_reason: `Direct Quay Conflict: Delayed occupancy of ${matched.name} prevents high-tide docking on Berth 1 (+${collateral1Delay}h wait).`,
+        severity: collateral1Delay >= 6 ? 'CRITICAL' : 'HIGH',
+      },
+      {
+        vessel_id: 'V-107',
+        vessel_name: 'OOCL Hong Kong',
+        vessel_class: 'ULCV',
+        carrier: 'OOCL',
+        fleet: 'Ocean Alliance',
+        assigned_berth_id: 'B-02',
+        assigned_berth_name: 'Berth 2 - Deepwater ULCV',
+        original_start_time: new Date(origEta.getTime() + 25200000).toISOString(),
+        delayed_start_time: new Date(origEta.getTime() + 25200000 + collateral2Delay * 3600000).toISOString(),
+        wait_increase_hours: collateral2Delay,
+        demurrage_impact_usd: col2Demurrage,
+        impact_category: 'QUEUE_DISPLACEMENT',
+        impact_reason: `Queue Re-routing: Pilot slot reassigned to absorb harbor fairway backup (+${collateral2Delay}h delay).`,
+        severity: collateral2Delay >= 5 ? 'HIGH' : 'MODERATE',
+      },
+      {
+        vessel_id: 'V-108',
+        vessel_name: 'COSCO Universe',
+        vessel_class: 'Post-Panamax',
+        carrier: 'COSCO Shipping Lines',
+        fleet: 'Ocean Alliance',
+        assigned_berth_id: 'B-03',
+        assigned_berth_name: 'Berth 3 - Post-Panamax',
+        original_start_time: new Date(origEta.getTime() + 36000000).toISOString(),
+        delayed_start_time: new Date(origEta.getTime() + 36000000 + collateral3Delay * 3600000).toISOString(),
+        wait_increase_hours: collateral3Delay,
+        demurrage_impact_usd: col3Demurrage,
+        impact_category: 'ANCHORAGE_STACK',
+        impact_reason: `Anchorage Stacking: Idling offshore as harbor fairway and tug dispatch queued (+${collateral3Delay}h delay).`,
+        severity: 'MODERATE',
+      },
+      {
+        vessel_id: 'V-105',
+        vessel_name: 'ONE Apus',
+        vessel_class: 'Feeder',
+        carrier: 'Ocean Network Express (ONE)',
+        fleet: 'THE / Premier Alliance',
+        assigned_berth_id: 'B-09',
+        assigned_berth_name: 'Berth 9 - Feeder South',
+        original_start_time: new Date(origEta.getTime() + 43200000).toISOString(),
+        delayed_start_time: new Date(origEta.getTime() + 43200000 + collateral4Delay * 3600000).toISOString(),
+        wait_increase_hours: collateral4Delay,
+        demurrage_impact_usd: col4Demurrage,
+        impact_category: 'QUEUE_DISPLACEMENT',
+        impact_reason: `Gate & Rail Staging: Feeder transshipment connection missed due to delayed quayside container drop.`,
+        severity: 'LOW',
+      },
+    ];
+
+    const fleetChainImpacts = [
+      {
+        fleet_name: fleet,
+        carrier: carrier,
+        vessels_affected_count: 1,
+        total_delay_hours: delayHours,
+        total_demurrage_usd: primaryDemurrage,
+        affected_vessels: [matched.name],
+        chain_risk_level: delayHours >= 12 ? 'CRITICAL' : 'HIGH',
+        operational_note: `Direct shock epicenter: Fleet absorbs primary disruption with ${matched.name} and $${primaryDemurrage.toLocaleString()} demurrage exposure.`,
+      },
+      {
+        fleet_name: 'THE / Premier Alliance',
+        carrier: 'HMM / ONE',
+        vessels_affected_count: 2,
+        total_delay_hours: Math.round((collateral1Delay + collateral4Delay) * 10) / 10,
+        total_demurrage_usd: col1Demurrage + col4Demurrage,
+        affected_vessels: ['HMM Algeciras', 'ONE Apus'],
+        chain_risk_level: collateral1Delay >= 6 ? 'CRITICAL' : 'HIGH',
+        operational_note: `Collateral ripple damage: 2 vessels queued offshore behind delayed berths, totaling ${(collateral1Delay + collateral4Delay).toFixed(1)}h idle time.`,
+      },
+      {
+        fleet_name: 'Ocean Alliance',
+        carrier: 'CMA CGM / COSCO / OOCL',
+        vessels_affected_count: 2,
+        total_delay_hours: Math.round((collateral2Delay + collateral3Delay) * 10) / 10,
+        total_demurrage_usd: col2Demurrage + col3Demurrage,
+        affected_vessels: ['OOCL Hong Kong', 'COSCO Universe'],
+        chain_risk_level: 'MODERATE',
+        operational_note: `Downstream fairway friction: 2 vessels displaced in pilot scheduling with $${(col2Demurrage + col3Demurrage).toLocaleString()} demurrage.`,
+      },
+    ];
+
+    const mitigationRecommendations = [
+      {
+        action_type: 'BERTH_DIVERSION',
+        target_vessel_name: 'HMM Algeciras',
+        description: `Reroute HMM Algeciras from congested Berth 1 to Berth 2 during high-tide surge to eliminate quay clash.`,
+        potential_savings_usd: Math.round(col1Demurrage * 0.85),
+        potential_hours_saved: Math.round(collateral1Delay * 0.8 * 10) / 10,
+      },
+      {
+        action_type: 'SLOW_STEAMING',
+        target_vessel_name: 'OOCL Hong Kong',
+        description: `Virtual Arrival: Instruct OOCL Hong Kong 14h out to drop speed from 18 kts to 14.2 kts, converting idle wait to bunker savings.`,
+        potential_savings_usd: Math.round(bunkerWasteUsd * 0.45 + col2Demurrage * 0.5),
+        potential_hours_saved: Math.round(collateral2Delay * 0.7 * 10) / 10,
+      },
+      {
+        action_type: 'CRANE_BOOST',
+        target_vessel_name: matched.name,
+        description: `Assign 4th STS Gantry Crane and 2 additional straddle carriers to accelerate container discharge upon berthing.`,
+        potential_savings_usd: Math.round(primaryDemurrage * 0.35),
+        potential_hours_saved: Math.round(delayHours * 0.3 * 10) / 10,
+      },
+    ];
+
+    return {
+      status: 'success',
+      correlation_id: `shock-sim-${Date.now()}`,
+      applied_to_live: false,
+      delay_cause: delayCause,
+      target_vessel: {
+        id: matched.id,
+        name: matched.name,
+        vessel_class: matched.vessel_class,
+        carrier: carrier,
+        fleet: fleet,
+        cargo_volume: matched.cargo_volume || 18500,
+        draft_m: matched.draft_m || 15.7,
+        length_m: matched.length_m || 399,
+        original_eta: origEta.toISOString(),
+        delayed_eta: delayedEta.toISOString(),
+        delay_hours: delayHours,
+        current_status: matched.status || 'APPROACHING',
+        assigned_berth_id: matched.assigned_berth_id || 'B-01',
+        assigned_berth_name: matched.assigned_berth_name || 'Berth 1 - Deepwater ULCV',
+      },
+      summary_impact: {
+        total_monetary_damages_usd: totalDamagesUsd,
+        demurrage_damages_usd: totalDemurrage,
+        bunker_waste_usd: bunkerWasteUsd,
+        berth_disruption_cost_usd: berthDisruptionUsd,
+        co2_excess_tonnes: co2ExcessTonnes,
+        total_additional_wait_hours: totalAdditionalWaitHours,
+        baseline_avg_wait_hours: 2.4,
+        simulated_avg_wait_hours: Math.round((2.4 + totalAdditionalWaitHours / 10) * 10) / 10,
+        port_average_wait_spike_hours: Math.round((totalAdditionalWaitHours / 10) * 10) / 10,
+        total_vessels_affected: affectedVessels.length,
+        total_fleets_affected: fleetChainImpacts.length,
+        recovery_horizon_hours: Math.round((delayHours * 1.6 + 6) * 10) / 10,
+        severity: delayHours >= 12 ? 'CRITICAL' : delayHours >= 6 ? 'HIGH' : 'MODERATE',
+      },
+      fleet_chain_impacts: fleetChainImpacts,
+      affected_vessels: affectedVessels,
+      mitigation_recommendations: mitigationRecommendations,
+      message: `Operational Shock Lab: Successfully simulated ${delayHours}h delay on ${matched.name}. Domino impacts modeled across ${affectedVessels.length} vessels and ${fleetChainImpacts.length} fleets.`,
+    };
+  }
+
   // 10. Audit Logs & Integrity Ledger
   if (cleanEndpoint === '/audit/verify-integrity') {
     return {
@@ -795,6 +1032,14 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
     };
   }
 
+  if (cleanEndpoint === '/auth/mfa/verify' && method === 'POST') {
+    return {
+      access_token: `mock_jwt_${btoa(JSON.stringify({ sub: 'admin', role: 'admin', exp: Date.now() + 86400000 }))}`,
+      token_type: 'bearer',
+      user: { id: 1, username: 'admin', email: 'admin@portpulse.local', role: 'admin' },
+    };
+  }
+
   if (cleanEndpoint === '/auth/approvals') {
     return [];
   }
@@ -808,7 +1053,7 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
       { id: 105, correlation_id: 'CORR-2026-905', timestamp: new Date(Date.now() - 21600000).toISOString(), actor: 'planner', actor_role: 'vessel_planner', client_ip: '192.168.1.42', prev_hash: 'd3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5', entry_hash: 'e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6', action: 'BERTH_MAINTENANCE_UPDATE', entity_type: 'BERTH', entity_id: 'B-06', payload_snapshot: JSON.stringify({ status: 'MAINTENANCE', crane_slots: 2, estimated_resume: '2026-09-17T08:00:00Z' }) },
       { id: 106, correlation_id: 'CORR-2026-906', timestamp: new Date(Date.now() - 28800000).toISOString(), actor: 'supervisor', actor_role: 'shift_supervisor', client_ip: '127.0.0.1', prev_hash: 'e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6', entry_hash: 'f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7', action: 'RECOMMENDATION_REJECTED', entity_type: 'RECOMMENDATION', entity_id: 'REC-2026-079', payload_snapshot: JSON.stringify({ vessel: 'CMA CGM Rivoli', reason: 'Bunkering refueling scheduled concurrently at Berth 4' }) },
       { id: 107, correlation_id: 'CORR-2026-907', timestamp: new Date(Date.now() - 36000000).toISOString(), actor: 'admin', actor_role: 'admin', client_ip: '10.0.4.15', prev_hash: 'f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7', entry_hash: '06b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8', action: 'MASTER_DATA_IMPORT', entity_type: 'VESSEL_REGISTRY', entity_id: 'WPI-NGA-2026', payload_snapshot: JSON.stringify({ imported_vessels: 50, deepwater_ulcv: 4, feeder_classes: 2, berths_updated: 10 }) },
-      { id: 108, correlation_id: 'CORR-2026-908', timestamp: new Date(Date.now() - 43200000).toISOString(), actor: 'planner', actor_role: 'vessel_planner', client_ip: '192.168.1.42', prev_hash: '06b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8', entry_hash: '17c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9', action: 'WHAT_IF_SIMULATION', entity_type: 'SCENARIO', entity_id: 'SCEN-CRANE-OUTAGE', payload_snapshot: JSON.stringify({ crane_outages: 2, delay_impact_hours: 4.2, net_cost_usd: 31000 }) }
+      { id: 108, correlation_id: 'CORR-2026-908', timestamp: new Date(Date.now() - 43200000).toISOString(), actor: 'planner', actor_role: 'vessel_planner', client_ip: '192.168.1.42', prev_hash: '06b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8', entry_hash: '17c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9', action: 'WHAT_IF_SIMULATION', entity_type: 'SCENARIO', entity_id: 'SCEN-CRANE-OUTAGE', payload_snapshot: JSON.stringify({ crane_outages: 2, delay_impact_hours: 4.2, net_cost_usd: 31000 }) },
     ];
     const logs: AuditLogListResponse & { events: AuditLogEntryItem[] } = {
       total: items.length,
@@ -818,23 +1063,49 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
     return logs;
   }
 
-  // 11. GenAI Chat Assistant
+  // 11. GenAI Chat Assistant (Dynamic Grounding Synthesis)
   if (cleanEndpoint === '/chat/query' && method === 'POST') {
     let queryText = 'What is the port status?';
     try {
       const parsed = JSON.parse(String(options.body || '{}'));
-      queryText = parsed.query || queryText;
+      queryText = (parsed.query || queryText).trim();
     } catch {}
+
+    const qLower = queryText.toLowerCase();
+    let dynamicAnswer = '';
+    let citations = [
+      'World Port Index (NGA Pub 150): Deepwater Berth Constraints',
+      'BIMCO Demurrage & Laytime Standard 2026: Clause 8',
+    ];
+
+    if (qLower.includes('berth') || qLower.includes('quay') || qLower.includes('dock') || qLower.includes('pier') || qLower.includes('depth') || qLower.includes('draft')) {
+      dynamicAnswer = `### ⚓ Quayside & Berth Telemetry Assessment\n- **Deepwater ULCV Quays**: \n  - **Berth 1 (Deepwater ULCV, 16.5m draft)**: Currently **OCCUPIED** by *Ever Given* (15.7m draft, 88% quay utilization). Scheduled departure: T+4h.\n  - **Berth 2 (Deepwater ULCV, 16.0m draft)**: **OCCUPIED** by *MSC Oscar* (15.2m draft, 75% utilization). Crane 2 under maintenance.\n- **Post-Panamax & Panamax Berths**:\n  - **Berth 3 (14.5m draft)**: **AVAILABLE** (Cold-ironing shore power ready).\n  - **Berth 4 (14.0m draft)**: **OCCUPIED** by *CMA CGM Rivoli* (66% utilization).\n  - **Berth 5 & 6 (12.5m draft)**: Berth 5 is **AVAILABLE**; Berth 6 undergoing preventive maintenance until 22:00 UTC.\n- **Feeder Terminals (Berths 7-10)**: Berths 8 & 10 available; Berths 7 & 9 servicing regional coastal traffic.\n- **Harbor Tidal Advice**: High tide at 14:00 UTC will provide a +1.2m surge, enabling safe arrival for deep-draft vessels (>16.0m) with certified Under-Keel Clearance (UKC).`;
+      citations.push('NOAA Tidal Prediction Station 9410660');
+    } else if (qLower.includes('crane') || qLower.includes('sts') || qLower.includes('equipment') || qLower.includes('moves') || qLower.includes('gang')) {
+      dynamicAnswer = `### 🏗️ Super Post-Panamax STS Crane Productivity Report\n- **Quayside Status**: **22 of 24 STS Gantry Cranes** are in active operation across Terminals 1–4.\n- **Bottleneck Identified**: Crane 2 on **Berth 2** is throttled due to trolley hoist motor maintenance (throughput reduced by 40%).\n- **Mitigation Trigger**: Prescriptive recommendation **REC-2026-083** is active to deploy auxiliary Floating Crane **FC-01** to Berth 2.\n- **Net Productivity**: Average terminal gross crane rate is currently **29.4 moves/hour** per gang.\n- **Electrification**: 100% of active STS cranes are connected to Pier 400 microgrid shore power, reducing auxiliary diesel emissions.`;
+      citations.push('Pier 400 SCADA Gantry Monitoring System');
+    } else if (qLower.includes('demurrage') || qLower.includes('cost') || qLower.includes('fine') || qLower.includes('delay') || qLower.includes('money') || qLower.includes('dollar') || qLower.includes('fuel') || qLower.includes('bunker')) {
+      dynamicAnswer = `### 💰 Financial Exposure & Demurrage Audit\n- **Charterparty Demurrage Rates**:\n  - **ULCV Class (18k+ TEU)**: $24,000 to $28,000 USD/day ($1,000 - $1,166/hour)\n  - **Post-Panamax (10k-15k TEU)**: $16,000 USD/day ($667/hour)\n  - **Feeder (1k-3k TEU)**: $7,500 USD/day ($312/hour)\n- **Harbor Exposure Today**: Estimated **$36,500 USD** cumulative demurrage risk across waiting anchorage vessels without intervention.\n- **Idling Bunker Fuel Cost**: Vessels idling auxiliary generators at roadstead burn ~0.15 MT VLSFO/hr at $650/MT ($97.50/hr per vessel).\n- **Prescriptive Savings**: Automated berth reallocations and virtual arrival slow-steaming have already captured **$63,800 USD** in certified net savings today.`;
+      citations.push('Platts Bunkerworld VLSFO Index (Los Angeles)');
+    } else if (qLower.includes('shock') || qLower.includes('simulat') || qLower.includes('lab') || qLower.includes('cascade') || qLower.includes('ripple') || qLower.includes('what-if') || qLower.includes('domino')) {
+      dynamicAnswer = `### ⚡ Operational Shock Lab & Cascade Simulation Analysis\n- **Domino Cascade Mechanism**: Injected arrival delays cascade across upstream pilot boarding, quayside gang allocation, and downstream outbound vessels sharing the same berth.\n- **Alliance Vulnerability**: A delay on an **Ocean Alliance** vessel (e.g., *Ever Given*) displaces subsequent **2M Alliance** calls (*MSC Oscar*), multiplying monetary damages.\n- **Prescriptive Neutralizers**:\n  1. **Dynamic Quay Diversion**: Shift displaced ships to Berth 3 or Berth 5 to preserve port turnaround.\n  2. **Virtual Arrival Slow-Steaming**: Signal vessels 12h out to reduce speed by 2.5 knots, saving bunker fuel while quayside clears.\n  3. **Crane Gang Boosting**: Allocate 4 STS cranes to accelerated vessels to recover up to 4.5 hours on the quay.`;
+      citations.push('PortPulse Operational Shock Lab MILP Cascade Formulation');
+    } else if (qLower.includes('model') || qLower.includes('ml') || qLower.includes('metric') || qLower.includes('accuracy') || qLower.includes('predict') || qLower.includes('xgboost') || qLower.includes('algorithm')) {
+      dynamicAnswer = `### 🎯 Dual-Layer Predictive ML Benchmark Telemetry\n- **Model 1: ETA Corrected Arrival (Gradient Boosting Regressor)**:\n  - **MAE**: **1.15 hours** (vs 4.80 hours naive carrier ETA baseline — **76.0% accuracy improvement**).\n  - **Key Features**: Live AIS headway, trans-Pacific weather routing, Malacca / Panama chokepoint congestion.\n- **Model 2: Berth Dwell Time (Random Forest Regressor)**:\n  - **RMSE**: **1.82 hours** (vs 6.20 hours baseline — **70.6% improvement**).\n  - **Key Features**: TEU exchange volume, STS crane count, yard gate saturation.\n- **Model 3: Anchorage Queue Congestion Classifier**:\n  - **F1 Score**: **0.93** (vs 0.61 naive baseline).\n- **Continuous Learning**: Active learning feedback loop records supervisor overrides to trigger automated retraining.`;
+      citations.push('PortPulse ML Benchmark Report (Scikit-Learn / XGBoost Engine)');
+    } else if (qLower.includes('ever given') || qLower.includes('hmm') || qLower.includes('msc') || qLower.includes('vessel') || qLower.includes('ship') || qLower.includes('oocl') || qLower.includes('cma')) {
+      dynamicAnswer = `### 🚢 Active Fleet Telemetry & Vessel Tracking\n- **Ever Given (ULCV, IMO 9811000)**: Berthed at **Berth 1**. 18,500 TEU. Departure clearance on track for T+3.5h. Draft 15.7m.\n- **MSC Oscar (ULCV, IMO 9703291)**: Berthed at **Berth 2**. 19,200 TEU. Operations slightly slowed by Crane 2 maintenance; ETA to completion T+8h.\n- **HMM Algeciras (ULCV, IMO 9863297)**: Anchored in Outer Harbor. 23,964 TEU, Draft 16.2m. High tide entry designated at 14:00 UTC. Recommended for Berth 2 diversion.\n- **OOCL Hong Kong (ULCV, IMO 9776171)**: Approaching fairway. Virtual arrival slow-steaming active at 13.5 knots to avoid anchorage stacking.\n- **CMA CGM Rivoli (Post-Panamax)**: Berthed at **Berth 4**. On-schedule quayside discharge.`;
+      citations.push("Lloyd's Register Marine Telemetry AIS Stream");
+    } else {
+      dynamicAnswer = `### 🌐 PortPulse Dispatcher Operational Briefing\n- **Quayside Status**: 10 total berths — **5 OCCUPIED**, **4 AVAILABLE** (Berths 3, 5, 8, 10), **1 UNDER MAINTENANCE** (Berth 6).\n- **Fleet at Harbor**: 50 vessels tracked (10 berthed, 12 anchored in roadstead, 28 scheduled in 72h horizon).\n- **Immediate Priorities**:\n  1. High-tide surge at **14:00 UTC** (+1.2m water level) required for deep-draft entry of **HMM Algeciras** (16.2m draft).\n  2. Implement prescriptive recommendation **REC-2026-081** to avert **$24,000 USD** in charterparty demurrage.\n  3. STS Crane 2 on Berth 2 scheduled for re-commissioning by shift handover.\n- **Operational Health**: Port fluidity index is **NOMINAL (84/100)** with average truck gate turnaround at **21.4 minutes**.`;
+    }
 
     const chatResp: ChatQueryResponse = {
       query: queryText,
-      answer: `### Quayside Status Report\n- **Deepwater Berths**: Berth 1 (Ever Given) and Berth 2 (MSC Oscar) are operating at 88% and 75% capacity.\n- **Queue Advisory**: 12 vessels anchored in waiting roadstead. High-tide window at 14:00 UTC allows safe entry for **HMM Algeciras** (16.2m draft).\n- **Prescriptive Action**: Recommendation REC-2026-081 is pending to shift HMM Algeciras to Berth 2, preventing **$24,000 USD** in demurrage penalties.`,
-      model: 'llama-3.3-70b-versatile',
+      answer: dynamicAnswer,
+      model: 'PortPulse Grounded Maritime Copilot',
       timestamp: new Date().toISOString(),
-      citations: [
-        'World Port Index (NGA Pub 150): Deepwater Berth Constraints',
-        'BIMCO Demurrage & Laytime Standard 2026: Clause 8',
-      ],
+      citations,
       grounding_summary: {
         total_berths: 10,
         total_vessels: 50,

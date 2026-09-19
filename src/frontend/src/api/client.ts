@@ -321,7 +321,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     console.warn(`[PortPulse API] Live endpoint ${endpoint} returned ${response.status}. Using standalone provider.`);
     return handleFallbackRequest(endpoint, options) as T;
   } catch (err: any) {
-    if (err.message && (err.message.includes('[RBAC 403]') || endpoint.startsWith('/auth/'))) {
+    if (err.message && (err.message.includes('[RBAC 403]') || err.message.includes('Authentication failed') || err.message.includes('Invalid verification code'))) {
       throw err;
     }
     // Network / connection / CORS errors

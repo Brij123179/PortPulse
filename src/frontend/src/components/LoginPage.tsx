@@ -17,9 +17,15 @@ import {
 
 interface LoginPageProps {
   onLoginSuccess?: () => void;
+  isAlreadyAuthenticated?: boolean;
+  onNavigateToCockpit?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({
+  onLoginSuccess,
+  isAlreadyAuthenticated,
+  onNavigateToCockpit,
+}) => {
   const { login, quickLogin, mfaPending, verifyMfa, cancelMfa, loggedOutReason } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -370,6 +376,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <div>
                     <span className="font-bold">Workstation Locked:</span> {loggedOutReason}
                   </div>
+                </div>
+              )}
+
+              {/* Already Authenticated Banner */}
+              {isAlreadyAuthenticated && (
+                <div className="mb-5 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center space-x-2">
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-blue-500" />
+                    <span><strong>Active Session:</strong> You are currently logged in.</span>
+                  </div>
+                  {onNavigateToCockpit && (
+                    <button
+                      type="button"
+                      onClick={onNavigateToCockpit}
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-xs cursor-pointer flex items-center space-x-1"
+                    >
+                      <span>Return to Dashboard</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               )}
 
