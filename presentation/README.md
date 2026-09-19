@@ -14,5 +14,5 @@
 2. **Solution** — Predictive + Prescriptive + Generative AI stack
 3. **Architecture** — FastAPI / SQLite / React / HiGHS MILP / Groq LLM / Supabase RAG
 4. **Demo** — Live quayside spatial map, 72h Gantt, congestion shock lab, AI copilot
-5. **Results** — 33% MAE improvement, zero MILP constraint violations, 48/48 tests passing
+5. **Results** — MAE improvement, zero MILP constraint violations, 48/48 tests passing
 6. **Team** — PCPirates (Naitik Patel, Diya Shah, Brij Patel, Rudra Dodiya)
