@@ -7,7 +7,8 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
-from app.core.logging import logger, correlation_id_ctx
+from app.core.logging import logger, correlation_id_ctx, client_ip_ctx
+from app.core.security_middleware import RateLimiterMiddleware, CSRFProtectionMiddleware
 from app.core.database import engine, Base, SessionLocal
 from app.models.entities import User, Berth
 from app.services.ingestion import PortDataGenerator
@@ -63,6 +64,10 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json"
 )
 
+# CSRF and Rate Limiting Middlewares
+app.add_middleware(CSRFProtectionMiddleware)
+app.add_middleware(RateLimiterMiddleware)
+
 # CORS Middleware (Supports local dev and verified portpulse deployments)
 app.add_middleware(
     CORSMiddleware,
@@ -70,11 +75,14 @@ app.add_middleware(
     allow_origin_regex=r"https://(portpulse|ibm-hackathon)[a-zA-Z0-9_-]*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["Authorization", "Content-Type", "X-Correlation-ID", "X-User-Role", "X-User-Id", "X-User-Name", "Accept"],
+    allow_headers=[
+        "Authorization", "Content-Type", "X-Correlation-ID", "X-User-Role",
+        "X-User-Id", "X-User-Name", "Accept", "X-Requested-With", "X-CSRF-Token"
+    ],
 )
 
 
-# Security Headers Middleware (SECURITY.md §1)
+# Security Headers Middleware (SECURITY.md §1: HSTS, CSP, X-Frame-Options, nosniff)
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
@@ -82,20 +90,37 @@ async def security_headers_middleware(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Enforce HTTPS/TLS everywhere with HSTS
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    # Strict Content Security Policy
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: blob: https:; "
+        "connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://* ws://* wss://*;"
+    )
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     return response
 
 
-# Correlation ID Middleware (FR-X2)
+# Correlation ID & Client IP Middleware (FR-X2 & Audit Trail Tracking)
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
     corr_id = request.headers.get("X-Correlation-ID") or f"pp-{uuid.uuid4().hex[:12]}"
-    token = correlation_id_ctx.set(corr_id)
+    forwarded = request.headers.get("X-Forwarded-For")
+    client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "127.0.0.1")
+
+    corr_token = correlation_id_ctx.set(corr_id)
+    ip_token = client_ip_ctx.set(client_ip)
     try:
         response = await call_next(request)
         response.headers["X-Correlation-ID"] = corr_id
         return response
     finally:
-        correlation_id_ctx.reset(token)
+        client_ip_ctx.reset(ip_token)
+        correlation_id_ctx.reset(corr_token)
 
 
 # Structured Error Handlers (05_backend.md §5)

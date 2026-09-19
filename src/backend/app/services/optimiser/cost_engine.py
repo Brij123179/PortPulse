@@ -50,6 +50,54 @@ class MaritimeCostEngine:
         return round(hours_saved * base_rate * multiplier, 2)
 
     @classmethod
+    def calculate_yard_congestion_damage(
+        cls,
+        dwell_delay_hours: float,
+        teu_volume: float = 3000.0,
+        current_utilization: float = 0.65
+    ) -> float:
+        """
+        Calculates container yard (CY) congestion damage caused by delayed container clearance.
+        When yard utilization > 80%, RTG reshuffling ('dead-digs') costs rise non-linearly.
+        Above 88%, truck gate queues and berth idle costs compound.
+        """
+        if current_utilization < 0.75:
+            return round(dwell_delay_hours * 120.0, 2)
+        elif current_utilization < 0.88:
+            active_teus = min(teu_volume, 3500.0)
+            return round(dwell_delay_hours * (active_teus * 0.45), 2)
+        else:
+            active_teus = min(teu_volume, 5000.0)
+            return round(dwell_delay_hours * (active_teus * 1.10), 2)
+
+    @classmethod
+    def calculate_contractual_laytime_demurrage(
+        cls,
+        wait_hours: float,
+        dwell_hours: float,
+        vessel_class: Optional[str] = None,
+        is_priority: bool = False,
+        laytime_grace_hours: Optional[float] = None
+    ) -> float:
+        """
+        Contractual BIMCO Charterparty Laytime Demurrage:
+        Grants standard laytime allowance (e.g. 12h Feeder, 18h Panamax, 24h ULCV).
+        Demurrage billing accumulates on time exceeding agreed laytime.
+        """
+        v_cls_str = str(vessel_class or "DEFAULT").strip().upper()
+        if laytime_grace_hours is None:
+            if "FEEDER" in v_cls_str:
+                laytime_grace_hours = 12.0
+            elif "PANAMAX" in v_cls_str and "POST" not in v_cls_str:
+                laytime_grace_hours = 18.0
+            else:
+                laytime_grace_hours = 24.0
+
+        total_port_hours = wait_hours + dwell_hours
+        excess_hours = max(0.0, total_port_hours - laytime_grace_hours)
+        return cls.calculate_demurrage_saving(excess_hours, vessel_class, is_priority)
+
+    @classmethod
     def calculate_slow_steam_impact(
         cls,
         transit_hours: float,

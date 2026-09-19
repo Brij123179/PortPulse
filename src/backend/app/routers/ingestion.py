@@ -9,6 +9,7 @@ from app.services.ingestion import PortDataGenerator
 from app.models.entities import TurnaroundRecord, Vessel, Berth, Crane, YardCapacity
 from app.schemas.common import SuccessResponse
 from app.core.logging import correlation_id_ctx
+from app.services.audit import AuditService
 
 router = APIRouter(prefix="/api/v1/ingestion", tags=["Data Ingestion & Synthetic Generator"])
 
@@ -54,6 +55,28 @@ def trigger_generation(
         historical_days=365,
         clear_existing=True
     )
+    from app.services.ml.risk_engine import risk_engine
+    try:
+        risk_engine.re_evaluate_all_predictions(db, trigger=f"FLEET_SYNTHETIC_GENERATION_SEED_{seed}")
+    except Exception:
+        risk_engine.clear_cache()
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        actor_id=user.id,
+        action="FLEET_SYNTHETIC_GENERATION",
+        entity_type="FLEET",
+        entity_id=f"SEED-{seed}",
+        payload_snapshot={
+            "vessels": vessels,
+            "berths": berths,
+            "seed": seed,
+            "stats": stats
+        }
+    )
+
     return SuccessResponse(
         status="success",
         message=f"Generated {stats['vessels']} vessels, {stats['berths']} berths, {stats['cranes']} cranes, and {stats['turnaround_records']} historical records.",
@@ -80,6 +103,23 @@ def inject_shock(
 
     generator = PortDataGenerator()
     result = generator.inject_shock_event(db, event_type=event_type)
+    from app.services.ml.risk_engine import risk_engine
+    try:
+        risk_engine.re_evaluate_all_predictions(db, trigger=f"SHOCK_EVENT_{event_type.upper()}")
+    except Exception:
+        risk_engine.clear_cache()
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        actor_id=user.id,
+        action="SHOCK_EVENT_INJECTION",
+        entity_type="SIMULATION",
+        entity_id=event_type.upper(),
+        payload_snapshot={"event_type": event_type, "result": result}
+    )
+
     return SuccessResponse(
         status="success",
         message=f"Shock event '{event_type}' injected successfully.",

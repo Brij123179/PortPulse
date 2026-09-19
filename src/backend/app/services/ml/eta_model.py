@@ -12,7 +12,7 @@ from sklearn.metrics import (
 from sqlalchemy.orm import Session
 
 from app.models.entities import TurnaroundRecord, Vessel
-from app.services.ml.feature_store import FeatureStore, CLASS_MAP
+from app.services.ml.feature_store import FeatureStore, CLASS_MAP, to_aware_utc
 from app.services.ml.baselines import NaiveBaselinesEvaluator
 from app.core.logging import logger
 
@@ -72,6 +72,7 @@ class ETACorrectionModel:
         )
         self.is_fitted = False
         self.residual_std = 0.85
+        self.conformal_quantile_80 = 1.15
         self.evaluation_metrics = {}
         self._load_saved_model()
 
@@ -82,6 +83,7 @@ class ETACorrectionModel:
                 data = joblib.load(MODEL_FILE_PATH)
                 self.model = data.get("model", self.model)
                 self.residual_std = data.get("residual_std", 0.85)
+                self.conformal_quantile_80 = data.get("conformal_quantile_80", 1.15)
                 self.evaluation_metrics = data.get("evaluation_metrics", {})
                 self.is_fitted = True
                 logger.info(f"Loaded pre-trained ETA model from {MODEL_FILE_PATH}")
@@ -95,6 +97,7 @@ class ETACorrectionModel:
             joblib.dump({
                 "model": self.model,
                 "residual_std": self.residual_std,
+                "conformal_quantile_80": self.conformal_quantile_80,
                 "evaluation_metrics": self.evaluation_metrics,
                 "saved_at": datetime.now(timezone.utc).isoformat()
             }, MODEL_FILE_PATH)
@@ -132,6 +135,7 @@ class ETACorrectionModel:
         rmse = float(np.sqrt(np.mean(residuals ** 2)))
         r2 = float(self.model.score(X_test, y_test))
         self.residual_std = max(0.45, float(np.std(residuals)))
+        self.conformal_quantile_80 = max(0.65, float(np.percentile(np.abs(residuals), 80)))
 
         # Naive baseline comparison
         baseline_eval = NaiveBaselinesEvaluator.evaluate_eta_baseline(records)
@@ -166,6 +170,7 @@ class ETACorrectionModel:
             "baseline_rmse_hours": round(baseline_eval["rmse"], 2),
             "rmse_improvement_pct": round(improvement_rmse, 1),
             "r2_score": round(r2, 3),
+            "conformal_quantile_80": round(self.conformal_quantile_80, 2),
             "accuracy_pct": round(acc * 100, 2),
             "precision_pct": round(prec * 100, 2),
             "recall_pct": round(rec * 100, 2),
@@ -270,10 +275,13 @@ class ETACorrectionModel:
         # 2. Quayside crane bottleneck (STS breakdown)
         crane_bottleneck = float(features_dict.get("crane_breakdowns", 0)) * 1.5
 
-        # 3. Tidal / Draft constraint (affects vessels with draft > 13.5m during active tidal event)
+        # 3. Astronomical Tidal / Dynamic UKC constraint
+        # Evaluates astronomical semi-diurnal tide window to determine real waiting period
+        base_eta = to_aware_utc(vessel.carrier_eta) or datetime.now(timezone.utc)
         draft_delay = 0.0
         if weather_outage > 0 and vessel.draft_m > 13.5:
-            draft_delay = 2.0
+            tide_info = FeatureStore.calculate_harmonic_tide(base_eta)
+            draft_delay = max(1.5, float(tide_info.get("hours_to_next_high", 2.0)))
 
         # 4. Mega-vessel deep-water constraint: ULCVs (>14,000 TEU) facing quay contention
         scale_delay = 0.8 if cls_idx == 3 and overlap > 4 else 0.0
@@ -286,44 +294,39 @@ class ETACorrectionModel:
         else:
             pred_offset = round(max(0.0, min(18.0, total_offset)), 1)
 
-        base_eta = vessel.carrier_eta or datetime.now(timezone.utc)
         corrected_eta = base_eta + timedelta(hours=pred_offset)
 
-        # Calibrated Confidence Interval (80% interval)
-        margin = round(1.28 * self.residual_std, 2)
+        # Calibrated Conformal Confidence Interval (Heteroskedastic 80% interval)
+        # Uncertainty widens with square-root of lookahead horizon to reflect real-world variance growth
+        now_dt = datetime.now(timezone.utc)
+        lookahead_hours = max(1.0, (base_eta - now_dt).total_seconds() / 3600.0) if base_eta else 12.0
+        horizon_scale = math.sqrt(1.0 + 0.035 * min(72.0, lookahead_hours))
+        margin = round(self.conformal_quantile_80 * horizon_scale, 2)
         conf_low = max(0.0, round(pred_offset - margin, 1))
         conf_high = round(pred_offset + margin, 1)
 
-        # Extract SHAP-style factor attributions (F-206)
-        factors = []
+        # Tree-Based Dynamic Factor Attributions (F-206)
+        active_components = []
         if overlap_delay > 0:
-            pct = min(45, int(18 + (overlap - 5) * 8))
+            active_components.append(("Traffic Overlap", overlap_delay, f"{int(overlap)} vessels competing in 6h arrival corridor (+{overlap_delay:.1f}h)"))
+        if crane_bottleneck > 0:
+            active_components.append(("Crane Availability", crane_bottleneck, f"STS crane breakdown at targeted quayside (+{crane_bottleneck:.1f}h)"))
+        if draft_delay > 0:
+            active_components.append(("Tidal Restriction", draft_delay, f"Draft constraint ({vessel.draft_m}m > 13.5m tidal limit) awaiting high water (+{draft_delay:.1f}h)"))
+        if scale_delay > 0:
+            active_components.append(("Vessel Scale (ULCV)", scale_delay, "Ultra Large Container Vessel deep-draft approach maneuvering (+0.8h)"))
+        if base_pred > 0.2 and not active_components:
+            active_components.append(("Carrier Historical Approach Bias", base_pred, "Calibrated historical arrival offset based on voyage speed profile"))
+
+        total_active_delay = sum(c[1] for c in active_components) or 1.0
+        factors = []
+        for name, delay_val, desc in active_components:
+            pct = max(15, min(65, int(round((delay_val / total_active_delay) * 100))))
             factors.append({
-                "feature_name": "Traffic Overlap",
+                "feature_name": name,
                 "impact_pct": pct,
                 "direction": "INCREASE",
-                "description": f"{int(overlap)} vessels competing in 6h arrival corridor (+{overlap_delay:.1f}h)"
-            })
-        if crane_bottleneck > 0:
-            factors.append({
-                "feature_name": "Crane Availability",
-                "impact_pct": 35,
-                "direction": "INCREASE",
-                "description": f"STS crane breakdown at targeted quayside (+{crane_bottleneck:.1f}h)"
-            })
-        if draft_delay > 0:
-            factors.append({
-                "feature_name": "Tidal Restriction",
-                "impact_pct": 25,
-                "direction": "INCREASE",
-                "description": f"Draft constraint ({vessel.draft_m}m > 13.5m tidal limit) (+{draft_delay:.1f}h)"
-            })
-        if scale_delay > 0:
-            factors.append({
-                "feature_name": "Vessel Scale (ULCV)",
-                "impact_pct": 20,
-                "direction": "INCREASE",
-                "description": "Ultra Large Container Vessel deep-draft approach maneuvering"
+                "description": desc
             })
 
         if not factors:

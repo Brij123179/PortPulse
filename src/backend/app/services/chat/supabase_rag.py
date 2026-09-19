@@ -18,7 +18,7 @@ try:
 except ImportError:
     psycopg2 = None
 import urllib.request
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timezone
 from app.core.logging import logger
 from app.services.sanitizer import sanitize_ai_response
@@ -45,8 +45,17 @@ SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.oblectpxtfsdelyjoipo")
 SUPABASE_PASS = os.getenv("SUPABASE_PASS", "")
 SUPABASE_DB = os.getenv("SUPABASE_DB", "postgres")
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODELS = [
+    "deepseek/deepseek-v4-flash-0731:free",
+    "nex-agi/nex-n2.5-mini:free",
+    "qwen/qwen3.8-27b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+]
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Static Fallback in case of temporary network outage
@@ -137,80 +146,132 @@ class SupabaseRAGEngine:
         return matched if matched else FALLBACK_DOCS[:2]
 
     @classmethod
+    def generate_ai_response(
+        cls,
+        user_query: str,
+        live_context: Dict[str, Any],
+        retrieved_docs: List[Dict[str, Any]]
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Call OpenRouter high-speed LLM (with fallback cascade and Groq secondary)
+        grounded on combined live context and Supabase RAG references.
+        Returns (answer_text, model_name).
+        Enforces clean text without markdown asterisks or hashes.
+        """
+        sources_text = "\n\n".join([
+            f"--- Document: {d['title']} ({d.get('source', 'Standard')}) ---\n{d.get('content', '')}"
+            for d in retrieved_docs
+        ])
+
+        system_instruction = (
+            "You are PortPulse AI, an intelligent, real-time operational copilot for terminal dispatchers, "
+            "harbormasters, and shift supervisors at the Port of Los Angeles (Pier 400).\n\n"
+            "You have access to live port operational telemetry (vessel schedules, berth occupancies, "
+            "crane breakdowns, delay predictions, and prescriptive solver recommendations) and Supabase "
+            "maritime regulations (World Port Index NGA Pub 150, BIMCO demurrage standards, IMO UKC protocols).\n\n"
+            "STRICT FORMATTING REQUIREMENTS:\n"
+            "- Do NOT use asterisks (*) or hash symbols (#) anywhere in your response.\n"
+            "- Do NOT use markdown bold (no **text**) and do NOT use markdown headers (no #, ##, ###).\n"
+            "- Write section headers in plain UPPERCASE on their own line (e.g. QUAYSIDE CONGESTION ASSESSMENT).\n"
+            "- Use bullet points starting with the unicode character '• ' for lists.\n"
+            "- Answer directly, authoritatively, and concisely with specific numbers, vessel names, and berth IDs.\n"
+            "- Do not hallucinate berth or vessel IDs not present in the live telemetry."
+        )
+
+        user_content = (
+            f"LIVE PORT TELEMETRY STATE:\n"
+            f"• Total Tracked Vessels: {live_context.get('total_vessels', 50)}\n"
+            f"• Delayed Vessels (ETA slip >= 1.0h): {len(live_context.get('delayed_vessels', []))}\n"
+            f"• Top Delayed Vessels: {json.dumps(live_context.get('delayed_vessels', [])[:3])}\n"
+            f"• Quayside Cranes: {live_context.get('active_cranes', 20)} active / {live_context.get('total_cranes', 20)} total\n"
+            f"• Crane Breakdowns: {json.dumps(live_context.get('crane_breakdowns', []))}\n"
+            f"• Prescriptive Recommendations: {len(live_context.get('recommendations', []))} active actions\n"
+            f"• Demurrage Savings Potential: ${live_context.get('total_demurrage_saved', 0):,.0f} USD\n"
+            f"• CO2 Savings Potential: {live_context.get('total_co2_saved', 0):,.1f} MT\n\n"
+            f"SUPABASE MARITIME KNOWLEDGE BASE REFERENCES:\n"
+            f"{sources_text}\n\n"
+            f"DISPATCHER QUERY:\n{user_query}"
+        )
+
+        # 1. Attempt OpenRouter Models Cascade
+        if OPENROUTER_API_KEY:
+            for model_candidate in OPENROUTER_MODELS:
+                payload = {
+                    "model": model_candidate,
+                    "messages": [
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": user_content}
+                    ],
+                    "temperature": 0.2,
+                    "max_tokens": 700
+                }
+                try:
+                    req_data = json.dumps(payload).encode("utf-8")
+                    req = urllib.request.Request(
+                        OPENROUTER_URL,
+                        data=req_data,
+                        headers={
+                            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": "https://portpulse.io",
+                            "X-Title": "PortPulse AI Copilot"
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=12) as resp:
+                        res_json = json.loads(resp.read().decode("utf-8"))
+                        choice = res_json.get("choices", [{}])[0]
+                        answer = choice.get("message", {}).get("content", "")
+                        if answer:
+                            answer = sanitize_ai_response(answer)
+                            model_display = f"OpenRouter ({model_candidate})"
+                            return answer, model_display
+                except Exception as e:
+                    logger.info(f"OpenRouter candidate '{model_candidate}' failed ({e}), trying next candidate...")
+
+        # 2. Attempt Groq as fallback if configured
+        if GROQ_API_KEY:
+            try:
+                payload = {
+                    "model": GROQ_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": user_content}
+                    ],
+                    "temperature": 0.2,
+                    "max_tokens": 700
+                }
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(
+                    GROQ_URL,
+                    data=req_data,
+                    headers={
+                        "Authorization": f"Bearer {GROQ_API_KEY}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "PortPulse-RAG/1.0"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                    choice = res_json.get("choices", [{}])[0]
+                    answer = choice.get("message", {}).get("content", "")
+                    if answer:
+                        answer = sanitize_ai_response(answer)
+                        return answer, f"Groq ({GROQ_MODEL})"
+            except Exception as e:
+                logger.warning(f"Groq fallback failed: {e}")
+
+        return None, None
+
+    @classmethod
     def generate_groq_response(
         cls,
         user_query: str,
         live_context: Dict[str, Any],
         retrieved_docs: List[Dict[str, Any]]
     ) -> Optional[str]:
-        """Call Groq high-speed LLM with combined live context and Supabase RAG references."""
-        if not GROQ_API_KEY:
-            return None
-
-        # Build prompt
-        sources_text = "\n\n".join([
-            f"--- Document: {d['title']} ({d['source']}) ---\n{d['content']}"
-            for d in retrieved_docs
-        ])
-
-        system_instruction = (
-            "You are PortPulse AI, an intelligent maritime operational assistant for terminal dispatchers and shift supervisors.\n"
-            "You have access to two sources of truth:\n"
-            "1. Real-time terminal state (current vessel schedules, berth assignments, crane breakdowns, and prescriptive recommendations).\n"
-            "2. Authoritative maritime regulations and standards from Supabase (World Port Index NGA Pub 150, BIMCO demurrage standards, IMO UKC protocols).\n\n"
-            "Guidelines:\n"
-            "- Answer concisely and authoritatively with direct numbers, vessel names, and berth IDs.\n"
-            "- Explain the operational or financial significance (e.g. demurrage savings, UKC draft margins).\n"
-            "- Do NOT hallucinate berth or vessel IDs not present in the provided state.\n"
-            "- Format your response using clean GitHub markdown headers and bullet points."
-        )
-
-        user_content = (
-            f"### LIVE PORT TELEMETRY STATE:\n"
-            f"- Total Tracked Vessels: {live_context.get('total_vessels', 50)}\n"
-            f"- Delayed Vessels (ETA slip >= 1.0h): {len(live_context.get('delayed_vessels', []))}\n"
-            f"- Top Delayed Vessels: {json.dumps(live_context.get('delayed_vessels', [])[:3])}\n"
-            f"- Quayside Cranes: {live_context.get('active_cranes', 20)} active / {live_context.get('total_cranes', 20)} total\n"
-            f"- Crane Breakdowns: {json.dumps(live_context.get('crane_breakdowns', []))}\n"
-            f"- Prescriptive Recommendations: {len(live_context.get('recommendations', []))} active actions\n"
-            f"- Demurrage Savings Potential: ${live_context.get('total_demurrage_saved', 0):,.0f} USD\n"
-            f"- CO2 Savings Potential: {live_context.get('total_co2_saved', 0):,.1f} MT\n\n"
-            f"### SUPABASE MARITIME KNOWLEDGE BASE REFERENCES:\n"
-            f"{sources_text}\n\n"
-            f"### DISPATCHER QUERY:\n{user_query}"
-        )
-
-        payload = {
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": user_content}
-            ],
-            "temperature": 0.2,
-            "max_tokens": 700
-        }
-
-        try:
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(
-                GROQ_URL,
-                data=req_data,
-                headers={
-                    "Authorization": f"Bearer {GROQ_API_KEY}",
-                    "Content-Type": "application/json",
-                    "User-Agent": "PortPulse-RAG/1.0"
-                }
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                res_json = json.loads(resp.read().decode("utf-8"))
-                choice = res_json["choices"][0]
-                answer = choice["message"].get("content", "")
-                if answer:
-                    answer = sanitize_ai_response(answer)
-                    return answer
-        except Exception as e:
-            logger.warning(f"Groq API call failed: {e}. Falling back to deterministic RAG synthesis.")
-            return None
+        """Backwards-compatibility shim for generate_ai_response."""
+        ans, _ = cls.generate_ai_response(user_query, live_context, retrieved_docs)
+        return ans
 
 
 supabase_rag = SupabaseRAGEngine()

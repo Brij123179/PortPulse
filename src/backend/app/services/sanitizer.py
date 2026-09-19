@@ -3,8 +3,33 @@ import re
 from typing import Any, Dict
 
 
+def strip_markdown_decorations(text: str) -> str:
+    """
+    Remove all markdown clutter (*, #, **, etc.) from AI outputs,
+    transforming headers and bullets into clean plain text and unicode bullet points (•).
+    """
+    if not text:
+        return ""
+    # Convert header lines like ### Header to clean plain text
+    text = re.sub(r'(?m)^[ \t]*#{1,6}[ \t]*', '', text)
+    # Convert bullet points with * or - to unicode bullet •
+    text = re.sub(r'(?m)^[ \t]*[\*\-][ \t]+', '• ', text)
+    # Remove bold/italic asterisks: ***text***, **text**, *text*
+    text = re.sub(r'\*{1,3}(.*?)\*{1,3}', r'\1', text)
+    # Remove bold/italic underscores: ___text___, __text__, _text_
+    text = re.sub(r'_{1,3}(.*?)_{1,3}', r'\1', text)
+    # Strip any remaining stray * and #
+    text = text.replace('*', '').replace('#', '')
+    # Clean up redundant spaces on each line
+    lines = [line.rstrip() for line in text.splitlines()]
+    text = '\n'.join(lines)
+    # Normalize excessive newlines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
 def sanitize_ai_response(text: str) -> str:
-    """Sanitize AI/LLM generated text to prevent XSS and injection."""
+    """Sanitize AI/LLM generated text to prevent XSS and injection and strip markdown clutter."""
     if not text:
         return ""
     # Strip dangerous HTML tags
@@ -17,8 +42,8 @@ def sanitize_ai_response(text: str) -> str:
     text = re.sub(r'javascript:', '', text, flags=re.IGNORECASE)
     # Remove data: URIs
     text = re.sub(r'data:\s*text/html', '', text, flags=re.IGNORECASE)
-    # Collapse excessive newlines
-    text = re.sub(r'\n{4,}', '\n\n\n', text)
+    # Strip markdown symbols (*, #, etc.)
+    text = strip_markdown_decorations(text)
     # Trim length
     if len(text) > 5000:
         text = text[:5000] + '\n\n[Response truncated]'

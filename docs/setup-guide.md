@@ -16,7 +16,8 @@ This guide provides step-by-step instructions to run PortPulse locally on an **I
 
 1. Clone the repository and navigate to the project root:
    ```bash
-   cd e:/IBM_HACKATHON_PORTPLUS
+   git clone https://github.com/diya2405/ibm-hackathon-pcpirates.git
+   cd ibm-hackathon-pcpirates
    ```
 
 2. Configure environment variables:

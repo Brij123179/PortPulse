@@ -20,6 +20,7 @@ import {
   ChevronRight,
   RotateCcw,
   Download,
+  Sparkles,
 } from 'lucide-react';
 
 interface LiveStatusTableProps {
@@ -109,10 +110,25 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
       setInjectingEvent('reset');
       await api.generateSyntheticData(50, 10, 42);
       setActiveShockLabel(null);
-      onTriggerEvent('Baseline restored (50 vessels, 10 berths). Active shock scenarios cleared.');
+      onTriggerEvent('Baseline restored (50 vessels, 10 berths, Reference Seed #42). Active shock scenarios cleared.');
       onRefresh();
     } catch (err: any) {
       onTriggerEvent(`Error resetting baseline: ${err.message || 'Action failed'}`);
+    } finally {
+      setInjectingEvent(null);
+    }
+  };
+
+  const handleGenerateNewSession = async () => {
+    try {
+      setInjectingEvent('new-session');
+      const randomSeed = Math.floor(Math.random() * 900000) + 1000;
+      await api.generateSyntheticData(50, 10, randomSeed);
+      setActiveShockLabel(null);
+      onTriggerEvent(`New Simulation Session Initialized (Seed #${randomSeed}) with fresh vessel calls and ETAs.`);
+      onRefresh();
+    } catch (err: any) {
+      onTriggerEvent(`Error generating new session: ${err.message || 'Action failed'}`);
     } finally {
       setInjectingEvent(null);
     }
@@ -142,65 +158,85 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
     <div className="space-y-6">
       {/* KPI Cards Row */}
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold text-[10px] tracking-wider uppercase border border-teal-500/20">
+                SECTION: Operational Health KPIs
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-content-primary">
+                Quayside &amp; Anchorage Status Overview
+              </span>
+            </div>
+            <p className="text-[11px] text-content-secondary hidden md:inline">
+              <strong className="text-content-primary">Purpose:</strong> Live operational statistics covering vessel queue states, quayside berth utilization, yard TEU capacity, and anchorage turnaround.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Vessels Overview */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-content-secondary uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Vessel Operations
               </span>
-              <Ship className="w-4 h-4 text-brand-500" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                <Ship className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-bold text-content-primary">{summary.total_vessels}</span>
-              <span className="text-xs text-content-muted">tracked vessels</span>
+              <span className="text-2xl font-black font-mono text-content-primary">{summary.total_vessels}</span>
+              <span className="text-xs text-content-secondary font-medium">tracked vessels</span>
             </div>
-            <div className="mt-3 flex items-center space-x-2 text-xs">
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-medium">
+            <div className="mt-3 flex items-center space-x-1.5 text-xs">
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20 text-[10px]">
                 {summary.berthed_vessels} Berthed
               </span>
-              <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-medium">
+              <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold border border-amber-500/20 text-[10px]">
                 {summary.anchored_vessels} Anchored
               </span>
-              <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-medium">
+              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold border border-blue-500/20 text-[10px]">
                 {summary.scheduled_vessels} Scheduled
               </span>
             </div>
           </div>
 
           {/* Berths Overview */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-content-secondary uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Berth Quays (Quay Length)
               </span>
-              <Layers className="w-4 h-4 text-brand-500" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                <Layers className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-bold text-content-primary">
+              <span className="text-2xl font-black font-mono text-content-primary">
                 {summary.occupied_berths} / {summary.total_berths}
               </span>
-              <span className="text-xs text-content-muted">occupied</span>
+              <span className="text-xs text-content-secondary font-medium">occupied</span>
             </div>
             <div className="mt-3 text-xs text-content-secondary flex justify-between">
               <span>{summary.available_berths} available</span>
-              <span>{Math.round(summary.total_quay_length_m)}m total quay</span>
+              <span className="font-mono">{Math.round(summary.total_quay_length_m)}m total</span>
             </div>
           </div>
 
           {/* Yard Utilization */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-content-secondary uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Container Yard TEU
               </span>
-              <Boxes className="w-4 h-4 text-brand-500" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                <Boxes className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-bold text-content-primary">
+              <span className="text-2xl font-black font-mono text-content-primary">
                 {summary.yard_utilization_pct}%
               </span>
-              <span className="text-xs text-content-muted">
+              <span className="text-xs text-content-secondary font-medium font-mono">
                 ({summary.yard_teu_used.toLocaleString()} / {summary.yard_teu_capacity.toLocaleString()} TEU)
               </span>
             </div>
@@ -211,7 +247,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
                     ? 'bg-rose-500'
                     : summary.yard_utilization_pct > 70
                     ? 'bg-amber-500'
-                    : 'bg-brand-500'
+                    : 'bg-blue-600'
                 }`}
                 style={{ width: `${Math.min(100, summary.yard_utilization_pct)}%` }}
               />
@@ -219,28 +255,39 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
           </div>
 
           {/* Ingestion & Refresh State */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-content-secondary uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Connector Status
               </span>
-              <Activity className="w-4 h-4 text-emerald-500" />
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <Activity className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-bold text-content-primary">Telemetry Sync</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold">
+              <span className="text-2xl font-black text-content-primary">Telemetry</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 font-mono">
                 NORMALIZED
               </span>
             </div>
-            <p className="mt-3 text-xs text-content-muted truncate">
-              Last sync: {new Date(summary.last_updated).toLocaleTimeString()}
+            <p className="mt-3 text-xs text-content-muted truncate font-mono">
+              Sync: {new Date(summary.last_updated).toLocaleTimeString()}
             </p>
           </div>
+        </div>
         </div>
       )}
 
       {/* Shock Event Injection Bar (Scenario Testing Controls) */}
-      <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm">
+      <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs space-y-2">
+        <div className="flex items-center space-x-2 pb-1 border-b border-surface-border/60">
+          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] tracking-wider uppercase border border-amber-500/20">
+            SECTION: Disruption Shock Injection
+          </span>
+          <p className="text-[11px] text-content-secondary">
+            <strong className="text-content-primary">Purpose:</strong> Inject real-time disturbance events (crane breakdowns, mega-ship surges, tidal draft restrictions) to test how operational queues respond.
+          </p>
+        </div>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex items-center space-x-2">
             <Zap className="w-4 h-4 text-amber-500" />
@@ -257,7 +304,7 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
             <button
               onClick={() => handleShockEvent('crane_outage', 'Crane Breakdown')}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50 shadow-2xs"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
               <span>Crane Breakdown</span>
@@ -266,16 +313,16 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
             <button
               onClick={() => handleShockEvent('mega_ship_surge', 'Mega-Ship Surge')}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50 shadow-2xs"
             >
               <Ship className="w-3.5 h-3.5 text-blue-500" />
-              <span>Mega-Ship Clustering</span>
+              <span>Mega-Ship Surge</span>
             </button>
 
             <button
               onClick={() => handleShockEvent('tidal_restriction', 'Tidal Restriction')}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-surface-bg hover:bg-surface-hover border border-surface-border text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50 shadow-2xs"
             >
               <Clock className="w-3.5 h-3.5 text-amber-500" />
               <span>Tidal Restriction</span>
@@ -284,22 +331,48 @@ export const LiveStatusTable: React.FC<LiveStatusTableProps> = ({
             <button
               onClick={handleResetBaseline}
               disabled={injectingEvent !== null}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-bg hover:bg-surface-hover border border-dashed border-surface-border text-content-muted hover:text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
-              title="Reset terminal baseline to 50 vessels, 10 berths"
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-surface-bg hover:bg-surface-hover border border-dashed border-surface-border text-content-muted hover:text-content-primary transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+              title="Reset terminal baseline to standard 50 vessels, 10 berths (Seed #42)"
             >
               <RotateCcw className="w-3.5 h-3.5 text-content-muted" />
               <span>Reset Baseline</span>
+            </button>
+
+            <button
+              onClick={handleGenerateNewSession}
+              disabled={injectingEvent !== null}
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xs shadow-blue-500/20 transition-all flex items-center space-x-1.5 disabled:opacity-50"
+              title="Generate a brand new simulation session with randomized fleet and arrival times"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>New Session Fleet</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Table Card */}
-      <div className="bg-surface-card border border-surface-border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface-card border border-surface-border rounded-2xl shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-surface-bg/50">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold text-[10px] tracking-wider uppercase border border-teal-500/20">
+                SECTION: Fleet &amp; Berth Operations Manifest
+              </span>
+            </div>
+            <h3 className="text-sm font-extrabold text-content-primary uppercase tracking-wider mt-1">
+              Real-Time Mooring &amp; Quayside Work Manifest
+            </h3>
+            <p className="text-[11px] text-content-secondary mt-0.5">
+              <strong className="text-content-primary">Purpose:</strong> Search, filter, and inspect detailed carrier vessel schedules, pilot status, draft clearances, and physical berth specifications.
+            </p>
+          </div>
+        </div>
+
         {/* Navigation Tabs & Search Controls */}
         <div className="p-4 border-b border-surface-border flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Tabs */}
-          <div className="flex items-center space-x-2 bg-surface-bg p-1 rounded-lg border border-surface-border">
+          <div className="flex items-center space-x-1.5 bg-surface-bg p-1 rounded-xl border border-surface-border">
             <button
               onClick={() => setActiveTab('vessels')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${

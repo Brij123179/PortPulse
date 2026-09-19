@@ -257,7 +257,8 @@ class PrescriptiveRecommender:
         self,
         recommendation_id: str,
         req: RecommendationActionRequest,
-        username: str
+        username: str,
+        db: Optional[Session] = None
     ) -> RecommendationActionResponse:
         """
         Records Accept / Modify / Reject decision with timestamp and user ID (F-407 / F-501).
@@ -291,6 +292,25 @@ class PrescriptiveRecommender:
             stored_rec.action_timestamp = action_time
             stored_rec.action_by_user = username
             stored_rec.action_notes = req.notes
+
+            # If action was ACCEPT or MODIFY, apply allocation change to vessel if target berth specified
+            if normalized_status in ["ACCEPTED", "MODIFIED"] and db:
+                target_berth = req.modified_berth_id or getattr(stored_rec, "target_berth_id", None)
+                v_id = getattr(stored_rec, "vessel_id", None)
+                if target_berth and v_id:
+                    from app.models.entities import Vessel
+                    vessel = db.query(Vessel).filter(Vessel.id == v_id).first()
+                    if vessel:
+                        vessel.assigned_berth_id = target_berth
+                        if req.modified_eta:
+                            vessel.corrected_eta = req.modified_eta
+                        try:
+                            db.commit()
+                            db.refresh(vessel)
+                            from app.services.ml.risk_engine import risk_engine
+                            risk_engine.re_evaluate_all_predictions(db, trigger=f"REC_{normalized_status}_{v_id}_TO_{target_berth}")
+                        except Exception as e:
+                            logger.warning(f"Failed to re-evaluate predictions after recommendation action: {e}")
 
         logger.info(
             f"Prescriptive recommendation '{recommendation_id}' marked as '{normalized_status}' by user '{username}'",

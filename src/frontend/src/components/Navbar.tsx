@@ -8,23 +8,19 @@ import {
   RefreshCw,
   Database,
   Compass,
-  UserCheck,
-  Shield,
   LogOut,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   BookOpen,
-  Copy,
-  Check,
   X,
 } from 'lucide-react';
-import { GlobalPortSwitcher, PortTerminalSpec } from './GlobalPortSwitcher';
 
 export interface NavTabItem {
   id: string;
   label: string;
   icon: React.ReactNode;
+  badge?: string | number;
   isCore?: boolean;
 }
 
@@ -41,8 +37,6 @@ interface NavbarProps {
   visibleTabs: NavTabItem[];
   autoRefresh: boolean;
   onToggleAutoRefresh: (val: boolean) => void;
-  currentPort?: PortTerminalSpec;
-  onSelectPort?: (port: PortTerminalSpec) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -58,14 +52,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   visibleTabs,
   autoRefresh,
   onToggleAutoRefresh,
-  currentPort,
-  onSelectPort,
 }) => {
   const { theme, toggleTheme } = useTheme();
-  const { role, user, logout, token, decodedToken } = useAuth();
-  const [showJwtModal, setShowJwtModal] = useState(false);
+  const { user, logout } = useAuth();
   const [showPitchModal, setShowPitchModal] = useState(false);
-  const [copiedToken, setCopiedToken] = useState(false);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -107,179 +97,181 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="no-print border-b border-surface-border bg-surface-card sticky top-0 z-30 transition-colors shadow-sm">
+    <header className="no-print border-b border-surface-border bg-surface-card/95 backdrop-blur-md sticky top-0 z-30 transition-colors shadow-xs">
       {/* Row 1: Top Utility & Command Deck */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-15 flex items-center justify-between gap-2">
         {/* Left: Brand & Telemetry Status */}
-        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-          <div className="bg-gradient-to-tr from-blue-700 to-blue-500 text-white p-2 sm:p-2.5 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25 ring-1 ring-blue-400/30">
-            <Anchor className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+        <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
+          <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-xs shadow-blue-500/25 ring-1 ring-white/20">
+            <Anchor className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5 sm:space-x-2">
-              <span className="text-base sm:text-xl font-black tracking-tight text-content-primary">
+              <span className="text-base sm:text-lg font-black tracking-tight text-content-primary">
                 Port<span className="text-blue-500">Pulse</span>
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold uppercase tracking-wider hidden md:inline">
+              <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold uppercase tracking-wider hidden sm:inline">
                 Ops Cockpit
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-content-muted hidden sm:block">
-              Container Congestion &amp; Berthing Optimiser
+            <p className="text-[10px] text-content-muted hidden md:block leading-none mt-0.5">
+              Predictive Digital Twin &amp; Operations Optimiser
             </p>
           </div>
         </div>
 
-        {/* Center: Global Terminal Switcher & Live Connection Pill */}
-        <div className="flex items-center space-x-2.5">
-          <GlobalPortSwitcher selectedPort={currentPort} onSelectPort={onSelectPort} />
-          <div className="hidden 2xl:flex items-center space-x-2 text-xs bg-surface-bg/80 px-3 py-1.5 rounded-full border border-surface-border shadow-inner">
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-                }`}
-            />
-            <span className="text-content-secondary font-semibold text-[11px] whitespace-nowrap">
-              {isBackendConnected ? 'Telemetry Online' : 'Telemetry Offline'}
-            </span>
-          </div>
+        {/* Center: Single Terminal Indicator & Coordinates Badge */}
+        <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl border border-blue-500/25 bg-surface-bg text-content-primary text-xs font-semibold shadow-2xs shrink-0">
+          <span
+            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+              isBackendConnected ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50 animate-pulse' : 'bg-rose-500'
+            }`}
+            title={isBackendConnected ? 'Terminal Online' : 'Terminal Offline'}
+          />
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 shrink-0">
+            POLA
+          </span>
+          <span className="font-bold text-content-primary whitespace-nowrap">
+            Port of Los Angeles (Pier 400)
+          </span>
+          <span className="text-[11px] text-content-secondary font-mono whitespace-nowrap hidden sm:inline">
+            · 33.754°N 118.216°W
+          </span>
         </div>
 
-        {/* Right: Quick Action Controls */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-          {/* PortPulse AI Copilot Trigger */}
-          <button
-            onClick={onOpenChat}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-zinc-900 to-zinc-800 text-white hover:from-black hover:to-zinc-900 dark:from-zinc-100 dark:to-zinc-200 dark:text-zinc-900 dark:hover:from-white dark:hover:to-zinc-100 transition-all shadow-sm ring-1 ring-white/10"
-            title="Open Grounded AI Operational Copilot"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="font-semibold">Ask AI</span>
-          </button>
-
-          {/* Guided Tour Trigger */}
-          <button
-            onClick={onOpenTour}
-            className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all"
-            title="Interactive Operations Walkthrough"
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">Tour</span>
-          </button>
-
-          {/* Master Data Trigger */}
-          <button
-            onClick={onOpenMasterData}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-surface-border hover:bg-surface-hover text-content-primary transition-colors"
-            title="Infrastructure &amp; Vessel Master Data"
-          >
-            <Database className="w-3.5 h-3.5 text-blue-500" />
-            <span className="hidden sm:inline">Master Data</span>
-          </button>
-
-          {/* Admin User Management */}
-          {role === 'admin' && (
+        {/* Right: Operational Controls & Personnel Session */}
+        <div className="flex items-center space-x-2 shrink-0">
+          {/* Operational Tools Cluster */}
+          <div className="flex items-center space-x-1.5 border-r border-surface-border pr-2 sm:pr-2.5">
+            {/* Ask AI Copilot */}
             <button
-              onClick={() => onOpenLogin('USERS')}
-              className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20 transition-all"
-              title="Manage Operators & Roles"
+              onClick={onOpenChat}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xs shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95"
+              title="Open Grounded AI Operational Copilot"
             >
-              <Shield className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Users</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Ask AI</span>
             </button>
-          )}
 
-          {/* JWT Security Badge */}
-          <button
-            onClick={() => setShowJwtModal(true)}
-            className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 transition-all shadow-xs"
-            title="Inspect Cryptographic JWT Security Claims"
-          >
-            <Shield className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="hidden xl:inline font-mono font-bold text-[11px]">JWT: HS256</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          </button>
-
-          {/* Quick Pitch Guide Trigger */}
-          <button
-            onClick={() => setShowPitchModal(true)}
-            className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/25 transition-all shadow-xs"
-            title="Open Judge Presentation & 60-Second Pitch Guide"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden md:inline font-bold">Pitch Guide</span>
-          </button>
-
-          {/* User Profile */}
-          <button
-            onClick={() => onOpenLogin('AUTH')}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition shadow-xs"
-            title="Switch Operational Profile"
-          >
-            <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span className="font-bold text-content-primary text-xs">@{user.username}</span>
-          </button>
-
-          {/* Sign Out */}
-          <button
-            onClick={logout}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-semibold rounded-lg border border-surface-border bg-surface-bg hover:bg-rose-500/10 hover:border-rose-500/30 text-content-secondary hover:text-rose-500 transition shadow-xs flex items-center space-x-1"
-            title="Sign Out of Operations Cockpit"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Sign Out</span>
-          </button>
-
-          {/* Refresh & Auto-Sync Pill */}
-          <div className="flex items-center rounded-lg border border-surface-border bg-surface-bg p-0.5 shadow-xs">
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className="p-1.5 rounded-md hover:bg-surface-hover text-content-secondary hover:text-content-primary transition-colors"
-              title="Refresh Live Telemetry"
-              aria-label="Refresh Data"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-500' : ''}`} />
-            </button>
-            {onToggleAutoRefresh && (
+            {/* Toolbar Group */}
+            <div className="hidden md:flex items-center space-x-1 p-0.5 rounded-xl bg-surface-bg border border-surface-border">
+              {/* Master Data */}
               <button
-                type="button"
-                onClick={() => onToggleAutoRefresh(!autoRefresh)}
-                className={`px-1.5 py-1 text-[10px] font-semibold rounded-md transition-colors flex items-center space-x-1 ${autoRefresh
-                    ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
-                    : 'text-content-muted hover:text-content-primary hover:bg-surface-hover'
-                  }`}
-                title={autoRefresh ? 'Auto-sync active (60s)' : 'Auto-sync paused'}
+                onClick={onOpenMasterData}
+                className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition"
+                title="Infrastructure & Vessel Master Data"
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500 animate-pulse' : 'bg-content-muted'}`} />
-                <span className="font-mono">60s</span>
+                <Database className="w-3.5 h-3.5 text-blue-500" />
+                <span className="hidden lg:inline">Master Data</span>
               </button>
-            )}
+
+              {/* Presentation Pitch Guide */}
+              <button
+                onClick={() => setShowPitchModal(true)}
+                className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition"
+                title="Open Judge Presentation & 60-Second Pitch Guide"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden xl:inline">Pitch Guide</span>
+              </button>
+
+              {/* Guided Tour Trigger */}
+              <button
+                onClick={onOpenTour}
+                className="hidden 2xl:flex items-center space-x-1 px-2 py-1 text-xs font-semibold rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition"
+                title="Interactive System Walkthrough"
+              >
+                <Compass className="w-3.5 h-3.5 text-blue-500" />
+                <span>Tour</span>
+              </button>
+            </div>
           </div>
 
-          {/* Light / Dark Mode Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-1.5 sm:p-2 rounded-lg border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition-colors"
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-            title={`Toggle Theme (${theme})`}
-          >
-            {theme === 'light' ? (
-              <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
-            ) : (
-              <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-            )}
-          </button>
+          {/* Personnel Profile & Role Switcher */}
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={() => onOpenLogin('AUTH')}
+              className="flex items-center space-x-2 px-2.5 py-1 rounded-xl border border-surface-border bg-surface-bg hover:bg-surface-hover hover:border-blue-500/30 transition shadow-2xs group"
+              title="Switch Operational Profile or View Role Permissions"
+            >
+              <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-[11px]">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left leading-none">
+                <div className="text-xs font-bold text-content-primary font-mono group-hover:text-blue-500 transition-colors">
+                  @{user.username}
+                </div>
+                <div className="text-[8.5px] font-extrabold uppercase text-content-muted tracking-wider mt-0.5">
+                  {user.role.replace('_', ' ')}
+                </div>
+              </div>
+            </button>
+
+            {/* Sign Out */}
+            <button
+              onClick={() => logout()}
+              className="p-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-xl border border-surface-border bg-surface-bg hover:bg-rose-500/10 hover:border-rose-500/30 text-content-secondary hover:text-rose-600 dark:hover:text-rose-400 transition flex items-center space-x-1"
+              title="Sign Out of Operations Cockpit"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Sign Out</span>
+            </button>
+          </div>
+
+          {/* Telemetry Sync & Theme Toggle */}
+          <div className="flex items-center space-x-1 border-l border-surface-border pl-2">
+            {/* Auto-Sync Pill */}
+            <div className="flex items-center rounded-xl border border-surface-border bg-surface-bg p-0.5 shadow-2xs">
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="p-1.5 rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition-colors"
+                title="Refresh Live Telemetry"
+                aria-label="Refresh Data"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-500' : ''}`} />
+              </button>
+              {onToggleAutoRefresh && (
+                <button
+                  type="button"
+                  onClick={() => onToggleAutoRefresh(!autoRefresh)}
+                  className={`px-1.5 py-1 text-[10px] font-semibold rounded-lg transition-colors flex items-center space-x-1 ${autoRefresh
+                      ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
+                      : 'text-content-muted hover:text-content-primary hover:bg-surface-hover'
+                    }`}
+                  title={autoRefresh ? 'Auto-sync active (60s)' : 'Auto-sync paused'}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500 animate-pulse' : 'bg-content-muted'}`} />
+                  <span className="font-mono">60s</span>
+                </button>
+              )}
+            </div>
+
+            {/* Light / Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 sm:p-2 rounded-xl border border-surface-border bg-surface-bg hover:bg-surface-hover text-content-primary transition-colors"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+              title={`Toggle Theme (${theme})`}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
+              ) : (
+                <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Row 2: Executive Navigation Tabs Strip with Scroll Controls & High-Contrast Design */}
-      <div className="border-t border-surface-border bg-gradient-to-b from-surface-bg/40 to-surface-bg/80 relative backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2 relative flex items-center">
+      {/* Row 2: Executive Navigation Tabs Strip with Scroll Controls */}
+      <div className="border-t border-surface-border bg-surface-bg/60 backdrop-blur-sm relative">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-1.5 relative flex items-center">
           {/* Scroll Left Button */}
           {canScrollLeft && (
             <button
               onClick={() => handleScroll('left')}
-              className="absolute left-1 sm:left-2 z-20 p-1.5 rounded-full bg-surface-card border border-surface-border shadow-lg text-content-primary hover:text-blue-500 hover:scale-110 transition-all"
+              className="absolute left-1 sm:left-2 z-20 p-1.5 rounded-full bg-surface-card border border-surface-border shadow-md text-content-primary hover:text-blue-500 hover:scale-110 transition-all"
               title="Scroll tabs left"
               aria-label="Scroll navigation tabs left"
             >
@@ -291,7 +283,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div
             ref={navContainerRef}
             onScroll={updateScrollState}
-            className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar py-0.5 px-1 w-full scroll-smooth"
+            className="flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto no-scrollbar py-0.5 px-1 w-full scroll-smooth"
             aria-label="Operations Navigation"
           >
             {visibleTabs.map((tab) => {
@@ -301,28 +293,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={tab.id}
                   data-active={isActive}
                   onClick={() => onSelectTab(tab.id)}
-                  className={`group shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap select-none border ${isActive
-                      ? 'bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 text-white border-blue-500 shadow-md shadow-blue-500/30 ring-2 ring-blue-400/20'
-                      : 'bg-surface-card text-content-primary hover:text-blue-600 dark:hover:text-blue-400 hover:bg-surface-hover border-surface-border hover:border-blue-400/40 shadow-xs'
+                  className={`group shrink-0 flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs transition-all whitespace-nowrap select-none ${isActive
+                      ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white font-bold shadow-sm shadow-blue-500/25 ring-1 ring-white/20'
+                      : 'bg-transparent hover:bg-surface-card text-content-secondary hover:text-content-primary font-medium hover:border-surface-border'
                     }`}
                 >
                   <span
-                    className={`transition-colors ${isActive
-                        ? 'text-white'
-                        : 'text-content-secondary group-hover:text-blue-500'
+                    className={`transition-colors [&>svg]:transition-colors ${isActive
+                        ? 'text-white [&>svg]:text-white'
+                        : 'text-content-muted group-hover:text-blue-500'
                       }`}
                   >
                     {tab.icon}
                   </span>
                   <span className="tracking-tight">{tab.label}</span>
-                  {tab.isCore && (
+                  {tab.badge !== undefined && tab.badge !== null && (
                     <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider ${isActive
-                          ? 'bg-white/25 text-white'
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold font-mono ${isActive
+                          ? 'bg-white/25 text-white ring-1 ring-white/30'
                           : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                         }`}
                     >
-                      Core
+                      {tab.badge}
                     </span>
                   )}
                 </button>
@@ -334,7 +326,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {canScrollRight && (
             <button
               onClick={() => handleScroll('right')}
-              className="absolute right-1 sm:right-2 z-20 p-1.5 rounded-full bg-surface-card border border-surface-border shadow-lg text-content-primary hover:text-blue-500 hover:scale-110 transition-all animate-pulse"
+              className="absolute right-1 sm:right-2 z-20 p-1.5 rounded-full bg-surface-card border border-surface-border shadow-md text-content-primary hover:text-blue-500 hover:scale-110 transition-all"
               title="Scroll tabs right"
               aria-label="Scroll navigation tabs right"
             >
@@ -343,103 +335,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
-
-      {/* JWT Cryptographic Security Inspector Modal */}
-      {showJwtModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-surface-card border border-surface-border rounded-2xl shadow-2xl max-w-xl w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-surface-border pb-3">
-              <div className="flex items-center space-x-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  <Shield className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-content-primary flex items-center space-x-2">
-                    <span>Cryptographic JWT Security</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-bold border border-emerald-500/30">
-                      RFC 7519
-                    </span>
-                  </h3>
-                  <p className="text-xs text-content-secondary">
-                    All terminal telemetry and solver API requests require signed Bearer tokens
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowJwtModal(false)}
-                className="p-1.5 rounded-lg hover:bg-surface-hover text-content-secondary hover:text-content-primary transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Token Status Callout */}
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  Valid Active Session ({role.toUpperCase()})
-                </span>
-              </div>
-              <span className="text-[11px] font-mono text-content-secondary">Algorithm: HS256</span>
-            </div>
-
-            {/* Decoded Claims Payload */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-content-secondary uppercase tracking-wider block">
-                Decoded JWT Claims (Payload)
-              </label>
-              <pre className="p-3 rounded-xl bg-surface-bg border border-surface-border font-mono text-xs text-content-primary overflow-x-auto leading-relaxed">
-                {JSON.stringify(
-                  decodedToken || {
-                    sub: user.username,
-                    role: user.role,
-                    user_id: 1,
-                    exp: Math.floor(Date.now() / 1000) + 3600,
-                    iss: 'portpulse-backend',
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-            </div>
-
-            {/* Raw Token Snippet */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-content-secondary uppercase tracking-wider">
-                  Raw Bearer Authorization Header
-                </label>
-                <button
-                  onClick={() => {
-                    if (token) {
-                      navigator.clipboard.writeText(`Bearer ${token}`);
-                      setCopiedToken(true);
-                      setTimeout(() => setCopiedToken(false), 2000);
-                    }
-                  }}
-                  className="flex items-center space-x-1 text-[11px] text-blue-500 hover:text-blue-600 font-semibold"
-                >
-                  {copiedToken ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedToken ? 'Copied' : 'Copy Header'}</span>
-                </button>
-              </div>
-              <div className="p-2.5 rounded-xl bg-surface-bg border border-surface-border font-mono text-[11px] text-content-muted break-all select-all">
-                Bearer {token ? `${token.slice(0, 32)}...${token.slice(-16)}` : 'Generating session token...'}
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setShowJwtModal(false)}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-surface-hover hover:bg-surface-border text-content-primary transition"
-              >
-                Close Inspector
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Quick Pitch & Presentation Guide Modal */}
       {showPitchModal && (

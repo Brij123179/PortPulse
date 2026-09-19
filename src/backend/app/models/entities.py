@@ -112,13 +112,13 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False)
     hashed_password = Column(String(200), nullable=False)
-    role = Column(String(50), nullable=False, default="shift_supervisor")
+    role = Column(String(50), nullable=False, default="viewer")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=utcnow)
 
 
 class AuditLogEntry(Base):
-    """Append-only audit trail (F-501, cross-cutting)."""
+    """Tamper-evident append-only cryptographic audit trail with SHA-256 hash chaining."""
     __tablename__ = "audit_log"
     __table_args__ = {'extend_existing': True}
 
@@ -127,8 +127,31 @@ class AuditLogEntry(Base):
     actor = Column(String(100), nullable=False)
     actor_role = Column(String(50), nullable=True)
     actor_id = Column(Integer, nullable=True)
+    client_ip = Column(String(50), nullable=True)
     action = Column(String(100), nullable=False, index=True)
     entity_type = Column(String(50), nullable=False, index=True)
     entity_id = Column(String(50), nullable=False)
     payload_snapshot = Column(Text, nullable=True)
+    prev_hash = Column(String(64), nullable=True)
+    entry_hash = Column(String(64), nullable=True)
     timestamp = Column(DateTime, default=utcnow)
+
+
+class AdminApprovalRequest(Base):
+    """Dual-control second-admin approval workflow for critical actions (F-502)."""
+    __tablename__ = "admin_approvals"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    request_type = Column(String(50), nullable=False)  # CREATE_ADMIN, ELEVATE_ROLE, SYSTEM_RESET
+    requested_by = Column(String(100), nullable=False)
+    target_username = Column(String(100), nullable=False)
+    target_email = Column(String(255), nullable=True)
+    target_role = Column(String(50), nullable=False)
+    payload_snapshot = Column(Text, nullable=True)
+    status = Column(String(50), default="PENDING")  # PENDING, APPROVED, REJECTED
+    approved_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+

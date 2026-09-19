@@ -11,7 +11,8 @@ import {
   Ship, 
   AlertCircle,
   Key,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 
 interface LoginPageProps {
@@ -19,12 +20,17 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const { login, quickLogin } = useAuth();
+  const { login, quickLogin, mfaPending, verifyMfa, cancelMfa, loggedOutReason } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // MFA verification state
+  const [mfaCode, setMfaCode] = useState('');
+  const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
 
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +46,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     if (res.success) {
       if (onLoginSuccess) onLoginSuccess();
+    } else if (res.mfaRequired) {
+      // Transition automatically to MFA challenge
+      setMfaCode('');
+      setMfaError(null);
     } else {
       setErrorMsg(res.error || 'Authentication failed. Please verify credentials.');
     }
@@ -53,12 +63,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     if (res.success) {
       if (onLoginSuccess) onLoginSuccess();
+    } else if (res.mfaRequired) {
+      // MFA required for privileged roles (admin / terminal_manager)
+      setMfaCode('');
+      setMfaError(null);
     } else {
       setErrorMsg(res.error || `Quick sign in failed for ${roleKey}.`);
     }
   };
 
+  const handleVerifyMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaCode.trim() || mfaCode.trim().length < 6) {
+      setMfaError('Please enter the full 6-digit verification code.');
+      return;
+    }
+
+    setIsVerifyingMfa(true);
+    setMfaError(null);
+    const res = await verifyMfa(mfaCode.trim());
+    setIsVerifyingMfa(false);
+
+    if (res.success) {
+      if (onLoginSuccess) onLoginSuccess();
+    } else {
+      setMfaError(res.error || 'Invalid verification code. Please try again.');
+    }
+  };
+
   const fillForm = (u: string, p: string) => {
+    if (mfaPending) cancelMfa();
     setUsername(u);
     setPassword(p);
     setErrorMsg(null);
@@ -325,94 +359,211 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* Right Column: Manual Sign-In Form */}
+          {/* Right Column: Authentication Form / MFA Challenge */}
           <div className="lg:col-span-5">
             <div className="bg-surface-card border border-surface-border rounded-2xl p-6 sm:p-8 shadow-xl relative">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-content-primary">Personnel Authentication</h2>
-                  <p className="text-xs text-content-secondary">Enter your operational credentials</p>
-                </div>
-              </div>
-
-              {errorMsg && (
-                <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start space-x-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              
+              {/* Session Inactivity Timeout Notice */}
+              {loggedOutReason && (
+                <div className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-start space-x-2.5">
+                  <Shield className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
                   <div>
-                    <span className="font-bold">Authentication Error:</span> {errorMsg}
+                    <span className="font-bold">Workstation Locked:</span> {loggedOutReason}
                   </div>
                 </div>
               )}
 
-              <form onSubmit={handleManualLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-content-secondary mb-1.5">
-                    Operator Username
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3.5 top-3 text-content-muted" />
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. admin or supervisor"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-border bg-surface-bg text-content-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                      disabled={isSubmitting || loadingRole !== null}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-content-secondary mb-1.5">
-                    Security Password
-                  </label>
-                  <div className="relative">
-                    <Key className="w-4 h-4 absolute left-3.5 top-3 text-content-muted" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-border bg-surface-bg text-content-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                      disabled={isSubmitting || loadingRole !== null}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting || loadingRole !== null}
-                  className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center space-x-2 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Verifying Credentials...</span>
+              {mfaPending ? (
+                /* Two-Factor Authentication Challenge View */
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500">
+                      <ShieldCheck className="w-5 h-5" />
                     </div>
-                  ) : (
-                    <>
-                      <span>Sign In to Operations Cockpit</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Strict Admin-Only Registration Security Notice */}
-              <div className="mt-6 pt-5 border-t border-surface-border">
-                <div className="p-3 rounded-xl bg-surface-bg border border-surface-border text-[11px] text-content-secondary space-y-1.5">
-                  <div className="flex items-center space-x-1.5 font-bold text-content-primary">
-                    <Shield className="w-3.5 h-3.5 text-purple-500" />
-                    <span>Admin-Only User Registration</span>
+                    <div>
+                      <h2 className="text-lg font-bold text-content-primary">Two-Factor Authentication</h2>
+                      <p className="text-xs text-content-secondary">Privileged Role Security Guard</p>
+                    </div>
                   </div>
-                  <p className="leading-relaxed">
-                    Public self-signup is disabled by terminal security protocol. New operator accounts and role assignments are restricted and must be provisioned by an authenticated <strong className="text-content-primary">Administrator</strong>.
-                  </p>
+
+                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs space-y-1.5">
+                    <div className="font-bold text-purple-600 dark:text-purple-300 flex items-center justify-between">
+                      <span>Operator: @{mfaPending.user.username}</span>
+                      <span className="uppercase text-[10px] px-2 py-0.5 rounded font-extrabold bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30">
+                        {mfaPending.user.role.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-content-secondary text-[11px] leading-relaxed">
+                      {mfaPending.message || 'MFA is strictly enforced for Administrator and Terminal Manager accounts.'}
+                    </p>
+                  </div>
+
+                  {mfaError && (
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">MFA Error:</span> {mfaError}
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleVerifyMfa} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-content-secondary mb-1.5">
+                        6-Digit TOTP Verification Code
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          value={mfaCode}
+                          onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="849201"
+                          className="w-full text-center font-mono text-2xl tracking-[0.35em] py-3 rounded-xl border border-surface-border bg-surface-bg text-content-primary focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                          autoFocus
+                          disabled={isVerifyingMfa}
+                        />
+                      </div>
+                    </div>
+
+                    {mfaPending.demoCode && (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface-bg border border-surface-border text-xs">
+                        <span className="text-content-muted text-[11px]">
+                          Authorized Demo OTP: <strong className="font-mono text-content-primary">{mfaPending.demoCode}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setMfaCode(mfaPending.demoCode || '849201')}
+                          className="text-[11px] font-bold text-blue-500 hover:text-blue-400 underline cursor-pointer"
+                        >
+                          Use Code
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isVerifyingMfa || mfaCode.length < 6}
+                      className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center space-x-2 disabled:opacity-50"
+                    >
+                      {isVerifyingMfa ? (
+                        <div className="flex items-center space-x-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Verifying Token...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span>Verify &amp; Enter Operations Cockpit</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cancelMfa();
+                        setMfaError(null);
+                        setMfaCode('');
+                      }}
+                      className="w-full py-2 text-xs font-semibold text-content-muted hover:text-content-primary transition text-center"
+                    >
+                      Cancel and back to login
+                    </button>
+                  </form>
                 </div>
-              </div>
+              ) : (
+                /* Standard Credentials Form */
+                <>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-content-primary">Personnel Authentication</h2>
+                      <p className="text-xs text-content-secondary">Enter your operational credentials</p>
+                    </div>
+                  </div>
+
+                  {errorMsg && (
+                    <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">Authentication Error:</span> {errorMsg}
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleManualLogin} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-content-secondary mb-1.5">
+                        Operator Username
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 absolute left-3.5 top-3 text-content-muted" />
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="e.g. admin, manager, supervisor"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-border bg-surface-bg text-content-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          disabled={isSubmitting || loadingRole !== null}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-content-secondary mb-1.5">
+                        Security Password
+                      </label>
+                      <div className="relative">
+                        <Key className="w-4 h-4 absolute left-3.5 top-3 text-content-muted" />
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-border bg-surface-bg text-content-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          disabled={isSubmitting || loadingRole !== null}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || loadingRole !== null}
+                      className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center space-x-2 disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center space-x-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Verifying Credentials...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span>Sign In to Operations Cockpit</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* Strict Admin-Only Registration Security Notice */}
+                  <div className="mt-6 pt-5 border-t border-surface-border">
+                    <div className="p-3 rounded-xl bg-surface-bg border border-surface-border text-[11px] text-content-secondary space-y-1.5">
+                      <div className="flex items-center space-x-1.5 font-bold text-content-primary">
+                        <Shield className="w-3.5 h-3.5 text-purple-500" />
+                        <span>Admin-Only User Registration</span>
+                      </div>
+                      <p className="leading-relaxed">
+                        Public self-signup is disabled by terminal security protocol. New operator accounts and role assignments are restricted and must be provisioned by an authenticated <strong className="text-content-primary">Administrator</strong>.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
             </div>
           </div>

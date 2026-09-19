@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
@@ -37,7 +37,9 @@ def export_berths_csv(
 ):
     """
     Exports all terminal berths as CSV with specifications and active cranes.
+    Field-level masking: commercial priority rules are redacted for non-privileged roles.
     """
+    is_privileged = user.role in [UserRole.ADMIN, UserRole.TERMINAL_MANAGER]
     berths = db.query(Berth).all()
     output = io.StringIO()
     writer = csv.writer(output)
@@ -48,6 +50,9 @@ def export_berths_csv(
 
     for b in berths:
         operational_cranes = sum(1 for c in b.cranes if getattr(c, "status", "OPERATIONAL") == "OPERATIONAL")
+        rules = b.contractual_priority_rules or "STANDARD"
+        if not is_privileged:
+            rules = "[REDACTED: ROLE RESTRICTED]"
         writer.writerow([
             b.id,
             b.name,
@@ -55,9 +60,20 @@ def export_berths_csv(
             b.draft_limit_m,
             b.crane_slots,
             operational_cranes,
-            b.contractual_priority_rules or "STANDARD",
+            rules,
             b.status
         ])
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        action="EXPORT_BERTHS_CSV",
+        entity_type="BERTH",
+        entity_id="ALL",
+        actor_role=user.role,
+        actor_id=getattr(user, "user_id", None),
+        payload_snapshot={"masked": not is_privileged, "record_count": len(berths)}
+    )
 
     csv_data = output.getvalue()
     return Response(
@@ -77,7 +93,9 @@ def export_vessels_csv(
 ):
     """
     Exports current scheduled and berthed vessels manifest as CSV.
+    Field-level masking: commercial cargo volume is redacted for non-privileged roles.
     """
+    is_privileged = user.role in [UserRole.ADMIN, UserRole.TERMINAL_MANAGER]
     vessels = db.query(Vessel).all()
     output = io.StringIO()
     writer = csv.writer(output)
@@ -88,11 +106,14 @@ def export_vessels_csv(
     ])
 
     for v in vessels:
+        cargo = v.cargo_volume
+        if not is_privileged:
+            cargo = "[REDACTED: ROLE RESTRICTED]"
         writer.writerow([
             v.id,
             v.name,
             v.vessel_class,
-            v.cargo_volume,
+            cargo,
             v.draft_m,
             v.length_m,
             v.carrier_eta.isoformat() if v.carrier_eta else "",
@@ -101,6 +122,17 @@ def export_vessels_csv(
             v.assigned_berth_id or "",
             v.status
         ])
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        action="EXPORT_VESSELS_CSV",
+        entity_type="VESSEL",
+        entity_id="ALL",
+        actor_role=user.role,
+        actor_id=getattr(user, "user_id", None),
+        payload_snapshot={"masked": not is_privileged, "record_count": len(vessels)}
+    )
 
     csv_data = output.getvalue()
     return Response(
@@ -120,9 +152,10 @@ def export_operations_plan_csv(
     user: CurrentUser = Depends(get_current_user)
 ):
     """
-    Fulfills Challenge Feature 4: Exports official 72-Hour Port Operations Plan
-    for Shift Supervisors as a standard TOS CSV.
+    Exports official Port Operations Plan for Shift Supervisors as a standard TOS CSV.
+    Field-level masking: commercial demurrage liabilities are redacted for non-privileged roles.
     """
+    is_privileged = user.role in [UserRole.ADMIN, UserRole.TERMINAL_MANAGER]
     plan = berth_optimiser.solve(db, horizon_hours=horizon_hours)
     output = io.StringIO()
     writer = csv.writer(output)
@@ -133,6 +166,9 @@ def export_operations_plan_csv(
     ])
 
     for a in plan.assignments:
+        demurrage = a.demurrage_cost_usd
+        if not is_privileged:
+            demurrage = "[REDACTED: ROLE RESTRICTED]"
         writer.writerow([
             a.vessel_id,
             a.vessel_name,
@@ -146,8 +182,19 @@ def export_operations_plan_csv(
             a.allocated_cranes,
             a.expected_dwell_hours,
             a.wait_time_hours,
-            a.demurrage_cost_usd
+            demurrage
         ])
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        action="EXPORT_OPERATIONS_PLAN_CSV",
+        entity_type="OPERATIONS_PLAN",
+        entity_id=f"HORIZON_{horizon_hours}H",
+        actor_role=user.role,
+        actor_id=getattr(user, "user_id", None),
+        payload_snapshot={"masked": not is_privileged, "horizon_hours": horizon_hours}
+    )
 
     csv_data = output.getvalue()
     return Response(
@@ -250,12 +297,12 @@ async def import_berths_csv(
     request: Request,
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_roles([
-        UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.VESSEL_PLANNER, UserRole.SHIFT_SUPERVISOR
+        UserRole.ADMIN, UserRole.TERMINAL_MANAGER
     ]))
 ):
     """
     Imports berths from CSV. Automatically connects cranes and validates boundaries.
-    Available to all operational port roles.
+    Restricted to Administrator and Terminal Manager.
     """
     csv_text = await extract_csv_text(request)
     if not csv_text.strip():
@@ -339,6 +386,10 @@ async def import_berths_csv(
         payload_snapshot={"imported": imported, "updated": updated, "cranes_created": cranes_created, "error_count": len(errors)}
     )
 
+    try:
+        risk_engine.re_evaluate_all_predictions(db, trigger="CSV_IMPORT_BERTHS")
+    except Exception:
+        pass
     event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="CSV_IMPORT")
     return CsvImportResult(
         status="success" if not errors else "partial_success",
@@ -464,6 +515,10 @@ async def import_vessels_csv(
         payload_snapshot={"imported": imported, "updated": updated, "error_count": len(errors)}
     )
 
+    try:
+        risk_engine.re_evaluate_all_predictions(db, trigger="CSV_IMPORT_VESSELS")
+    except Exception:
+        pass
     event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="CSV_IMPORT")
     return CsvImportResult(
         status="success" if not errors else "partial_success",
@@ -480,12 +535,13 @@ async def import_turnaround_csv(
     retrain_model: bool = False,
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_roles([
-        UserRole.ADMIN, UserRole.TERMINAL_MANAGER, UserRole.VESSEL_PLANNER, UserRole.SHIFT_SUPERVISOR
+        UserRole.ADMIN, UserRole.TERMINAL_MANAGER
     ]))
 ):
     """
     Imports historical turnaround records from CSV dataset.
     Optionally triggers immediate ML model re-training on new data.
+    Restricted to Administrator and Terminal Manager.
     """
     csv_text = await extract_csv_text(request)
     if not csv_text.strip():
@@ -556,7 +612,10 @@ async def import_turnaround_csv(
     )
 
     if retrain_model:
-        risk_engine.retrain_and_predict(db)
+        try:
+            risk_engine.re_evaluate_all_predictions(db, trigger="CSV_IMPORT_TURNAROUND")
+        except Exception:
+            risk_engine.retrain_and_predict(db)
 
     event_bus.publish(EventType.DATA_CHANGED, entity_type="TURNAROUND_RECORD", action="CSV_IMPORT")
 

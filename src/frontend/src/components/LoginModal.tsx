@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, ROLE_PROFILES, UserRole } from '../context/AuthContext';
 import { api, UserItem } from '../api/client';
-import { Shield, UserPlus, Users, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Shield, UserPlus, Users, CheckCircle, RefreshCw, AlertTriangle, ShieldCheck, ArrowRight } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -10,12 +10,17 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'AUTH' }) => {
-  const { role, user, isAuthenticated, login, logout, switchRole } = useAuth();
+  const { role, user, isAuthenticated, login, logout, switchRole, mfaPending, verifyMfa, cancelMfa } = useAuth();
   const [activeTab, setActiveTab] = useState<'AUTH' | 'USERS'>(initialTab);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // MFA modal verification state
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
 
   // Admin user management state
   const [usersList, setUsersList] = useState<UserItem[]>([]);
@@ -45,6 +50,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     setLoading(false);
     if (res.success) {
       onClose();
+    } else if (res.mfaRequired) {
+      setMfaCode('');
+      setMfaError(null);
     } else {
       setErrorMsg(res.error || 'Login failed. Please check credentials.');
     }
@@ -53,9 +61,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
   const handleQuickSwitch = async (targetRole: UserRole) => {
     setLoading(true);
     setErrorMsg(null);
-    await switchRole(targetRole);
+    const res = await switchRole(targetRole);
     setLoading(false);
-    onClose();
+    if (!res.mfaRequired) {
+      onClose();
+    }
+  };
+
+  const handleVerifyMfaModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaCode.trim() || mfaCode.trim().length < 6) {
+      setMfaError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setMfaLoading(true);
+    setMfaError(null);
+    const res = await verifyMfa(mfaCode.trim());
+    setMfaLoading(false);
+    if (res.success) {
+      onClose();
+    } else {
+      setMfaError(res.error || 'Invalid verification code. Please try again.');
+    }
   };
 
   const fetchUsers = useCallback(async () => {
@@ -164,25 +191,101 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         )}
 
         {activeTab === 'AUTH' ? (
-          <>
-            {/* Current Active User Status */}
-            <div className="mb-6 p-4 rounded-lg bg-surface-bg border border-surface-border flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-content-muted uppercase tracking-wider">Active Operator</div>
-                <div className="text-base font-bold text-blue-600 dark:text-blue-400">{user.displayName}</div>
-                <div className="text-xs text-content-secondary">Username: <code className="text-content-primary font-mono">@{user.username}</code> • Role: <span className="font-semibold text-indigo-500">{user.role}</span></div>
+          mfaPending ? (
+            /* MFA Challenge Card in Modal */
+              <div className="p-4 rounded-xl bg-surface-bg border border-purple-500/30 space-y-4 animate-in fade-in">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-content-primary">Two-Factor Authentication Required</h3>
+                    <p className="text-xs text-content-secondary">
+                      Privileged account: <code className="font-mono text-content-primary">@{mfaPending.user.username}</code> ({mfaPending.user.role.replace('_', ' ')})
+                    </p>
+                  </div>
+                </div>
+
+                {mfaError && (
+                  <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{mfaError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyMfaModal} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-content-secondary mb-1">
+                      Enter 6-Digit Authenticator Code
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="849201"
+                      autoFocus
+                      disabled={mfaLoading}
+                      className="w-full text-center font-mono text-xl tracking-[0.3em] py-2 rounded-lg border border-surface-border bg-surface-card text-content-primary focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                  </div>
+
+                  {mfaPending.demoCode && (
+                    <div className="flex items-center justify-between text-xs p-2 rounded bg-surface-card border border-surface-border">
+                      <span className="text-content-muted text-[11px]">Demo OTP: <strong className="font-mono text-content-primary">{mfaPending.demoCode}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => setMfaCode(mfaPending.demoCode || '849201')}
+                        className="text-[11px] font-bold text-blue-500 hover:text-blue-400 underline cursor-pointer"
+                      >
+                        Fill Code
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cancelMfa();
+                        setMfaError(null);
+                        setMfaCode('');
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-bg text-content-secondary hover:bg-surface-hover border border-surface-border transition"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={mfaLoading || mfaCode.length < 6}
+                      className="px-4 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-sm transition flex items-center space-x-1.5 disabled:opacity-50"
+                    >
+                      <span>{mfaLoading ? 'Verifying...' : 'Verify MFA Code'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </form>
               </div>
-              {isAuthenticated && (
-                <button
-                  onClick={() => {
-                    logout();
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition"
-                >
-                  Sign Out
-                </button>
-              )}
-            </div>
+            ) : (
+              <>
+                {/* Current Active User Status */}
+                <div className="mb-6 p-4 rounded-lg bg-surface-bg border border-surface-border flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-content-muted uppercase tracking-wider">Active Operator</div>
+                    <div className="text-base font-bold text-blue-600 dark:text-blue-400">{user.displayName}</div>
+                    <div className="text-xs text-content-secondary">Username: <code className="text-content-primary font-mono">@{user.username}</code> • Role: <span className="font-semibold text-indigo-500">{user.role}</span></div>
+                  </div>
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => {
+                        logout();
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition"
+                    >
+                      Sign Out
+                    </button>
+                  )}
+                </div>
 
             {/* Quick Role Switcher (1-Click with Default Credentials) */}
             <div className="mb-6">
@@ -277,6 +380,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               </form>
             </div>
           </>
+          )
         ) : (
           <div className="space-y-4 animate-in fade-in duration-150">
             {/* Notifications */}

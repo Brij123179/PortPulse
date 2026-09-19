@@ -19,6 +19,7 @@ class UserRole(str, Enum):
     TERMINAL_MANAGER = "terminal_manager"
     VESSEL_PLANNER = "vessel_planner"
     SHIFT_SUPERVISOR = "shift_supervisor"
+    VIEWER = "viewer"
 
 
 class TokenData(BaseModel):
@@ -51,6 +52,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
+    to_encode.setdefault("type", "access")
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -58,6 +60,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.PORTPULSE_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def create_mfa_challenge_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    to_encode["type"] = "mfa_pending"
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, settings.PORTPULSE_SECRET_KEY, algorithm=ALGORITHM)
 
 
 def get_current_user(
@@ -81,6 +94,13 @@ def get_current_user(
     if raw_token:
         try:
             payload = jwt.decode(raw_token, settings.PORTPULSE_SECRET_KEY, algorithms=[ALGORITHM])
+            token_type = payload.get("type", "access")
+            if token_type == "mfa_pending":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="MFA challenge token cannot be used for API access. Complete MFA verification first.",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
             username: str = payload.get("sub")
             role_str: str = payload.get("role")
             user_id: int = payload.get("user_id", 1)
@@ -137,9 +157,10 @@ def require_roles(*allowed_roles_args):
 
     def role_checker(current_user: CurrentUser = Depends(get_current_user)):
         if current_user.role not in converted_roles:
+            req_roles_str = ", ".join([r.value for r in converted_roles])
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Role '{current_user.role.value}' does not possess permissions for this endpoint. Required roles: {[r.value for r in converted_roles]}."
+                detail=f"Access denied. Role '{current_user.role.value}' does not possess permissions for this endpoint. Required roles: [{req_roles_str}]."
             )
         return current_user
     return role_checker

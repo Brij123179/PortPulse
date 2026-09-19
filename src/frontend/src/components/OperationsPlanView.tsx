@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OptimisationRunResponse, BerthStatusItem, api, apiClient, ShiftBriefingResponse, AutoOptimizeResult } from '../api/client';
-import { PortTerminalSpec } from '../utils/portData';
+import { OptimisationRunResponse, BerthStatusItem, VesselStatusItem, api, apiClient, ShiftBriefingResponse, AutoOptimizeResult } from '../api/client';
 import {
   CalendarDays,
   Download,
@@ -21,12 +20,15 @@ import {
   List,
   Sparkles,
   Scale,
+  RotateCcw,
 } from 'lucide-react';
 import { QuaysideSpatialMap } from './QuaysideSpatialMap';
 import { BerthScheduleGantt } from './BerthScheduleGantt';
 import { PredictionExplainabilityModal } from './PredictionExplainabilityModal';
 import { VoiceBriefingPlayer } from './VoiceBriefingPlayer';
 import { BimcoDemurrageCalculatorModal } from './BimcoDemurrageCalculatorModal';
+import { VesselDelayShockSimulator } from './VesselDelayShockSimulator';
+import { cleanFormatting } from './ChatAssistantDrawer';
 import { useAuth } from '../context/AuthContext';
 
 export type OperationsSubTab = 'MAP' | 'TABLE' | 'GANTT' | 'TESTING' | 'BRIEFING';
@@ -39,7 +41,6 @@ interface OperationsPlanViewProps {
   userRole: string;
   onNavigateTab?: (tab: string) => void;
   onAutoOptimizeComplete?: () => void;
-  currentPort?: PortTerminalSpec;
   berths?: BerthStatusItem[];
 }
 
@@ -51,7 +52,6 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   userRole,
   onNavigateTab,
   onAutoOptimizeComplete,
-  currentPort,
   berths,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<OperationsSubTab>('MAP');
@@ -76,6 +76,41 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   const [selectedBimcoVessel, setSelectedBimcoVessel] = useState<{ id: string; name: string; dwellHours: number } | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [kpiMode, setKpiMode] = useState<'optimized' | 'baseline'>('optimized');
+  const [shockVessels, setShockVessels] = useState<VesselStatusItem[]>([]);
+
+  useEffect(() => {
+    api.getVesselsStatus()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setShockVessels(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch vessels for shock simulator:', err);
+      });
+  }, [optimisationData]);
+
+  const candidateShockVessels: VesselStatusItem[] = useMemo(() => {
+    if (shockVessels.length > 0) return shockVessels;
+    if (!optimisationData?.assignments) return [];
+    return optimisationData.assignments.map((a) => ({
+      id: a.vessel_id,
+      name: a.vessel_name,
+      vessel_class: a.vessel_class,
+      cargo_volume: 3500,
+      carrier_eta: a.start_time,
+      corrected_eta: a.start_time,
+      eta_confidence: 0.95,
+      priority_flag: false,
+      length_m: a.length_m,
+      draft_m: a.draft_m,
+      status: 'SCHEDULED' as const,
+      assigned_berth_id: a.assigned_berth_id,
+      assigned_berth_name: a.assigned_berth_name,
+      quay_fit: true,
+      draft_fit: true,
+    }));
+  }, [shockVessels, optimisationData]);
 
   const handleAutoOptimize = async () => {
     setAutoOptLoading(true);
@@ -254,22 +289,29 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* Top Header & Global Actions */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-1">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-1">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-content-primary tracking-tight flex items-center space-x-3 flex-wrap gap-y-1">
-            <span>72-Hour Tactical Operations Plan</span>
-            {currentPort && (
-              <span className="text-xs px-2.5 py-1 rounded-xl bg-surface-card border border-surface-border text-content-primary font-bold shadow-xs flex items-center space-x-1.5">
-                <span className="text-base">{currentPort.flag}</span>
-                <span>{currentPort.name}</span>
+          <div className="flex items-center space-x-2 mb-1">
+            <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+              SECTION: Master Operations Plan &amp; Dispatch Controls
+            </span>
+          </div>
+          <div className="flex items-center space-x-2.5 flex-wrap gap-y-1.5">
+            <h2 className="text-xl sm:text-2xl font-black text-content-primary tracking-tight">
+              72-Hour Tactical Operations Plan
+            </h2>
+            <span className="text-xs px-2.5 py-1 rounded-xl bg-surface-card border border-surface-border text-content-primary font-bold shadow-2xs flex items-center space-x-1.5">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                POLA
               </span>
-            )}
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold border border-blue-500/30 uppercase tracking-wider">
+              <span>Port of Los Angeles (Pier 400)</span>
+            </span>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold border border-blue-500/20 uppercase tracking-wider">
               HiGHS MILP Optimised
             </span>
-          </h2>
+          </div>
           <p className="text-xs text-content-secondary mt-1">
-            Zero hard-constraint violation berthing manifest, quayside spatial layout, and dynamic congestion forecast
+            <strong className="text-content-primary">Purpose:</strong> Shift supervisor command deck for managing quayside allocations, executing mathematical optimization solvers, evaluating BIMCO contracts, and dispatching shift operations.
           </p>
         </div>
 
@@ -277,7 +319,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           <button
             onClick={handleAutoOptimize}
             disabled={autoOptLoading}
-            className="flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition shadow-sm active:scale-95 disabled:opacity-50"
+            className="flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xs hover:shadow-sm active:scale-95 transition-all disabled:opacity-50"
             title="Run Automated 72h MILP Berth & Crane Optimisation Pipeline"
           >
             <Brain className={`w-3.5 h-3.5 ${autoOptLoading ? 'animate-pulse text-amber-300' : ''}`} />
@@ -287,11 +329,44 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-sm"
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-2xs"
             title="Refresh Operations Plan from Highs MILP Solver"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-500' : ''}`} />
             <span>Sync Plan</span>
+          </button>
+
+          <button
+            onClick={async () => {
+              try {
+                setAutoOptLoading(true);
+                const randomSeed = Math.floor(Math.random() * 900000) + 1000;
+                await api.generateSyntheticData(50, 10, randomSeed);
+                setAutoOptNotification(`✨ New Simulation Session Initialized (Seed #${randomSeed}) with randomized 50-vessel calls.`);
+                onRefresh();
+                setTimeout(() => setAutoOptNotification(null), 6000);
+              } catch (e: any) {
+                setAutoOptNotification(`❌ Failed to initialize new session: ${e.message}`);
+              } finally {
+                setAutoOptLoading(false);
+              }
+            }}
+            disabled={autoOptLoading}
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-2xs"
+            title="Generate a brand new simulation session with randomized fleet and arrival times"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>New Session Fleet</span>
+          </button>
+
+          <button
+            onClick={handleResetBaseline}
+            disabled={shockLoading || autoOptLoading}
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-dashed border-surface-border bg-surface-card hover:bg-surface-hover text-content-muted hover:text-content-primary transition shadow-2xs"
+            title="Reset to standard 50-vessel reference baseline (Seed #42)"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-content-muted" />
+            <span>Reset Baseline</span>
           </button>
 
           <button
@@ -304,7 +379,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               });
               setBimcoModalOpen(true);
             }}
-            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition shadow-sm"
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 transition shadow-2xs"
             title="Open BIMCO Demurrage & Laytime Contract Calculator"
           >
             <Scale className="w-3.5 h-3.5" />
@@ -314,7 +389,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
           <button
             onClick={handleExportCsv}
             disabled={exportingCsv}
-            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-sm disabled:opacity-60 cursor-pointer"
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-2xs disabled:opacity-60 cursor-pointer"
             title="Export 72-Hour Shift Schedule to CSV"
           >
             {exportingCsv ? (
@@ -327,7 +402,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
 
           <button
             onClick={handlePrint}
-            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-sm"
+            className="flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition shadow-2xs"
             title="Print Shift Supervisor Handover Briefing"
           >
             <Printer className="w-3.5 h-3.5" />
@@ -336,24 +411,29 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
         </div>
       </div>
 
-      {/* Interactive 3-Step Presentation & Pitch HUD */}
-      <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-sm space-y-3">
+      {/* Interactive 3-Step Presentation & Stress-Testing Deck */}
+      <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-border pb-2.5">
           <div className="flex items-center space-x-2">
             <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
               <Zap className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-xs font-black uppercase tracking-wider text-content-primary">
-                Live Pitch &amp; Presentation Sequence
-              </span>
-              <span className="text-[11px] text-content-secondary ml-2 hidden sm:inline">
-                Demonstrate PortPulse problem, disruption shock, and AI self-healing in 3 clicks
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                  SECTION: Scenario Simulation Deck
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-content-primary">
+                  1-Click Scenario Demo
+                </span>
+              </div>
+              <p className="text-[11px] text-content-secondary mt-0.5">
+                <strong className="text-content-primary">Purpose:</strong> Quickly demonstrate port operations across 3 fundamental phases: standard baseline flow, disruption crisis injection, and automated AI self-healing.
+              </p>
             </div>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-cyan-400 border border-blue-500/20 uppercase tracking-wider self-start sm:self-auto">
-            1-Click Demo Presets
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 border border-blue-500/20 uppercase tracking-wider self-start sm:self-auto font-mono">
+            3-Step Presentation
           </span>
         </div>
 
@@ -363,19 +443,19 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             type="button"
             onClick={handleResetBaseline}
             disabled={shockLoading || autoOptLoading}
-            className="text-left p-3 rounded-xl border border-surface-border hover:border-emerald-500/50 bg-surface-bg hover:bg-emerald-500/5 transition group"
+            className="text-left p-3.5 rounded-xl border border-surface-border hover:border-emerald-500/40 bg-surface-bg hover:bg-emerald-500/5 transition-all group"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                Step 1: Baseline Port
+                Step 1: Baseline
               </span>
-              <span className="text-[10px] text-content-muted">Baseline Fleet</span>
+              <span className="text-[10px] text-content-muted font-mono">50 Vessels</span>
             </div>
-            <h4 className="text-xs font-bold text-content-primary group-hover:text-emerald-500 transition-colors">
+            <h4 className="text-xs font-bold text-content-primary group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
               Reset Baseline 50-Vessel Port
             </h4>
             <p className="text-[11px] text-content-secondary mt-1 leading-snug">
-              Demonstrates clean quayside flow, 0.66h ML ETA accuracy, and balanced crane utilization.
+              Clean quayside flow, 0.66h ML ETA accuracy, and balanced crane utilization.
             </p>
           </button>
 
@@ -384,15 +464,15 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             type="button"
             onClick={() => handleInjectShock('crane_outage')}
             disabled={shockLoading || autoOptLoading}
-            className="text-left p-3 rounded-xl border border-surface-border hover:border-rose-500/50 bg-surface-bg hover:bg-rose-500/5 transition group"
+            className="text-left p-3.5 rounded-xl border border-surface-border hover:border-rose-500/40 bg-surface-bg hover:bg-rose-500/5 transition-all group"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
-                Step 2: Inject Disruption
+                Step 2: Disruption
               </span>
-              <span className="text-[10px] text-rose-500 font-bold">Harbor Crisis</span>
+              <span className="text-[10px] text-rose-500 font-bold font-mono">CRISIS INJECTION</span>
             </div>
-            <h4 className="text-xs font-bold text-content-primary group-hover:text-rose-500 transition-colors flex items-center space-x-1">
+            <h4 className="text-xs font-bold text-content-primary group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors flex items-center space-x-1.5">
               <span>Simulate STS Crane Breakdown</span>
               <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             </h4>
@@ -406,20 +486,20 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             type="button"
             onClick={handleAutoOptimize}
             disabled={autoOptLoading || shockLoading}
-            className="text-left p-3 rounded-xl border border-blue-500/40 hover:border-blue-500 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-surface-bg hover:from-blue-500/15 transition group shadow-xs"
+            className="text-left p-3.5 rounded-xl border border-blue-500/30 hover:border-blue-500/60 bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-surface-card hover:from-blue-500/15 transition-all group shadow-xs"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-cyan-400 border border-blue-500/30">
-                Step 3: AI Self-Healing
+                Step 3: Self-Healing
               </span>
-              <span className="text-[10px] text-blue-500 font-bold">HiGHS Solver</span>
+              <span className="text-[10px] text-blue-500 font-bold font-mono">HIGHS SOLVER</span>
             </div>
-            <h4 className="text-xs font-bold text-content-primary group-hover:text-blue-500 transition-colors flex items-center space-x-1">
+            <h4 className="text-xs font-bold text-content-primary group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center space-x-1.5">
               <span>Run Automated Optimization</span>
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             </h4>
             <p className="text-[11px] text-content-secondary mt-1 leading-snug">
-              Automatically resequences calls, diverts ships to open berths, and saves $30,000+ demurrage.
+              Resequences calls, diverts ships to open berths, and saves $30,000+ demurrage.
             </p>
           </button>
         </div>
@@ -439,14 +519,19 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                 <Brain className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
-                  <span>HiGHS Constraint Solver Proposed Plan</span>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-bold text-[10px] tracking-wider uppercase border border-cyan-500/30">
+                    SECTION: Optimization Plan Review Gate
+                  </span>
                   <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 uppercase">
                     Zero Violations Verified
                   </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2 mt-1">
+                  <span>HiGHS Constraint Solver Proposed Plan</span>
                 </h3>
-                <p className="text-xs text-slate-300">
-                  Contrast: <strong>Unmanaged Carrier Baseline (Before)</strong> vs <strong>PortPulse Optimized Schedule (After)</strong>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  <strong className="text-white">Purpose:</strong> Contrast unmanaged carrier arrivals against the deconflicted schedule, verify demurrage savings, and approve or reject before committing to live quayside berths.
                 </p>
               </div>
             </div>
@@ -627,39 +712,44 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
       {/* KPI Overview Strip & Mode Selector */}
       <div className="no-print space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-black uppercase tracking-wider text-content-primary">
-              72h Operations Metric Evaluation:
-            </span>
-            <span className="text-[11px] text-content-secondary hidden md:inline">
-              Compare unmanaged carrier arrival baseline (Before) with HiGHS MILP allocated berths (After)
-            </span>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                SECTION: Operational Metric Evaluation
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-content-primary">
+                Schedule Performance Comparison Strip
+              </span>
+            </div>
+            <p className="text-[11px] text-content-secondary mt-0.5">
+              <strong className="text-content-primary">Purpose:</strong> Compare operational KPIs (fleet capacity, average wait hours, crane utilization, demurrage) between the unmanaged baseline and optimized plan.
+            </p>
           </div>
 
           {/* Before / After Toggle Buttons */}
-          <div className="inline-flex rounded-xl bg-surface-card border border-surface-border p-1 self-start sm:self-auto shadow-xs">
+          <div className="inline-flex rounded-xl bg-surface-card border border-surface-border p-1 self-start sm:self-auto shadow-2xs">
             <button
               type="button"
               onClick={() => setKpiMode('optimized')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
                 kpiMode === 'optimized'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-content-secondary hover:text-content-primary'
               }`}
             >
-              <Sparkles className="w-3 h-3 text-cyan-300" />
+              <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
               <span>After Optimization (HiGHS Plan)</span>
             </button>
             <button
               type="button"
               onClick={() => setKpiMode('baseline')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
                 kpiMode === 'baseline'
-                  ? 'bg-amber-600 text-white shadow-sm'
+                  ? 'bg-amber-600 text-white shadow-xs'
                   : 'text-content-secondary hover:text-content-primary'
               }`}
             >
-              <AlertTriangle className="w-3 h-3 text-amber-200" />
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-200" />
               <span>Before Optimization (Unmanaged)</span>
             </button>
           </div>
@@ -680,7 +770,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-black text-content-primary">
-                {currentPort?.metricsBaseline.scheduled_vessels ?? optimisationData?.vessels_scheduled ?? (assignments?.length || 50)}
+                {optimisationData?.vessels_scheduled ?? (assignments?.length || 50)}
               </span>
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                 kpiMode === 'optimized'
@@ -712,14 +802,12 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             <div className="mt-2 flex items-baseline justify-between">
               <span className={`text-2xl font-black font-mono ${kpiMode === 'optimized' ? 'text-blue-500' : 'text-rose-500'}`}>
                 {kpiMode === 'optimized'
-                  ? `${(currentPort?.metricsBaseline.opt_wait_hours ?? optimisationData?.average_wait_time_hours ?? 5.3).toFixed(1)}h`
-                  : `${(currentPort?.metricsBaseline.unmanaged_wait_hours ?? autoOptResult?.baseline_average_wait_time_hours ?? 13.8).toFixed(1)}h`}
+                  ? `${(optimisationData?.average_wait_time_hours ?? 5.3).toFixed(1)}h`
+                  : `${(autoOptResult?.baseline_average_wait_time_hours ?? 13.8).toFixed(1)}h`}
               </span>
               {kpiMode === 'optimized' && (
                 <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                  ↓ {currentPort
-                    ? (((currentPort.metricsBaseline.unmanaged_wait_hours - currentPort.metricsBaseline.opt_wait_hours) / currentPort.metricsBaseline.unmanaged_wait_hours) * 100).toFixed(1)
-                    : '61.6'}%
+                  ↓ {((( (autoOptResult?.baseline_average_wait_time_hours ?? 13.8) - (optimisationData?.average_wait_time_hours ?? 5.3) ) / (autoOptResult?.baseline_average_wait_time_hours ?? 13.8)) * 100).toFixed(1)}%
                 </span>
               )}
             </div>
@@ -729,7 +817,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               {kpiMode === 'optimized' ? (
                 <>
                   <TrendingDown className="w-3 h-3 mr-1" />
-                  Within target operating buffer (vs {currentPort?.metricsBaseline.unmanaged_wait_hours ?? 13.8}h baseline)
+                  Within target operating buffer (vs {(autoOptResult?.baseline_average_wait_time_hours ?? 13.8).toFixed(1)}h baseline)
                 </>
               ) : (
                 'Uncoordinated FIFO anchorage queuing backlog'
@@ -752,16 +840,16 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             <div className="mt-2 flex items-baseline justify-between">
               <span className={`text-2xl font-black ${kpiMode === 'optimized' ? 'text-amber-500' : 'text-slate-400'}`}>
                 {kpiMode === 'optimized'
-                  ? `${(currentPort?.metricsBaseline.opt_crane_util ?? optimisationData?.crane_utilization_pct ?? 95.0).toFixed(1)}%`
-                  : `${(currentPort?.metricsBaseline.unmanaged_crane_util ?? 58.2).toFixed(1)}%`}
+                  ? `${(optimisationData?.crane_utilization_pct ?? 95.0).toFixed(1)}%`
+                  : '58.2%'}
               </span>
               <span className="text-[10px] font-mono text-content-muted">
-                {kpiMode === 'optimized' ? `${(currentPort?.craneCount ?? 4) * 5}/${(currentPort?.craneCount ?? 4) * 5} STS` : 'Idle Cranes'}
+                {kpiMode === 'optimized' ? '20/20 STS' : 'Idle Cranes'}
               </span>
             </div>
             <span className="text-[10px] text-content-muted mt-1 block">
               {kpiMode === 'optimized'
-                ? `STS Gangs allocated optimally across ${currentPort?.berths?.length ?? 10} quays`
+                ? 'STS Gangs allocated optimally across 10 quays'
                 : 'Unbalanced crane idling during vessel congestion'}
             </span>
           </div>
@@ -781,14 +869,12 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             <div className="mt-2 flex items-baseline justify-between">
               <span className={`text-2xl font-black font-mono ${kpiMode === 'optimized' ? 'text-rose-500' : 'text-rose-600'}`}>
                 ${kpiMode === 'optimized'
-                  ? Math.round(currentPort?.metricsBaseline.opt_demurrage_usd ?? optimisationData?.total_port_demurrage_usd ?? 336988).toLocaleString()
-                  : Math.round(currentPort?.metricsBaseline.unmanaged_demurrage_usd ?? autoOptResult?.baseline_total_demurrage_usd ?? 618229).toLocaleString()}
+                  ? Math.round(optimisationData?.total_port_demurrage_usd ?? 336988).toLocaleString()
+                  : Math.round(autoOptResult?.baseline_total_demurrage_usd ?? 618229).toLocaleString()}
               </span>
               {kpiMode === 'optimized' && (
                 <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                  -${currentPort
-                    ? Math.round((currentPort.metricsBaseline.unmanaged_demurrage_usd - currentPort.metricsBaseline.opt_demurrage_usd) / 1000)
-                    : 281}k
+                  -${Math.round(((autoOptResult?.baseline_total_demurrage_usd ?? 618229) - (optimisationData?.total_port_demurrage_usd ?? 336988)) / 1000)}k
                 </span>
               )}
             </div>
@@ -796,7 +882,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               kpiMode === 'optimized' ? 'text-emerald-500' : 'text-rose-500'
             }`}>
               {kpiMode === 'optimized'
-                ? `Minimized by HiGHS MILP (Saved $${Math.round((currentPort?.metricsBaseline.unmanaged_demurrage_usd ?? 618229) - (currentPort?.metricsBaseline.opt_demurrage_usd ?? 336988)).toLocaleString()} USD)`
+                ? `Minimized by HiGHS MILP (Saved $${Math.round((autoOptResult?.baseline_total_demurrage_usd ?? 618229) - (optimisationData?.total_port_demurrage_usd ?? 336988)).toLocaleString()} USD)`
                 : 'Severe laytime overrun without intelligent berthing'}
             </span>
           </div>
@@ -827,66 +913,76 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
       )}
 
       {/* First-Class Operations Sub-Tabs Navigation */}
-      <div className="no-print flex items-center space-x-1 sm:space-x-2 border-b border-surface-border pb-2 text-xs font-bold overflow-x-auto">
+      <div className="space-y-1.5">
+        <div className="flex items-center space-x-2 px-1">
+          <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+            NAVIGATION: Tactical Shift Subtabs
+          </span>
+          <p className="text-[11px] text-content-secondary">
+            <strong className="text-content-primary">Purpose:</strong> Switch between quayside views: Spatial Map, Work Manifest Table, 72h Gantt Timeline, Congestion Testing Lab, and AI Briefing.
+          </p>
+        </div>
+        <div className="no-print flex items-center p-1 rounded-2xl bg-surface-card border border-surface-border shadow-2xs overflow-x-auto space-x-1">
         <button
           type="button"
           onClick={() => setActiveSubTab('MAP')}
-          className={`px-4 py-2.5 rounded-xl transition-all flex items-center space-x-2 whitespace-nowrap ${activeSubTab === 'MAP'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+          className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-bold whitespace-nowrap ${activeSubTab === 'MAP'
+              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/25'
               : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
             }`}
         >
           <MapPin className="w-4 h-4" />
-          <span>🗺️ Quayside Spatial Map</span>
+          <span>Quayside Spatial Map</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab('TABLE')}
-          className={`px-4 py-2.5 rounded-xl transition-all flex items-center space-x-2 whitespace-nowrap ${activeSubTab === 'TABLE'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+          className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-bold whitespace-nowrap ${activeSubTab === 'TABLE'
+              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/25'
               : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
             }`}
         >
           <List className="w-4 h-4" />
-          <span>📋 Berthing Manifest Table</span>
+          <span>Berthing Manifest Table</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab('GANTT')}
-          className={`px-4 py-2.5 rounded-xl transition-all flex items-center space-x-2 whitespace-nowrap ${activeSubTab === 'GANTT'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+          className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-bold whitespace-nowrap ${activeSubTab === 'GANTT'
+              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/25'
               : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
             }`}
         >
           <CalendarDays className="w-4 h-4" />
-          <span>📊 72h Gantt Timeline</span>
+          <span>72h Gantt Timeline</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab('TESTING')}
-          className={`px-4 py-2.5 rounded-xl transition-all flex items-center space-x-2 whitespace-nowrap ${activeSubTab === 'TESTING'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+          className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-bold whitespace-nowrap ${activeSubTab === 'TESTING'
+              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/25'
               : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
             }`}
         >
           <Zap className="w-4 h-4 text-amber-400" />
-          <span>⚡ Congestion Testing Lab</span>
+          <span>Congestion Testing Lab</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab('BRIEFING')}
-          className={`px-4 py-2.5 rounded-xl transition-all flex items-center space-x-2 whitespace-nowrap ${activeSubTab === 'BRIEFING'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+          className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-bold whitespace-nowrap ${activeSubTab === 'BRIEFING'
+              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/25'
               : 'text-content-secondary hover:text-content-primary hover:bg-surface-hover'
             }`}
         >
           <Printer className="w-4 h-4 text-emerald-400" />
-          <span>🤖 AI Shift Briefing</span>
+          <span>AI Shift Briefing</span>
         </button>
+      </div>
       </div>
 
       {/* SUB-TAB 1: QUAYSIDE SPATIAL MAP */}
@@ -897,7 +993,6 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             selectedShift={selectedShift}
             onOpenOverrideModal={onOpenOverrideModal}
             berths={berths}
-            currentPort={currentPort}
           />
         </div>
       )}
@@ -976,11 +1071,21 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
 
           {/* Main Operations Plan Table */}
           <div className="bg-surface-card border border-surface-border rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-surface-border flex items-center justify-between">
-              <h3 className="font-extrabold text-xs text-content-primary uppercase tracking-wider">
-                Berth &amp; Gang Work Manifest ({filteredAssignments?.length || 0} planned operations)
-              </h3>
-              <div className="text-xs text-content-muted">
+            <div className="p-4 border-b border-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                    SECTION: Berth &amp; Gang Work Manifest
+                  </span>
+                </div>
+                <h3 className="font-extrabold text-xs sm:text-sm text-content-primary uppercase tracking-wider mt-1">
+                  Berth &amp; Gang Work Manifest ({filteredAssignments?.length || 0} planned operations)
+                </h3>
+                <p className="text-[11px] text-content-secondary mt-0.5">
+                  <strong className="text-content-primary">Purpose:</strong> Line-by-line operational ledger detailing vessel arrival windows, assigned quayside berths, allocated STS cranes, expected dwell, and laytime/demurrage exposure.
+                </p>
+              </div>
+              <div className="text-xs text-content-muted self-start sm:self-center">
                 Displaying items {startIndex + 1}–{Math.min(startIndex + pageSize, filteredAssignments?.length || 0)} of {filteredAssignments?.length || 0}
               </div>
             </div>
@@ -1179,19 +1284,53 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
 
       {/* SUB-TAB 4: CONGESTION TESTING & SHOCK LAB */}
       {activeSubTab === 'TESTING' && (
-        <div className="no-print space-y-5 animate-in fade-in duration-150">
-          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-surface-border">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold text-lg">
+        <div className="no-print space-y-12 sm:space-y-14 animate-in fade-in duration-150">
+          {/* Active Shock Notification */}
+          {shockNotification && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-600 dark:text-purple-300 text-xs sm:text-sm font-semibold flex items-center space-x-3 animate-in fade-in shadow-sm">
+              <Zap className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <span>{shockNotification}</span>
+            </div>
+          )}
+
+          {/* Interactive Custom Vessel Delay Shock & Domino Cascade Predictor */}
+          <VesselDelayShockSimulator
+            vessels={candidateShockVessels}
+            berths={berths}
+            onRefresh={onRefresh}
+            userRole={userRole}
+          />
+
+          {/* Subtle Visual Section Divider */}
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-surface-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-surface-bg px-4 py-1 rounded-full border border-surface-border text-[11px] font-bold text-content-muted uppercase tracking-widest shadow-xs">
+                Macro Port Stress Testing Suite
+              </span>
+            </div>
+          </div>
+
+          {/* Macro Port Pipeline Stress Tests */}
+          <div className="bg-surface-card border border-surface-border p-7 sm:p-8 rounded-3xl shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-surface-border">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold text-xl shadow-xs">
                   🧪
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-content-primary">
-                    Operational Congestion Testing &amp; Shock Lab
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] tracking-wider uppercase border border-amber-500/20">
+                      SECTION: Macro Disruption Stress Suite
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-content-primary tracking-tight mt-1">
+                    Macro Operational Shocks &amp; Port Pipeline Stress Tests
                   </h3>
-                  <p className="text-xs text-content-secondary">
-                    Inject real-world disruption events into the port pipeline to test how our machine learning models forecast congestion and trigger mitigation actions
+                  <p className="text-xs sm:text-sm text-content-secondary mt-0.5">
+                    <strong className="text-content-primary">Purpose:</strong> Inject port-wide macro stress scenarios (simultaneous mega-ship arrivals, crane outages, tidal window closures) to evaluate terminal buffer capacity and resilience.
                   </p>
                 </div>
               </div>
@@ -1199,7 +1338,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
               <button
                 type="button"
                 onClick={() => setExplainModalOpen(true)}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition flex items-center space-x-2 shadow-sm whitespace-nowrap self-start sm:self-auto"
+                className="px-4 py-2.5 text-xs font-bold rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition flex items-center space-x-2 shadow-sm whitespace-nowrap self-start sm:self-auto cursor-pointer"
               >
                 <Brain className="w-4 h-4" />
                 <span>🧠 How Predictions Work &amp; Where to See Them</span>
@@ -1207,14 +1346,14 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
             </div>
 
             {/* Shock Test Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-              <div className="p-4 rounded-xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-3 shadow-sm">
-                <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 pt-2">
+              <div className="p-5 sm:p-6 rounded-2xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-4 shadow-sm hover:border-surface-hover transition">
+                <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-rose-500 font-bold text-sm">
                     <Zap className="w-4 h-4" />
                     <span>Mega-Ship Surge</span>
                   </div>
-                  <p className="text-xs text-content-secondary mt-1.5 leading-relaxed">
+                  <p className="text-xs text-content-secondary leading-relaxed">
                     Clusters 3 Ultra-Large Container Vessels (ULCVs) into an identical 3-hour arrival window to overload quays and test anchorage stacking.
                   </p>
                 </div>
@@ -1222,20 +1361,20 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                   type="button"
                   onClick={() => handleInjectShock('mega_ship_surge')}
                   disabled={shockLoading || loading}
-                  className="w-full px-3.5 py-2 text-xs font-extrabold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition flex items-center justify-center space-x-2 shadow-md shadow-rose-600/20 disabled:opacity-50"
+                  className="w-full px-4 py-2.5 text-xs font-extrabold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition flex items-center justify-center space-x-2 shadow-md shadow-rose-600/20 disabled:opacity-50 cursor-pointer"
                 >
                   <Zap className="w-3.5 h-3.5" />
                   <span>{shockLoading ? 'Injecting...' : 'Inject Mega-Ship Surge'}</span>
                 </button>
               </div>
 
-              <div className="p-4 rounded-xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-3 shadow-sm">
-                <div>
+              <div className="p-5 sm:p-6 rounded-2xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-4 shadow-sm hover:border-surface-hover transition">
+                <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-amber-500 font-bold text-sm">
                     <AlertTriangle className="w-4 h-4" />
                     <span>STS Crane Outage</span>
                   </div>
-                  <p className="text-xs text-content-secondary mt-1.5 leading-relaxed">
+                  <p className="text-xs text-content-secondary leading-relaxed">
                     Takes down STS Gantry Crane #2 on Berth 02, slashing discharge throughput by 50% and doubling ship dwell time.
                   </p>
                 </div>
@@ -1243,20 +1382,20 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                   type="button"
                   onClick={() => handleInjectShock('crane_outage')}
                   disabled={shockLoading || loading}
-                  className="w-full px-3.5 py-2 text-xs font-extrabold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition flex items-center justify-center space-x-2 shadow-md shadow-amber-600/20 disabled:opacity-50"
+                  className="w-full px-4 py-2.5 text-xs font-extrabold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition flex items-center justify-center space-x-2 shadow-md shadow-amber-600/20 disabled:opacity-50 cursor-pointer"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   <span>Inject Crane Breakdown</span>
                 </button>
               </div>
 
-              <div className="p-4 rounded-xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-3 shadow-sm">
-                <div>
+              <div className="p-5 sm:p-6 rounded-2xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-4 shadow-sm hover:border-surface-hover transition">
+                <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-blue-500 font-bold text-sm">
                     <span>🌊</span>
                     <span>Low Tide Anomaly</span>
                   </div>
-                  <p className="text-xs text-content-secondary mt-1.5 leading-relaxed">
+                  <p className="text-xs text-content-secondary leading-relaxed">
                     Drops fairway channel draft limits by 2.5m, restricting vessels with draft &gt; 13.0m from entering quayside until next tide cycle.
                   </p>
                 </div>
@@ -1264,20 +1403,20 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                   type="button"
                   onClick={() => handleInjectShock('tidal_restriction')}
                   disabled={shockLoading || loading}
-                  className="w-full px-3.5 py-2 text-xs font-extrabold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition flex items-center justify-center space-x-2 shadow-md shadow-blue-600/20 disabled:opacity-50"
+                  className="w-full px-4 py-2.5 text-xs font-extrabold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition flex items-center justify-center space-x-2 shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
                 >
                   <span>🌊</span>
                   <span>Inject Low Tide Anomaly</span>
                 </button>
               </div>
 
-              <div className="p-4 rounded-xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-3 shadow-sm">
-                <div>
+              <div className="p-5 sm:p-6 rounded-2xl border border-surface-border bg-surface-bg flex flex-col justify-between space-y-4 shadow-sm hover:border-surface-hover transition">
+                <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-emerald-500 font-bold text-sm">
                     <RefreshCw className="w-4 h-4" />
                     <span>Restore Baseline</span>
                   </div>
-                  <p className="text-xs text-content-secondary mt-1.5 leading-relaxed">
+                  <p className="text-xs text-content-secondary leading-relaxed">
                     Flushes all active shocks and restores the calibrated 50-vessel baseline dataset and optimal solver schedules.
                   </p>
                 </div>
@@ -1285,7 +1424,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                   type="button"
                   onClick={handleResetBaseline}
                   disabled={shockLoading || loading}
-                  className="w-full px-3.5 py-2 text-xs font-extrabold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="w-full px-4 py-2.5 text-xs font-extrabold rounded-xl border border-surface-border bg-surface-card hover:bg-surface-hover text-content-primary transition flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Reset to Baseline</span>
@@ -1301,21 +1440,26 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
         <div className="no-print space-y-4 animate-in fade-in duration-150">
           {/* Voice-Powered Harbor Controller Audio Dispatch */}
           <VoiceBriefingPlayer
-            briefingText={aiBriefing?.briefing_markdown || ''}
+            briefingText={cleanFormatting(aiBriefing?.briefing_markdown || '')}
             title="Harbor Master VHF Voice Dispatch"
           />
 
           <div className="bg-surface-card border border-surface-border p-6 rounded-2xl shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-surface-border">
               <div>
-                <h3 className="text-base font-extrabold text-content-primary flex items-center space-x-2">
-                  <span>🤖 AI Shift Handover Briefing</span>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                    SECTION: AI Shift Handover Briefing
+                  </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold border border-blue-500/20 uppercase">
                     IBM watsonx.ai Synthesized
                   </span>
+                </div>
+                <h3 className="text-base font-extrabold text-content-primary flex items-center space-x-2 mt-1">
+                  <span>🤖 Shift Handover Briefing &amp; Audio Dispatch</span>
                 </h3>
                 <p className="text-xs text-content-secondary mt-0.5">
-                  Automated shift change briefing synthesizing critical berth bottlenecks, pilot schedules, and crane allocations
+                  <strong className="text-content-primary">Purpose:</strong> Synthesizes high-priority shift handover intelligence into an executive written brief and VHF audio dispatch for incoming harbor controllers and quayside superintendents.
                 </p>
               </div>
 
@@ -1351,7 +1495,7 @@ export const OperationsPlanView: React.FC<OperationsPlanViewProps> = ({
                   </span>
                 </div>
                 <div className="text-xs whitespace-pre-wrap leading-relaxed text-zinc-200 font-mono bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-inner">
-                  {aiBriefing.briefing_markdown}
+                  {cleanFormatting(aiBriefing.briefing_markdown)}
                 </div>
               </div>
             ) : (

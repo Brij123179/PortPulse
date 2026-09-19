@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from app.core.auth import UserRole
 
@@ -9,11 +9,37 @@ class UserLoginRequest(BaseModel):
     password: str = Field(..., min_length=3)
 
 
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in_minutes: int
-    user: "UserResponse"
+    user: UserResponse
+    mfa_required: bool = False
+
+
+class MfaChallengeResponse(BaseModel):
+    mfa_required: bool = True
+    mfa_token: str
+    mfa_method: str = "TOTP_AUTHENTICATOR"
+    message: str = "Two-Factor Authentication required for privileged operational role."
+    demo_code: str = "849201"
+    user: UserResponse
+
+
+class MfaVerifyRequest(BaseModel):
+    mfa_token: str
+    code: str = Field(..., min_length=6, max_length=6)
 
 
 class UserCreateRequest(BaseModel):
@@ -31,15 +57,28 @@ class UserCreateRequest(BaseModel):
         return v.lower()
 
 
-class UserResponse(BaseModel):
+class AdminApprovalResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    username: str
-    email: str
-    role: str
-    is_active: bool
-    created_at: Optional[datetime] = None
+    request_type: str
+    requested_by: str
+    target_username: str
+    target_email: str
+    target_role: str
+    status: str
+    approved_by: Optional[str] = None
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+
+
+class AdminApprovalPendingResponse(BaseModel):
+    status: str
+    approval_id: int
+    message: str
+    target_username: str
+    target_role: str
 
 
 TokenResponse.model_rebuild()
+MfaChallengeResponse.model_rebuild()

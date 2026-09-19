@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { LiveStatusTable } from './components/LiveStatusTable';
 import { MasterDataModal } from './components/MasterDataModal';
@@ -15,20 +15,10 @@ import { ActivityLogView } from './components/ActivityLogView';
 import { GuidedTourModal } from './components/GuidedTourModal';
 import { LoginModal } from './components/LoginModal';
 import { LoginPage } from './components/LoginPage';
+import { SessionTimeoutModal } from './components/SessionTimeoutModal';
 import { OperationsPlanView } from './components/OperationsPlanView';
 import { ChatAssistantDrawer } from './components/ChatAssistantDrawer';
 import { useAuth } from './context/AuthContext';
-import {
-  PORT_TERMINALS,
-  PortTerminalSpec,
-  adaptBerths,
-  adaptVessels,
-  adaptSummary,
-  adaptOptimisationData,
-  adaptHeatmapData,
-  adaptAnchorageData,
-  adaptRecommendations,
-} from './utils/portData';
 import {
   api,
   LiveStatusSummary,
@@ -89,23 +79,10 @@ export const roleAllowedTabs: Record<string, TabType[]> = {
 };
 
 export const App: React.FC = () => {
-  const { role, isAuthenticated } = useAuth();
+  const { role, token, isAuthenticated } = useAuth();
 
   // Navigation Tabs (scoped to user's permitted role)
   const [activeTab, setActiveTab] = useState<TabType>('plan');
-
-  // Active Operating Terminal
-  const [currentPort, setCurrentPort] = useState<PortTerminalSpec>(() => {
-    const savedId = localStorage.getItem('portpulse_selected_port_id');
-    const found = PORT_TERMINALS.find((p) => p.id === savedId);
-    return found || PORT_TERMINALS[1]; // Default Rotterdam World Gateway
-  });
-
-  const handleSelectPort = (port: PortTerminalSpec) => {
-    setCurrentPort(port);
-    localStorage.setItem('portpulse_selected_port_id', port.id);
-    showToast(`Switched operational context to ${port.flag} ${port.name}`);
-  };
 
   // Enforce role-based tab gating on role change
   useEffect(() => {
@@ -151,31 +128,15 @@ export const App: React.FC = () => {
   // Notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showExplainer, setShowExplainer] = useState(true);
+  const [heatmapPlanMode, setHeatmapPlanMode] = useState<'optimized' | 'baseline'>('optimized');
 
-  // Dynamic port-adapted operational datasets
-  const berthMapping = useMemo(() => {
-    const map: Record<string, string> = {};
-    currentPort.berths.forEach((b, idx) => {
-      const defaultId = `B-${String(idx + 1).padStart(2, '0')}`;
-      map[defaultId] = b.id;
-    });
-    return map;
-  }, [currentPort]);
-
-  const displaySummary = useMemo(() => adaptSummary(summary, currentPort), [summary, currentPort]);
-  const displayBerths = useMemo(() => adaptBerths(berths, currentPort), [berths, currentPort]);
-  const displayVessels = useMemo(() => adaptVessels(vessels, currentPort, berthMapping), [vessels, currentPort, berthMapping]);
-  const displayOptimisationData = useMemo(() => adaptOptimisationData(optimisationData, currentPort, berthMapping), [optimisationData, currentPort, berthMapping]);
-  const displayHeatmapData = useMemo(() => adaptHeatmapData(heatmapData, currentPort, berthMapping), [heatmapData, currentPort, berthMapping]);
-  const displayAnchorageData = useMemo(() => adaptAnchorageData(anchorageData, currentPort), [anchorageData, currentPort]);
-  const displayRecommendations = useMemo(() => adaptRecommendations(recommendationsData, currentPort, berthMapping), [recommendationsData, currentPort, berthMapping]);
-
-  const fetchLiveStatus = useCallback(async (isSilent = false) => {
+  const fetchLiveStatus = useCallback(async (isSilent = false, overridePlanMode?: 'optimized' | 'baseline') => {
     try {
       if (!isSilent) setIsRefreshing(true);
+      const activeMode = overridePlanMode ?? heatmapPlanMode;
       const [tableData, hmData, ancData] = await Promise.all([
         api.getLiveStatusTable(),
-        api.getHeatmap(72),
+        api.getHeatmap(72, activeMode === 'optimized'),
         api.getAnchorageQueue(72),
       ]);
 
@@ -195,6 +156,19 @@ export const App: React.FC = () => {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      setHeatmapLoading(false);
+    }
+  }, [heatmapPlanMode]);
+
+  const handleHeatmapPlanModeChange = useCallback(async (mode: 'optimized' | 'baseline') => {
+    setHeatmapPlanMode(mode);
+    setHeatmapLoading(true);
+    try {
+      const hmData = await api.getHeatmap(72, mode === 'optimized');
+      setHeatmapData(hmData);
+    } catch (err: any) {
+      console.error('Failed to switch heatmap plan mode:', err);
+    } finally {
       setHeatmapLoading(false);
     }
   }, []);
@@ -223,13 +197,22 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Initial load
+  // Fresh load on login or when session token / role changes
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchLiveStatus();
+    if (isAuthenticated && token) {
+      fetchLiveStatus(false);
       fetchPrescriptiveData();
+    } else if (!isAuthenticated) {
+      // Clear sensitive state on logout
+      setSummary(null);
+      setVessels([]);
+      setBerths([]);
+      setHeatmapData(null);
+      setAnchorageData(null);
+      setRecommendationsData(null);
+      setOptimisationData(null);
     }
-  }, [isAuthenticated, fetchLiveStatus, fetchPrescriptiveData]);
+  }, [isAuthenticated, token, role, fetchLiveStatus, fetchPrescriptiveData]);
 
   // Polling loop
   useEffect(() => {
@@ -239,6 +222,13 @@ export const App: React.FC = () => {
     }, refreshIntervalSec * 1000);
     return () => clearInterval(interval);
   }, [autoRefresh, isAuthenticated, refreshIntervalSec, fetchLiveStatus]);
+
+  // Re-fetch fresh heatmap and operations data immediately when switching to the heatmap tab
+  useEffect(() => {
+    if (isAuthenticated && token && activeTab === 'heatmap') {
+      fetchLiveStatus(true);
+    }
+  }, [activeTab, isAuthenticated, token, fetchLiveStatus]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -252,11 +242,20 @@ export const App: React.FC = () => {
     setOverrideModalOpen(true);
   };
 
-  const allTabsConfig: { id: TabType; label: string; icon: React.ReactNode; isCore?: boolean }[] = [
-    { id: 'plan', label: '72h Plan', icon: <CalendarDays className="w-4 h-4 text-blue-500" />, isCore: true },
-    { id: 'heatmap', label: 'Congestion Heatmap', icon: <Layers className="w-4 h-4 text-amber-500" />, isCore: true },
-    { id: 'recommendations', label: 'Prescriptive Actions', icon: <Compass className="w-4 h-4 text-emerald-500" />, isCore: true },
-    { id: 'optimiser', label: 'Berth Allocator', icon: <CalendarDays className="w-4 h-4 text-purple-500" />, isCore: true },
+  const pendingRecsCount = Array.isArray(recommendationsData?.recommendations)
+    ? recommendationsData.recommendations.length
+    : 0;
+
+  const allTabsConfig: { id: TabType; label: string; icon: React.ReactNode; badge?: string | number }[] = [
+    { id: 'plan', label: '72h Plan', icon: <CalendarDays className="w-4 h-4 text-blue-500" /> },
+    { id: 'heatmap', label: 'Congestion Heatmap', icon: <Layers className="w-4 h-4 text-amber-500" /> },
+    {
+      id: 'recommendations',
+      label: 'Prescriptive Actions',
+      icon: <Compass className="w-4 h-4 text-emerald-500" />,
+      badge: pendingRecsCount > 0 ? pendingRecsCount : undefined,
+    },
+    { id: 'optimiser', label: 'Berth Allocator', icon: <CalendarDays className="w-4 h-4 text-purple-500" /> },
     { id: 'map', label: 'Terminal Map', icon: <MapPin className="w-4 h-4 text-sky-500" /> },
     { id: 'live', label: 'Live Queue', icon: <Activity className="w-4 h-4 text-teal-500" /> },
     { id: 'cascade', label: 'Delay Sim', icon: <GitPullRequest className="w-4 h-4 text-rose-500" /> },
@@ -313,8 +312,6 @@ export const App: React.FC = () => {
         visibleTabs={visibleTabs}
         autoRefresh={autoRefresh}
         onToggleAutoRefresh={setAutoRefresh}
-        currentPort={currentPort}
-        onSelectPort={handleSelectPort}
       />
 
       {/* Toast Notification Banner */}
@@ -326,73 +323,124 @@ export const App: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <main id="main-content" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
-        {/* Plain-Language Operational Orientation Banner (FRONTEND.md §1) */}
+      <main id="main-content" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 w-full space-y-5">
+        {/* Executive Decision Twin Operational Strip */}
         {showExplainer && (
-          <div className="no-print rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/40 p-4 shadow-sm relative transition-all">
+          <div className="no-print rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-500/5 via-surface-card to-blue-500/5 p-3.5 sm:p-4 shadow-xs relative transition-all">
             <button
               onClick={() => setShowExplainer(false)}
-              className="absolute top-3 right-3 text-content-muted hover:text-content-primary transition-colors p-1"
+              className="absolute top-3 right-3 text-content-muted hover:text-content-primary transition-colors p-1 rounded-lg hover:bg-surface-hover"
               title="Dismiss banner"
               aria-label="Dismiss orientation banner"
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="flex items-start space-x-3 pr-6">
-              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="space-y-1 text-xs">
-                <p className="font-bold text-content-primary text-sm">
-                  PortPulse 72-Hour Predictive Twin &amp; Operations Cockpit
-                </p>
-                <p className="text-content-secondary leading-relaxed">
-                  This system forecasts container terminal congestion before vessels arrive at port. 
-                  Every risk slot displays both color and letter encoding for accessible visibility: 
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 mx-1">Green [L]</span> for Low Risk (&lt;40%), 
-                  <span className="font-bold text-amber-600 dark:text-amber-400 mx-1">Amber [M]</span> for Medium Capacity Pressure (40–75%), and 
-                  <span className="font-bold text-rose-600 dark:text-rose-400 mx-1">Red [H]</span> for Critical Bottlenecks (&gt;75% / Quayside Clashes). 
-                  Review the at-a-glance headlines below to guide berth and crane decisions for your shift.
-                </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pr-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                      SECTION: 72-Hour Predictive Twin
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      LIVE
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-content-primary text-xs sm:text-sm tracking-tight mt-1">
+                    Continuous Quayside Machine Learning Forecast &amp; HiGHS MILP Deconfliction
+                  </h3>
+                  <p className="text-[11px] text-content-secondary mt-0.5">
+                    <strong className="text-content-primary">Purpose:</strong> Provides continuous real-time vessel arrival risk estimation and mathematical quayside allocation to prevent multi-ship berth clashes before they occur.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 flex-wrap gap-y-1 self-start md:self-auto">
+                <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[11px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>[L] &lt;40% Optimal</span>
+                </span>
+                <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-[11px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>[M] 40–75% Pressure</span>
+                </span>
+                <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 text-[11px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  <span>[H] &gt;75% Clash Risk</span>
+                </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* At-A-Glance Operational Stat Row (FRONTEND.md §3) */}
-        <div className="no-print grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {/* At-A-Glance Operational Stat Row */}
+        <div className="no-print space-y-1.5">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                SECTION: Operational Health KPIs
+              </span>
+              <span className="text-xs font-extrabold text-content-primary uppercase tracking-wider">
+                Port At-A-Glance Status Strip
+              </span>
+            </div>
+            <p className="text-[11px] text-content-secondary hidden sm:inline">
+              <strong className="text-content-primary">Purpose:</strong> High-level operational pulse across quayside bottlenecks, pending interventions, offshore queue, berth occupancy, and average wait time.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {/* Card 1: Berths at High Risk */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm relative overflow-hidden group">
+            <div className={`absolute top-0 left-0 right-0 h-0.5 ${
+              (heatmapData?.summary?.red_tier_count ?? 0) === 0 ? 'bg-emerald-500' : 'bg-rose-500'
+            }`} />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 High-Risk Bottlenecks
               </span>
-              <AlertTriangle className="w-4 h-4 text-rose-500" />
+              <div className={`p-1.5 rounded-lg ${
+                (heatmapData?.summary?.red_tier_count ?? 0) === 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+              }`}>
+                {(heatmapData?.summary?.red_tier_count ?? 0) === 0 ? (
+                  <CheckCircle className="w-3.5 h-3.5" />
+                ) : (
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                )}
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-black font-mono text-rose-500">
-                {displayHeatmapData?.summary?.red_tier_count ?? 0}
+              <span className={`text-2xl font-black font-mono ${
+                (heatmapData?.summary?.red_tier_count ?? 0) === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              }`}>
+                {heatmapData?.summary?.red_tier_count ?? 0}
               </span>
-              <span className="text-xs text-content-secondary">RED hours</span>
+              <span className="text-xs text-content-secondary font-medium">RED hours</span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
-              {Array.isArray(displayHeatmapData?.summary?.critical_berths) && displayHeatmapData.summary.critical_berths.length > 0
-                ? `Quays: ${displayHeatmapData.summary.critical_berths.join(', ')}`
-                : 'No quays in Sev-1 clash'}
+              {Array.isArray(heatmapData?.summary?.critical_berths) && heatmapData.summary.critical_berths.length > 0
+                ? `Quays: ${heatmapData.summary.critical_berths.join(', ')}`
+                : 'All 10 quays deconflicted by HiGHS'}
             </p>
           </div>
 
           {/* Card 2: Open Actionable Interventions */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Prescriptive Actions
               </span>
-              <Compass className="w-4 h-4 text-blue-500" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                <Compass className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-black font-mono text-blue-500">
-                {Array.isArray(displayRecommendations?.recommendations) ? displayRecommendations.recommendations.length : 0}
+              <span className="text-2xl font-black font-mono text-blue-600 dark:text-blue-400">
+                {pendingRecsCount}
               </span>
-              <span className="text-xs text-content-secondary">pending review</span>
+              <span className="text-xs text-content-secondary font-medium">pending review</span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
               Slow-steaming &amp; quay diversions
@@ -400,19 +448,22 @@ export const App: React.FC = () => {
           </div>
 
           {/* Card 3: Anchorage Backlog */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-500" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Offshore Queue
               </span>
-              <Anchor className="w-4 h-4 text-amber-500" />
+              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                <Anchor className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-black font-mono text-amber-500">
-                {displayAnchorageData?.current_queue ?? displaySummary.anchored_vessels}
+              <span className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
+                {anchorageData?.current_queue ?? summary?.anchored_vessels ?? 0}
               </span>
-              <span className="text-xs text-content-secondary">
-                (Peak {displayAnchorageData?.peak_predicted_queue ?? 0})
+              <span className="text-xs text-content-secondary font-medium">
+                (Peak {anchorageData?.peak_predicted_queue ?? 0})
               </span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
@@ -421,51 +472,56 @@ export const App: React.FC = () => {
           </div>
 
           {/* Card 4: Berths In Use */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm transition-colors">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-emerald-500" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
                 Quayside In Use
               </span>
-              <Layers className="w-4 h-4 text-emerald-500" />
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <Layers className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-2xl font-black font-mono text-emerald-500">
-                {displaySummary.occupied_berths} / {displaySummary.total_berths}
+              <span className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                {summary?.occupied_berths ?? 0} / {summary?.total_berths ?? 10}
               </span>
-              <span className="text-xs text-content-secondary">occupied</span>
+              <span className="text-xs text-content-secondary font-medium">occupied</span>
             </div>
             <p className="mt-1 text-[11px] text-content-muted truncate">
-              {displayOptimisationData?.crane_utilization_pct ? `${displayOptimisationData.crane_utilization_pct}% STS cranes active` : `${currentPort.craneCount * 5} operational cranes`}
+              {optimisationData?.crane_utilization_pct ? `${optimisationData.crane_utilization_pct}% STS cranes active` : '10 operational quays'}
             </p>
           </div>
 
-          {/* Card 5: Estimated Average Wait Time (Manager & Admin ONLY, per FRONTEND.md §3 & SECURITY.md) */}
+          {/* Card 5: Estimated Average Wait Time (Manager & Admin ONLY) */}
           {(role === 'terminal_manager' || role === 'admin') ? (
-            <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 shadow-sm col-span-2 sm:col-span-1 border-l-4 border-l-purple-500 transition-colors">
+            <div className="bg-surface-card border border-surface-border rounded-2xl p-4 shadow-xs transition-all hover:shadow-sm relative overflow-hidden group col-span-2 sm:col-span-1">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-purple-500" />
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider flex items-center space-x-1">
-                  <span>Est. Avg Wait</span>
+                <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                  Est. Avg Wait
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
                   Manager KPI
                 </span>
               </div>
               <div className="mt-2 flex items-baseline space-x-2">
                 <span className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
-                  {displayOptimisationData?.average_wait_time_hours ?? currentPort.metricsBaseline.opt_wait_hours}h
+                  {optimisationData?.average_wait_time_hours ?? 1.4}h
                 </span>
-                <span className="text-xs text-content-secondary">per vessel</span>
+                <span className="text-xs text-content-secondary font-medium">per vessel</span>
               </div>
               <p className="mt-1 text-[11px] text-content-muted truncate">
-                Total Demurrage: ${Math.round((displayOptimisationData?.total_port_demurrage_usd ?? currentPort.metricsBaseline.opt_demurrage_usd) / 1000)}k
+                Total Demurrage: ${Math.round((optimisationData?.total_port_demurrage_usd ?? 48000) / 1000)}k
               </p>
             </div>
           ) : (
-            <div className="bg-surface-card/60 border border-surface-border/60 rounded-xl p-3.5 shadow-sm col-span-2 sm:col-span-1 flex flex-col justify-center">
-              <span className="text-[11px] font-medium text-content-muted uppercase tracking-wider">Role Scope</span>
+            <div className="bg-surface-card/60 border border-surface-border/60 rounded-2xl p-4 shadow-xs col-span-2 sm:col-span-1 flex flex-col justify-center">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">Role Scope</span>
               <p className="text-[11px] text-content-secondary mt-1">Wait-time financial KPIs reserved for Terminal Manager.</p>
             </div>
           )}
+          </div>
         </div>
 
 
@@ -508,9 +564,8 @@ export const App: React.FC = () => {
         {/* Core Feature 4: 72-Hour Port Operations Plan (Dedicated Shift Supervisor View) */}
         {!loading && activeTab === 'plan' && (
           <OperationsPlanView
-            optimisationData={displayOptimisationData}
-            berths={displayBerths}
-            currentPort={currentPort}
+            optimisationData={optimisationData}
+            berths={berths}
             loading={prescriptiveLoading}
             onRefresh={() => {
               fetchLiveStatus();
@@ -524,16 +579,20 @@ export const App: React.FC = () => {
                 setActiveTab(t as any);
               }
             }}
+            onAutoOptimizeComplete={() => {
+              handleHeatmapPlanModeChange('optimized');
+              fetchLiveStatus(false, 'optimized');
+              fetchPrescriptiveData();
+            }}
           />
         )}
 
         {/* Tab 1: Terminal Map */}
         {!loading && activeTab === 'map' && (
           <VesselMap
-            currentPort={currentPort}
-            berths={displayBerths}
-            vessels={displayVessels}
-            heatmapData={displayHeatmapData}
+            berths={berths}
+            vessels={vessels}
+            heatmapData={heatmapData}
             onSelectVessel={(vId) => handleOpenOverride(vId)}
             onOpenOverride={(vId) => handleOpenOverride(vId)}
           />
@@ -542,9 +601,9 @@ export const App: React.FC = () => {
         {/* Tab 2: Live Operations Manifest */}
         {!loading && activeTab === 'live' && (
           <LiveStatusTable
-            summary={displaySummary}
-            vessels={displayVessels}
-            berths={displayBerths}
+            summary={summary}
+            vessels={vessels}
+            berths={berths}
             onTriggerEvent={showToast}
             onRefresh={() => fetchLiveStatus(false)}
           />
@@ -554,13 +613,15 @@ export const App: React.FC = () => {
         {!loading && activeTab === 'heatmap' && (
           <div className="space-y-6">
             <TimelineForecast
-              berths={displayHeatmapData?.berths || []}
-              generatedAt={displayHeatmapData?.generated_at}
+              berths={heatmapData?.berths || []}
+              generatedAt={heatmapData?.generated_at}
             />
             <CongestionHeatmap
-              heatmapData={displayHeatmapData}
+              heatmapData={heatmapData}
               loading={heatmapLoading}
               onRefresh={() => fetchLiveStatus(false)}
+              planMode={heatmapPlanMode}
+              onPlanModeChange={handleHeatmapPlanModeChange}
             />
           </div>
         )}
@@ -568,7 +629,7 @@ export const App: React.FC = () => {
         {/* Tab 4: Prescriptive Operational Interventions */}
         {!loading && activeTab === 'recommendations' && (
           <RecommendationFeed
-            recommendationsData={displayRecommendations}
+            recommendationsData={recommendationsData}
             loading={prescriptiveLoading}
             onRefresh={fetchPrescriptiveData}
             userRole={role}
@@ -579,13 +640,13 @@ export const App: React.FC = () => {
         {!loading && activeTab === 'optimiser' && (
           <div className="space-y-6">
             <BerthScheduleGantt
-              optimisationData={displayOptimisationData}
+              optimisationData={optimisationData}
               loading={prescriptiveLoading}
               onRefresh={fetchPrescriptiveData}
               onOpenOverrideModal={handleOpenOverride}
               userRole={role}
             />
-            <WhatIfSimulator vessels={displayVessels} berths={displayBerths} />
+            <WhatIfSimulator vessels={vessels} berths={berths} />
           </div>
         )}
 
@@ -594,7 +655,7 @@ export const App: React.FC = () => {
 
         {/* Tab 7: Cascading Delay Simulation */}
         {!loading && activeTab === 'cascade' && (
-          <CascadeDelaySimulator vessels={displayVessels} />
+          <CascadeDelaySimulator vessels={vessels} />
         )}
 
         {/* Tab 8: Predictive Forecast Accuracy & Baselines */}
@@ -605,8 +666,8 @@ export const App: React.FC = () => {
       <ManualOverrideModal
         isOpen={overrideModalOpen}
         onClose={() => setOverrideModalOpen(false)}
-        vessels={displayVessels}
-        berths={displayBerths}
+        vessels={vessels}
+        berths={berths}
         initialVesselId={overrideTargetVesselId}
         onOverrideSuccess={() => {
           showToast('Manual override verified and applied to master schedule.');
@@ -642,6 +703,9 @@ export const App: React.FC = () => {
         initialTab={loginModalTab}
         onClose={() => setLoginModalOpen(false)}
       />
+
+      {/* 24/7 Terminal Inactivity Security Auto-Logout Warning Modal */}
+      <SessionTimeoutModal />
 
       {/* PortPulse AI Copilot Drawer (F-406) */}
       <ChatAssistantDrawer

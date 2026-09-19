@@ -92,3 +92,64 @@ def test_audit_trail_recorded_on_recommendation_action(client, supervisor_token)
     assert len(matching) > 0
     assert matching[0]["actor"] == "supervisor"
     assert matching[0]["action"] == "RECOMMENDATION_ACCEPT"
+
+
+def test_all_operational_roles_can_view_system_logs(client, supervisor_token):
+    planner_token = create_access_token(data={"sub": "planner", "role": "vessel_planner"})
+    # Vessel planner can access audit logs
+    res = client.get("/api/v1/audit/logs", headers={"Authorization": f"Bearer {planner_token}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert "items" in data
+    assert "total" in data
+
+    # Shift supervisor can view general audit logs without actor restriction
+    res_sup = client.get("/api/v1/audit/logs", headers={"Authorization": f"Bearer {supervisor_token}"})
+    assert res_sup.status_code == 200
+    assert "items" in res_sup.json()
+
+
+def test_audit_trail_recorded_on_fleet_generation_and_shock(client, admin_token, supervisor_token):
+    # Fleet generation audit
+    gen_res = client.post(
+        "/api/v1/ingestion/generate?vessels=10&berths=4&seed=999",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert gen_res.status_code == 200
+
+    # Shock event audit
+    shock_res = client.post(
+        "/api/v1/ingestion/shock-event?event_type=crane_outage",
+        headers={"Authorization": f"Bearer {supervisor_token}"}
+    )
+    assert shock_res.status_code == 200
+
+    # Verify audit logs
+    log_res = client.get(
+        "/api/v1/audit/logs?limit=20",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert log_res.status_code == 200
+    items = log_res.json()["items"]
+    actions = [i["action"] for i in items]
+    assert "FLEET_SYNTHETIC_GENERATION" in actions
+    assert "SHOCK_EVENT_INJECTION" in actions
+
+    # Restore baseline 10 berths and 50 vessels for subsequent test suites
+    client.post(
+        "/api/v1/ingestion/generate?vessels=50&berths=10&seed=42",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+
+def test_audit_log_timestamp_format_has_utc_offset(client, admin_token):
+    log_res = client.get(
+        "/api/v1/audit/logs?limit=5",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert log_res.status_code == 200
+    items = log_res.json()["items"]
+    if len(items) > 0:
+        ts = items[0]["timestamp"]
+        # Must contain timezone information (+00:00 or Z)
+        assert "+00:00" in ts or ts.endswith("Z")

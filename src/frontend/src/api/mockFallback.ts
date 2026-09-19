@@ -146,32 +146,289 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
   }
 
   // 4. Congestion Heatmap
-  if (cleanEndpoint === '/risk/heatmap') {
-    const berthsHeatmap = localBerths.map((b) => ({
-      berth_id: b.id,
-      berth_name: b.name,
-      length_m: b.length_m,
-      draft_limit_m: b.draft_limit_m,
-      crane_slots: b.crane_slots,
-      timeline: Array.from({ length: 72 }, (_, i) => {
-        const prob = i > 18 && i < 42 && (b.id === 'B-01' || b.id === 'B-02') ? 0.92 : 0.2 + (i % 12) * 0.04;
-        const tier = prob > 0.8 ? 'RED' : prob > 0.5 ? 'AMBER' : 'GREEN';
+  if (cleanEndpoint === '/risk/heatmap' || cleanEndpoint === '/forecast/heatmap' || cleanEndpoint === '/forecast/berths') {
+    const isOptimized = !endpoint.includes('optimized=false');
+
+    interface ScheduleSlot {
+      vesselId: string;
+      vesselName: string;
+      vesselClass: string;
+      lengthM: number;
+      draftM: number;
+      cargoVolume: number;
+      startH: number;
+      endH: number;
+    }
+
+    const baselineSchedules: Record<string, ScheduleSlot[]> = {
+      'B-01': [
+        { vesselId: 'V-101', vesselName: 'Ever Given', vesselClass: 'ULCV', lengthM: 399, draftM: 15.7, cargoVolume: 18500, startH: 0, endH: 8 },
+        { vesselId: 'V-106', vesselName: 'HMM Algeciras', vesselClass: 'ULCV', lengthM: 399, draftM: 16.2, cargoVolume: 23964, startH: 8, endH: 32 },
+        { vesselId: 'V-110', vesselName: 'Ever Ace', vesselClass: 'ULCV', lengthM: 400, draftM: 16.4, cargoVolume: 23992, startH: 16, endH: 52 }, // Severe collision T+16 to T+32!
+      ],
+      'B-02': [
+        { vesselId: 'V-102', vesselName: 'MSC Oscar', vesselClass: 'ULCV', lengthM: 395, draftM: 15.2, cargoVolume: 19200, startH: 0, endH: 14 },
+        { vesselId: 'V-107', vesselName: 'OOCL Hong Kong', vesselClass: 'ULCV', lengthM: 399, draftM: 15.8, cargoVolume: 21413, startH: 12, endH: 42 }, // Collision & Crane 2 degraded!
+      ],
+      'B-03': [
+        { vesselId: 'V-108', vesselName: 'COSCO Universe', vesselClass: 'Post-Panamax', lengthM: 345, draftM: 14.1, cargoVolume: 14500, startH: 8, endH: 28 },
+      ],
+      'B-04': [
+        { vesselId: 'V-103', vesselName: 'CMA CGM Rivoli', vesselClass: 'Post-Panamax', lengthM: 335, draftM: 13.8, cargoVolume: 9800, startH: 0, endH: 12 },
+      ],
+      'B-05': [
+        { vesselId: 'V-109', vesselName: 'Yang Ming Wellhead', vesselClass: 'Panamax', lengthM: 260, draftM: 11.8, cargoVolume: 4800, startH: 12, endH: 26 },
+      ],
+      'B-07': [
+        { vesselId: 'V-104', vesselName: 'Madrid Maersk', vesselClass: 'Feeder', lengthM: 185, draftM: 9.8, cargoVolume: 2100, startH: 0, endH: 7 },
+      ],
+      'B-09': [
+        { vesselId: 'V-105', vesselName: 'ONE Apus', vesselClass: 'Feeder', lengthM: 175, draftM: 8.9, cargoVolume: 1800, startH: 0, endH: 5 },
+      ],
+    };
+
+    const optimizedSchedules: Record<string, ScheduleSlot[]> = {
+      'B-01': [
+        { vesselId: 'V-101', vesselName: 'Ever Given', vesselClass: 'ULCV', lengthM: 399, draftM: 15.7, cargoVolume: 18500, startH: 0, endH: 6 },
+        { vesselId: 'V-106', vesselName: 'HMM Algeciras', vesselClass: 'ULCV', lengthM: 399, draftM: 16.2, cargoVolume: 23964, startH: 7, endH: 24 }, // 4 cranes, cleared at T+24!
+        { vesselId: 'V-110', vesselName: 'Ever Ace', vesselClass: 'ULCV', lengthM: 400, draftM: 16.4, cargoVolume: 23992, startH: 26, endH: 45 }, // Clean gap, 0 collision!
+      ],
+      'B-02': [
+        { vesselId: 'V-102', vesselName: 'MSC Oscar', vesselClass: 'ULCV', lengthM: 395, draftM: 15.2, cargoVolume: 19200, startH: 0, endH: 12 },
+        { vesselId: 'V-107', vesselName: 'OOCL Hong Kong', vesselClass: 'ULCV', lengthM: 399, draftM: 15.8, cargoVolume: 21413, startH: 14, endH: 34 }, // Clean transition, 0 overlap!
+      ],
+      'B-03': [
+        { vesselId: 'V-108', vesselName: 'COSCO Universe', vesselClass: 'Post-Panamax', lengthM: 345, draftM: 14.1, cargoVolume: 14500, startH: 8, endH: 26 },
+      ],
+      'B-04': [
+        { vesselId: 'V-103', vesselName: 'CMA CGM Rivoli', vesselClass: 'Post-Panamax', lengthM: 335, draftM: 13.8, cargoVolume: 9800, startH: 0, endH: 11 },
+      ],
+      'B-05': [
+        { vesselId: 'V-109', vesselName: 'Yang Ming Wellhead', vesselClass: 'Panamax', lengthM: 260, draftM: 11.8, cargoVolume: 4800, startH: 12, endH: 24 },
+      ],
+      'B-07': [
+        { vesselId: 'V-104', vesselName: 'Madrid Maersk', vesselClass: 'Feeder', lengthM: 185, draftM: 9.8, cargoVolume: 2100, startH: 0, endH: 6 },
+      ],
+      'B-09': [
+        { vesselId: 'V-105', vesselName: 'ONE Apus', vesselClass: 'Feeder', lengthM: 175, draftM: 8.9, cargoVolume: 1800, startH: 0, endH: 5 },
+      ],
+    };
+
+    const activeSchedule = isOptimized ? optimizedSchedules : baselineSchedules;
+
+    let redCount = 0;
+    let amberCount = 0;
+    let greenCount = 0;
+    const criticalBerthsSet = new Set<string>();
+
+    const berthsHeatmap = localBerths.map((b) => {
+      const slots = activeSchedule[b.id] || [];
+      const hasCraneBreakdown = b.operational_cranes < b.crane_slots;
+      const isUnderMaintenance = b.status === 'MAINTENANCE';
+
+      const timeline = Array.from({ length: 72 }, (_, i) => {
+        if (isUnderMaintenance) {
+          greenCount++;
+          return {
+            hour_offset: i,
+            forecast_time: new Date(Date.now() + i * 3600000).toISOString(),
+            occupancy_probability: 0.0,
+            confidence_low: 0.0,
+            confidence_high: 0.0,
+            risk_tier: 'GREEN' as any,
+            expected_vessel_id: null,
+            expected_vessel_name: null,
+            top_factors: [
+              {
+                feature_name: 'Berth Maintenance Lockout',
+                impact_pct: 50,
+                direction: 'INCREASE' as any,
+                description: 'Civil quay maintenance & fender refurbishment active; zero vessel berthing capacity',
+              },
+            ],
+          };
+        }
+
+        const overlapping = slots.filter((s) => s.startH <= i && i <= s.endH);
+
+        let prob = 0.12;
+        let expVesselId: string | null = null;
+        let expVesselName: string | null = null;
+        let factors: any[] = [];
+
+        if (overlapping.length >= 2) {
+          // Multi-vessel quay clash / collision! (Only unoptimized baseline)
+          const v1 = overlapping[0];
+          const v2 = overlapping[1];
+          prob = 0.93 + Math.min(0.05, (i % 3) * 0.015);
+          expVesselId = v1.vesselId;
+          expVesselName = v1.vesselName;
+          factors = [
+            {
+              feature_name: 'Quay Collision / Dual ULCV Clash',
+              impact_pct: 46,
+              direction: 'INCREASE' as any,
+              description: `${v2.vesselName} (${v2.lengthM}m) scheduled arrival at T+${v2.startH}h clashes with docked ${v1.vesselName} (${v1.lengthM}m) at ${b.name}`,
+            },
+            {
+              feature_name: 'Quayside Spatial Footprint',
+              impact_pct: 38,
+              direction: 'INCREASE' as any,
+              description: `${v1.vesselName} occupies ${Math.min(100, Math.round((v1.lengthM / b.length_m) * 100))}% of ${b.name} (${b.length_m}m LOA); double-banking physically prohibited`,
+            },
+            {
+              feature_name: 'Under-Keel Clearance Margin',
+              impact_pct: 26,
+              direction: 'INCREASE' as any,
+              description: `Draft ${v1.draftM}m leaves tight ${(b.draft_limit_m - v1.draftM).toFixed(1)}m static draft clearance; low-water ebb transit prohibited`,
+            },
+          ];
+        } else if (overlapping.length === 1) {
+          const v = overlapping[0];
+          expVesselId = v.vesselId;
+          expVesselName = v.vesselName;
+
+          if (isOptimized) {
+            // Under AI optimization: clean, deconflicted scheduled operations (Safe GREEN tier < 0.60)
+            prob = 0.35 + (v.lengthM > 350 ? 0.05 : 0.02);
+            factors = [
+              {
+                feature_name: 'AI Optimal Quay Sequencing',
+                impact_pct: 45,
+                direction: 'NOMINAL' as any,
+                description: `Solver sequenced ${v.vesselName} at ${b.name} with 0 collisions and ${b.operational_cranes} STS cranes`,
+              },
+              {
+                feature_name: 'Tidal Window Alignment',
+                impact_pct: 30,
+                direction: 'NOMINAL' as any,
+                description: `Berthing synchronized with flood tide high-water slack for ${(b.draft_limit_m - v.draftM).toFixed(1)}m Under-Keel Clearance`,
+              },
+              {
+                feature_name: 'Yard Buffer Deconfliction',
+                impact_pct: 22,
+                direction: 'DECREASE' as any,
+                description: 'Pre-staged export container stack blocks ensure continuous STS crane productivity',
+              },
+            ];
+          } else {
+            // Unoptimized baseline with single vessel
+            if (hasCraneBreakdown) {
+              prob = 0.86 + ((i % 4) * 0.015);
+              factors = [
+                {
+                  feature_name: 'Quayside Crane Curtailment',
+                  impact_pct: 36,
+                  direction: 'INCREASE' as any,
+                  description: `Crane offline on ${b.name} (${b.operational_cranes}/${b.crane_slots} operational) throttles vessel Gross Moves Per Hour (GMPH)`,
+                },
+                {
+                  feature_name: 'Carrier Arrival Density',
+                  impact_pct: 28,
+                  direction: 'INCREASE' as any,
+                  description: `Heavy container volume (${v.cargoVolume.toLocaleString()} TEU) compounds quayside crane queue`,
+                },
+                {
+                  feature_name: 'Container Yard Saturation',
+                  impact_pct: 22,
+                  direction: 'INCREASE' as any,
+                  description: 'Yard stack density at 84% induces RTG dead-dig reshuffle delays and drayage congestion',
+                },
+              ];
+            } else {
+              prob = 0.74 + (v.lengthM > 350 ? 0.06 : 0.01);
+              factors = [
+                {
+                  feature_name: 'Quayside Spatial Footprint',
+                  impact_pct: 35,
+                  direction: 'INCREASE' as any,
+                  description: `${v.vesselName} (${v.lengthM}m) occupies ${Math.min(100, Math.round((v.lengthM / b.length_m) * 100))}% of ${b.name} quay length`,
+                },
+                {
+                  feature_name: 'Under-Keel Clearance Margin',
+                  impact_pct: 25,
+                  direction: 'INCREASE' as any,
+                  description: `Draft ${v.draftM}m leaves tight ${(b.draft_limit_m - v.draftM).toFixed(1)}m static draft clearance at berth`,
+                },
+                {
+                  feature_name: 'Mooring & Pilotage Buffer',
+                  impact_pct: 18,
+                  direction: 'INCREASE' as any,
+                  description: 'Harbor pilotage and multi-tug mooring operations scheduled for quayside turnaround',
+                },
+              ];
+            }
+          }
+        } else {
+          // Free berth slot
+          const nearVessel = slots.some((s) => Math.abs(s.startH - i) <= 1 || Math.abs(s.endH - i) <= 1);
+          if (nearVessel) {
+            prob = 0.35;
+            factors = [
+              {
+                feature_name: 'Mooring & Pilotage Transition Buffer',
+                impact_pct: 22,
+                direction: 'INCREASE' as any,
+                description: `Tug standby and harbor pilot navigation clearance between scheduled vessel calls`,
+              },
+            ];
+          } else {
+            prob = 0.08 + (i % 8) * 0.015;
+            if (!isOptimized && ['B-01', 'B-02', 'B-03'].includes(b.id)) {
+              factors = [
+                {
+                  feature_name: 'Queued Anchorage Inflow',
+                  impact_pct: 20,
+                  direction: 'INCREASE' as any,
+                  description: 'Offshore anchored vessels awaiting compatible deepwater quay berth clearance',
+                },
+              ];
+            } else {
+              factors = [
+                {
+                  feature_name: 'Quay Berth Availability',
+                  impact_pct: 12,
+                  direction: 'DECREASE' as any,
+                  description: `Berth free with ${b.operational_cranes} operational STS cranes and unrestricted channel draft`,
+                },
+              ];
+            }
+          }
+        }
+
+        const tier = prob >= 0.85 ? 'RED' : prob >= 0.60 ? 'AMBER' : 'GREEN';
+        if (tier === 'RED') {
+          redCount++;
+          criticalBerthsSet.add(b.name);
+        } else if (tier === 'AMBER') {
+          amberCount++;
+        } else {
+          greenCount++;
+        }
+
+        const confMargin = Math.min(0.12, Math.max(0.04, 0.05 + (i / 72) * 0.05));
         return {
           hour_offset: i,
           forecast_time: new Date(Date.now() + i * 3600000).toISOString(),
           occupancy_probability: Number(prob.toFixed(2)),
-          confidence_low: Number(Math.max(0, prob - 0.1).toFixed(2)),
-          confidence_high: Number(Math.min(1, prob + 0.1).toFixed(2)),
+          confidence_low: Number(Math.max(0, prob - confMargin).toFixed(2)),
+          confidence_high: Number(Math.min(1, prob + confMargin).toFixed(2)),
           risk_tier: tier as any,
-          expected_vessel_id: prob > 0.5 ? (b.id === 'B-01' ? 'V-106' : 'V-107') : null,
-          expected_vessel_name: prob > 0.5 ? (b.id === 'B-01' ? 'HMM Algeciras' : 'OOCL Hong Kong') : null,
-          top_factors: [
-            { feature_name: 'Carrier Arrival Density', impact_pct: 42, direction: 'INCREASE' as any, description: 'Consecutive ULCV scheduled arrivals' },
-            { feature_name: 'Quayside Crane Availability', impact_pct: 28, direction: 'INCREASE' as any, description: 'Crane 2 offline on Berth 2' },
-          ],
+          expected_vessel_id: expVesselId,
+          expected_vessel_name: expVesselName,
+          top_factors: factors,
         };
-      }),
-    }));
+      });
+
+      return {
+        berth_id: b.id,
+        berth_name: b.name,
+        length_m: b.length_m,
+        draft_limit_m: b.draft_limit_m,
+        crane_slots: b.crane_slots,
+        timeline,
+      };
+    });
 
     const response: HeatmapResponse = {
       correlation_id: `hm-${Date.now()}`,
@@ -179,12 +436,17 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
       generated_at: new Date().toISOString(),
       horizon_hours: 72,
       summary: {
-        red_tier_count: 14,
-        amber_tier_count: 26,
-        green_tier_count: 32,
-        critical_berths: ['B-01', 'B-02'],
-        peak_congestion_window: 'T+24h to T+42h',
-      },
+        red_tier_count: redCount,
+        amber_tier_count: amberCount,
+        green_tier_count: greenCount,
+        critical_berths: Array.from(criticalBerthsSet),
+        peak_congestion_window: isOptimized
+          ? 'Nominal Operations (AI Deconflicted)'
+          : 'T+16h to T+32h (ULCV Dual-Vessel Clash)',
+        baseline_red_tier_count: isOptimized ? 24 : undefined,
+        red_hours_resolved_count: isOptimized ? 24 : undefined,
+        is_optimized: isOptimized,
+      } as any,
       berths: berthsHeatmap,
     };
     return response;
@@ -485,17 +747,39 @@ export function handleFallbackRequest(endpoint: string, options: RequestInit = {
     return result;
   }
 
-  // 10. Audit Logs
+  // 10. Audit Logs & Integrity Ledger
+  if (cleanEndpoint === '/audit/verify-integrity') {
+    return {
+      is_valid: true,
+      total_verified: 8,
+      chain_head: '7f9a2e3b1c4d8e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f',
+      compromised_entry_id: null,
+      error: null,
+      verified_at: new Date().toISOString(),
+    };
+  }
+
+  if (cleanEndpoint === '/audit/anomalies') {
+    return {
+      total: 0,
+      anomalies: [],
+    };
+  }
+
+  if (cleanEndpoint === '/auth/approvals') {
+    return [];
+  }
+
   if (cleanEndpoint === '/audit/logs' || cleanEndpoint === '/audit/events') {
     const items: AuditLogEntryItem[] = [
-      { id: 101, correlation_id: 'CORR-2026-901', timestamp: new Date(Date.now() - 1200000).toISOString(), actor: 'supervisor', action: 'RECOMMENDATION_ACCEPTED', entity_type: 'RECOMMENDATION', entity_id: 'REC-2026-081', payload_snapshot: JSON.stringify({ berth: 'Berth 2 - Deepwater ULCV', vessel: 'HMM Algeciras', demurrage_saved: '$24,000', co2_avoided_mt: 11.2 }) },
-      { id: 102, correlation_id: 'CORR-2026-902', timestamp: new Date(Date.now() - 3600000).toISOString(), actor: 'planner', action: 'SOLVER_EXECUTION', entity_type: 'SCHEDULE', entity_id: '72H-WINDOW', payload_snapshot: JSON.stringify({ solver: 'HiGHS MILP', status: 'OPTIMAL', duration_ms: 240, objective_demurrage_usd: 41200, berths_scheduled: 10 }) },
-      { id: 103, correlation_id: 'CORR-2026-903', timestamp: new Date(Date.now() - 7200000).toISOString(), actor: 'admin', action: 'SECURITY_LOGIN', entity_type: 'SESSION', entity_id: 'AUTH-ADMIN', payload_snapshot: JSON.stringify({ ip: '127.0.0.1', method: 'JWT', role: 'admin', terminal: 'Operations Center' }) },
-      { id: 104, correlation_id: 'CORR-2026-904', timestamp: new Date(Date.now() - 14400000).toISOString(), actor: 'supervisor', action: 'BERTH_OVERRIDE', entity_type: 'BERTH_ASSIGNMENT', entity_id: 'V-106', payload_snapshot: JSON.stringify({ vessel: 'HMM Algeciras', assigned_berth: 'B-02', reason: 'Tidal draft window UKC clearance' }) },
-      { id: 105, correlation_id: 'CORR-2026-905', timestamp: new Date(Date.now() - 21600000).toISOString(), actor: 'planner', action: 'BERTH_MAINTENANCE_UPDATE', entity_type: 'BERTH', entity_id: 'B-06', payload_snapshot: JSON.stringify({ status: 'MAINTENANCE', crane_slots: 2, estimated_resume: '2026-09-17T08:00:00Z' }) },
-      { id: 106, correlation_id: 'CORR-2026-906', timestamp: new Date(Date.now() - 28800000).toISOString(), actor: 'supervisor', action: 'RECOMMENDATION_REJECTED', entity_type: 'RECOMMENDATION', entity_id: 'REC-2026-079', payload_snapshot: JSON.stringify({ vessel: 'CMA CGM Rivoli', reason: 'Bunkering refueling scheduled concurrently at Berth 4' }) },
-      { id: 107, correlation_id: 'CORR-2026-907', timestamp: new Date(Date.now() - 36000000).toISOString(), actor: 'admin', action: 'MASTER_DATA_IMPORT', entity_type: 'VESSEL_REGISTRY', entity_id: 'WPI-NGA-2026', payload_snapshot: JSON.stringify({ imported_vessels: 50, deepwater_ulcv: 4, feeder_classes: 2, berths_updated: 10 }) },
-      { id: 108, correlation_id: 'CORR-2026-908', timestamp: new Date(Date.now() - 43200000).toISOString(), actor: 'planner', action: 'WHAT_IF_SIMULATION', entity_type: 'SCENARIO', entity_id: 'SCEN-CRANE-OUTAGE', payload_snapshot: JSON.stringify({ crane_outages: 2, delay_impact_hours: 4.2, net_cost_usd: 31000 }) }
+      { id: 101, correlation_id: 'CORR-2026-901', timestamp: new Date(Date.now() - 1200000).toISOString(), actor: 'supervisor', actor_role: 'shift_supervisor', client_ip: '127.0.0.1', prev_hash: 'GENESIS_PORTPULSE_INTEGRITY_CHAIN', entry_hash: '8a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b', action: 'RECOMMENDATION_ACCEPTED', entity_type: 'RECOMMENDATION', entity_id: 'REC-2026-081', payload_snapshot: JSON.stringify({ berth: 'Berth 2 - Deepwater ULCV', vessel: 'HMM Algeciras', demurrage_saved: '$24,000', co2_avoided_mt: 11.2 }) },
+      { id: 102, correlation_id: 'CORR-2026-902', timestamp: new Date(Date.now() - 3600000).toISOString(), actor: 'planner', actor_role: 'vessel_planner', client_ip: '192.168.1.42', prev_hash: '8a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b', entry_hash: 'b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3', action: 'SOLVER_EXECUTION', entity_type: 'SCHEDULE', entity_id: '72H-WINDOW', payload_snapshot: JSON.stringify({ solver: 'HiGHS MILP', status: 'OPTIMAL', duration_ms: 240, objective_demurrage_usd: 41200, berths_scheduled: 10 }) },
+      { id: 103, correlation_id: 'CORR-2026-903', timestamp: new Date(Date.now() - 7200000).toISOString(), actor: 'admin', actor_role: 'admin', client_ip: '10.0.4.15', prev_hash: 'b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3', entry_hash: 'c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4', action: 'SECURITY_LOGIN', entity_type: 'SESSION', entity_id: 'AUTH-ADMIN', payload_snapshot: JSON.stringify({ ip: '127.0.0.1', method: 'JWT', role: 'admin', terminal: 'Operations Center' }) },
+      { id: 104, correlation_id: 'CORR-2026-904', timestamp: new Date(Date.now() - 14400000).toISOString(), actor: 'supervisor', actor_role: 'shift_supervisor', client_ip: '127.0.0.1', prev_hash: 'c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4', entry_hash: 'd3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5', action: 'BERTH_OVERRIDE', entity_type: 'BERTH_ASSIGNMENT', entity_id: 'V-106', payload_snapshot: JSON.stringify({ vessel: 'HMM Algeciras', assigned_berth: 'B-02', reason: 'Tidal draft window UKC clearance' }) },
+      { id: 105, correlation_id: 'CORR-2026-905', timestamp: new Date(Date.now() - 21600000).toISOString(), actor: 'planner', actor_role: 'vessel_planner', client_ip: '192.168.1.42', prev_hash: 'd3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5', entry_hash: 'e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6', action: 'BERTH_MAINTENANCE_UPDATE', entity_type: 'BERTH', entity_id: 'B-06', payload_snapshot: JSON.stringify({ status: 'MAINTENANCE', crane_slots: 2, estimated_resume: '2026-09-17T08:00:00Z' }) },
+      { id: 106, correlation_id: 'CORR-2026-906', timestamp: new Date(Date.now() - 28800000).toISOString(), actor: 'supervisor', actor_role: 'shift_supervisor', client_ip: '127.0.0.1', prev_hash: 'e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6', entry_hash: 'f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7', action: 'RECOMMENDATION_REJECTED', entity_type: 'RECOMMENDATION', entity_id: 'REC-2026-079', payload_snapshot: JSON.stringify({ vessel: 'CMA CGM Rivoli', reason: 'Bunkering refueling scheduled concurrently at Berth 4' }) },
+      { id: 107, correlation_id: 'CORR-2026-907', timestamp: new Date(Date.now() - 36000000).toISOString(), actor: 'admin', actor_role: 'admin', client_ip: '10.0.4.15', prev_hash: 'f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7', entry_hash: '06b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8', action: 'MASTER_DATA_IMPORT', entity_type: 'VESSEL_REGISTRY', entity_id: 'WPI-NGA-2026', payload_snapshot: JSON.stringify({ imported_vessels: 50, deepwater_ulcv: 4, feeder_classes: 2, berths_updated: 10 }) },
+      { id: 108, correlation_id: 'CORR-2026-908', timestamp: new Date(Date.now() - 43200000).toISOString(), actor: 'planner', actor_role: 'vessel_planner', client_ip: '192.168.1.42', prev_hash: '06b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8', entry_hash: '17c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9', action: 'WHAT_IF_SIMULATION', entity_type: 'SCENARIO', entity_id: 'SCEN-CRANE-OUTAGE', payload_snapshot: JSON.stringify({ crane_outages: 2, delay_impact_hours: 4.2, net_cost_usd: 31000 }) }
     ];
     const logs: AuditLogListResponse & { events: AuditLogEntryItem[] } = {
       total: items.length,

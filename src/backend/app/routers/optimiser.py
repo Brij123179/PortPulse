@@ -18,10 +18,15 @@ from app.schemas.optimiser import (
     WhatIfRequest,
     WhatIfResponse
 )
+from app.schemas.shock_simulation import (
+    VesselDelayShockRequest,
+    VesselDelayShockResponse
+)
 from app.services.optimiser.recommender import prescriptive_recommender
 from app.services.optimiser.solver import berth_optimiser
 from app.services.optimiser.override_guard import override_guard
 from app.services.optimiser.whatif_simulator import whatif_simulator
+from app.services.optimiser.shock_simulator import vessel_delay_shock_simulator
 from app.services.audit import AuditService
 from app.services.ml.feedback import feedback_tracker
 
@@ -58,7 +63,8 @@ def act_on_recommendation(
     res = prescriptive_recommender.record_action(
         recommendation_id=recommendation_id,
         req=payload,
-        username=user.username
+        username=user.username,
+        db=db
     )
     AuditService.record_event(
         db=db,
@@ -264,4 +270,46 @@ def run_what_if_simulation(
     F-308: Tests hypothetical interventions in a non-destructive sandbox,
     recalculating wait times, red hours, and demurrage savings.
     """
-    return whatif_simulator.simulate(db, payload)
+    res = whatif_simulator.simulate(db, payload)
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        actor_id=user.id,
+        action="WHATIF_SIMULATION",
+        entity_type="SIMULATION",
+        entity_id=payload.scenario_name or "CUSTOM",
+        payload_snapshot={
+            "scenario": payload.scenario_name,
+            "interventions_count": len(payload.interventions) if hasattr(payload, "interventions") else 0,
+            "red_hours_before": getattr(res, "red_tier_berth_hours_before", 0),
+            "red_hours_after": getattr(res, "red_tier_berth_hours_after", 0),
+            "demurrage_saved_usd": getattr(res, "total_demurrage_saved_usd", 0.0)
+        }
+    )
+    return res
+
+
+# --- Operational Shock Lab: Vessel Delay Shock & System Cascade Predictor ---
+
+@router.post("/optimiser/shock-simulation/vessel-delay", response_model=VesselDelayShockResponse)
+def simulate_vessel_delay_shock(
+    payload: VesselDelayShockRequest,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_roles("admin", "terminal_manager", "shift_supervisor", "vessel_planner"))
+):
+    """
+    Operational Shock Lab: Simulates the system-wide domino impact of delaying a vessel.
+    Calculates monetary damages (demurrage, bunker waste, disruption cost),
+    port wait time spikes, affected collateral vessels, and multi-fleet chain impacts.
+    Optionally commits the shock to the active database and triggers ML risk re-evaluation.
+    """
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+    return vessel_delay_shock_simulator.simulate_delay_shock(
+        db=db,
+        req=payload,
+        actor_username=user.username,
+        actor_role=role_val,
+        actor_id=user.id
+    )
+

@@ -106,7 +106,27 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
   }
 
   return (
-    <div>
+    <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-border pb-2.5 gap-2">
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+              SECTION: 72-Hour Demand Trajectory
+            </span>
+          </div>
+          <h3 className="text-xs sm:text-sm font-bold text-content-primary uppercase tracking-wider mt-1 flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span>Quayside Risk Trajectory (6-Hour Aggregated Shift Windows)</span>
+          </h3>
+          <p className="text-xs text-content-secondary mt-0.5">
+            <strong className="text-content-primary">Purpose:</strong> Provides a 72-hour macro forecast of port-wide congestion peaks grouped into 6-hour operational shifts to anticipate berth pressure before it happens.
+          </p>
+        </div>
+        <span className="text-[11px] text-content-muted font-mono self-start sm:self-center">
+          Click any bar to inspect risk breakdown
+        </span>
+      </div>
+
       <div className="timeline-scroll-wrapper">
         <div className="timeline-container" style={{ paddingTop: 28 }}>
           {/* Track */}
@@ -123,7 +143,7 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
                 <div
                   id={`timeline-bucket-${i}`}
                   key={i}
-                  className={`timeline-bucket${isSelected ? ' selected' : ''}`}
+                  className={`timeline-bucket${isSelected ? ' selected ring-2 ring-blue-500' : ''}`}
                   style={{ animationDelay: `${i * 40}ms` }}
                   onMouseMove={(e) => setTooltip({ x: e.clientX + 14, y: e.clientY - 10, bucket })}
                   onMouseLeave={() => setTooltip(null)}
@@ -142,7 +162,7 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
           {/* Labels */}
           <div className="timeline-labels">
             {buckets.map((b, i) => (
-              <div key={i} className="timeline-label">{fmtTimeline(b.startTime)}</div>
+              <div key={i} className="timeline-label text-[10px] text-content-muted">{fmtTimeline(b.startTime)}</div>
             ))}
           </div>
         </div>
@@ -150,37 +170,42 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
 
       {/* Selected bucket detail */}
       {selectedIdx !== null && buckets[selectedIdx] && (
-        <div style={{
-          marginTop: 12, padding: '10px 14px',
-          background: 'var(--bg-card, #1a2236)',
-          border: '1px solid var(--border-accent, rgba(56,189,248,0.3))',
-          borderRadius: 8, fontSize: '0.78rem',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontWeight: 700, color: 'var(--text-primary, #e2e8f0)' }}>
-              Window +{buckets[selectedIdx].bucketIdx * 6}h — +{(buckets[selectedIdx].bucketIdx + 1) * 6}h
-            </span>
-            <span style={{
-              padding: '2px 8px', borderRadius: 999, fontSize: '0.65rem', fontWeight: 700,
-              background: buckets[selectedIdx].tier === 'RED' ? 'rgba(239,68,68,0.15)' : buckets[selectedIdx].tier === 'AMBER' ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.12)',
-              color: tierColor[buckets[selectedIdx].tier],
-            }}>
-              {buckets[selectedIdx].tier} RISK
-            </span>
+        <div className="p-3 bg-surface-bg border border-surface-border rounded-xl text-xs space-y-1.5 animate-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-content-primary">
+                Window +{buckets[selectedIdx].bucketIdx * 6}h &mdash; +{(buckets[selectedIdx].bucketIdx + 1) * 6}h
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                buckets[selectedIdx].tier === 'RED'
+                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                  : buckets[selectedIdx].tier === 'AMBER'
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                  : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+              }`}>
+                {buckets[selectedIdx].tier} RISK
+              </span>
+            </div>
+            <button
+              onClick={() => setSelectedIdx(null)}
+              className="text-[11px] text-content-muted hover:text-content-primary"
+            >
+              Dismiss
+            </button>
           </div>
-          <div style={{ display: 'flex', gap: 20, color: 'var(--text-secondary, #94a3b8)', fontSize: '0.72rem' }}>
-            <span>🔴 Red berth-hrs: <strong style={{ color: '#ef4444' }}>{buckets[selectedIdx].redCount}</strong></span>
-            <span>🟡 Amber: <strong style={{ color: '#f59e0b' }}>{buckets[selectedIdx].amberCount}</strong></span>
-            <span>Avg occupancy: <strong style={{ color: 'var(--text-primary, #e2e8f0)' }}>{Math.round(buckets[selectedIdx].avgOccupancy * 100)}%</strong></span>
+          <div className="flex flex-wrap gap-4 text-content-secondary text-[11px]">
+            <span>Critical Hours: <strong className="text-rose-600 dark:text-rose-400">{buckets[selectedIdx].redCount}</strong></span>
+            <span>Elevated Hours: <strong className="text-amber-600 dark:text-amber-400">{buckets[selectedIdx].amberCount}</strong></span>
+            <span>Avg Quay Occupancy: <strong className="text-content-primary">{Math.round(buckets[selectedIdx].avgOccupancy * 100)}%</strong></span>
           </div>
           {(buckets[selectedIdx]?.topBerths?.length || 0) > 0 && (
-            <div style={{ marginTop: 6, color: 'var(--text-muted, #64748b)', fontSize: '0.68rem' }}>
-              Critical berths: <strong style={{ color: '#ef4444' }}>{buckets[selectedIdx].topBerths.join(', ')}</strong>
+            <div className="text-[11px] text-content-muted">
+              Critical Berths: <strong className="text-rose-600 dark:text-rose-400">{buckets[selectedIdx].topBerths.join(', ')}</strong>
             </div>
           )}
           {(buckets[selectedIdx]?.topFactors?.length || 0) > 0 && (
-            <div style={{ marginTop: 4, color: 'var(--text-muted, #64748b)', fontSize: '0.68rem' }}>
-              Top factor: <strong style={{ color: 'var(--accent-blue, #38bdf8)' }}>
+            <div className="text-[11px] text-content-muted">
+              Primary Risk Driver: <strong className="text-blue-500">
                 {(buckets[selectedIdx].topFactors[0]?.feature_name || 'Carrier Density').replace(/_/g, ' ')}
               </strong> (+{buckets[selectedIdx].topFactors[0]?.impact_pct || 0}%)
             </div>
@@ -203,11 +228,11 @@ export const TimelineForecast: React.FC<TimelineForecastProps> = ({ berths }) =>
             <span>{Math.round(tooltip.bucket.avgOccupancy * 100)}%</span>
           </div>
           <div className="timeline-tooltip-row">
-            <span>🔴 Critical hrs</span>
+            <span>Critical hrs</span>
             <span style={{ color: '#ef4444' }}>{tooltip.bucket.redCount}</span>
           </div>
           <div className="timeline-tooltip-row">
-            <span>🟡 Elevated hrs</span>
+            <span>Elevated hrs</span>
             <span style={{ color: '#f59e0b' }}>{tooltip.bucket.amberCount}</span>
           </div>
           {(tooltip.bucket.topBerths?.length || 0) > 0 && (

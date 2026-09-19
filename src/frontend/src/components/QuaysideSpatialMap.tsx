@@ -15,7 +15,6 @@ interface QuaysideSpatialMapProps {
   selectedShift: number | 'ALL';
   onOpenOverrideModal: (vesselId?: string) => void;
   berths?: any[];
-  currentPort?: any;
 }
 
 // 10 Standard Berths fallback configuration
@@ -37,7 +36,6 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
   selectedShift,
   onOpenOverrideModal,
   berths,
-  currentPort,
 }) => {
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
   const [anchoragePage, setAnchoragePage] = useState<number>(1);
@@ -97,14 +95,19 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
             🗺️
           </div>
           <div>
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-cyan-300 font-bold text-[10px] tracking-wider uppercase border border-cyan-500/30">
+                SECTION: Quayside Spatial Harbor Board
+              </span>
+            </div>
             <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2.5">
               <span>72-Hour Quayside Spatial Harbor Board</span>
               <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 font-black border border-cyan-500/30 uppercase tracking-wider">
                 {selectedShift === 'ALL' ? '72h Tactical Horizon' : `Shift ${selectedShift}`}
               </span>
             </h3>
-            <p className="text-xs text-slate-300">
-              {currentPort ? `${currentPort.flag} ${currentPort.name} quayside shoreline` : 'Interactive quayside shoreline'} with active berths, crane allocations, anchorage holding basins, and live congestion tracking
+            <p className="text-xs text-slate-300 mt-0.5">
+              <strong className="text-white">Purpose:</strong> Visualizes physical Pier 400 quays, crane allocations, and offshore roadstead holding basins to track spatial congestion across each berth.
             </p>
           </div>
         </div>
@@ -139,10 +142,17 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
                   <Anchor className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-white">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-cyan-300 font-bold text-[10px] tracking-wider uppercase border border-cyan-500/30">
+                      SECTION: Offshore Anchorage Holding Basin
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-white mt-1">
                     Offshore Anchorage Basin
                   </h4>
-                  <p className="text-[10px] text-slate-400">Waiting basin for delayed/queued arrivals</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    <strong className="text-slate-300">Purpose:</strong> Track vessels held in fairway roadstead awaiting open berths or harbor pilots.
+                  </p>
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${
@@ -263,12 +273,17 @@ export const QuaysideSpatialMap: React.FC<QuaysideSpatialMapProps> = ({
           <div className="bg-slate-900/95 border border-slate-700/80 rounded-2xl p-5 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-slate-800 mb-4 gap-2">
               <div>
-                <h4 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-cyan-300 font-bold text-[10px] tracking-wider uppercase border border-cyan-500/30">
+                    SECTION: Quayside Berth Allocation Grid
+                  </span>
+                </div>
+                <h4 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2 mt-1">
                   <span>Terminal Shoreline &amp; Deepwater Quays</span>
                   <span className="text-xs text-slate-400 font-normal">(Berths B-01 through B-10)</span>
                 </h4>
-                <p className="text-xs text-slate-300">
-                  Continuous quayside berths with depth clearance, STS crane gantries, and allocated carrier vessels
+                <p className="text-xs text-slate-300 mt-0.5">
+                  <strong className="text-white">Purpose:</strong> Monitor STS crane allocations, vessel draft clearance, and vessel berthing schedules along Quays B-01 to B-10.
                 </p>
               </div>
               <div className="text-xs font-mono text-slate-300 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800">

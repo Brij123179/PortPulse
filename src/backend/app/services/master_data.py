@@ -40,6 +40,11 @@ class MasterDataService:
         db.commit()
         db.refresh(berth)
         event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="CREATE", entity_id=berth.id)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"CREATE_BERTH_{berth.id}")
+        except Exception:
+            pass
         return berth
 
     @staticmethod
@@ -51,6 +56,11 @@ class MasterDataService:
         db.commit()
         db.refresh(berth)
         event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="UPDATE", entity_id=berth_id)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"UPDATE_BERTH_{berth_id}")
+        except Exception:
+            pass
         return berth
 
     @staticmethod
@@ -68,6 +78,11 @@ class MasterDataService:
         db.delete(berth)
         db.commit()
         event_bus.publish(EventType.DATA_CHANGED, entity_type="BERTH", action="DELETE", entity_id=berth_id)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"DELETE_BERTH_{berth_id}")
+        except Exception:
+            pass
         return True
 
     @staticmethod
@@ -109,6 +124,11 @@ class MasterDataService:
         db.commit()
         db.refresh(vessel)
         event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="CREATE", entity_id=vessel.id)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"CREATE_VESSEL_{vessel.id}")
+        except Exception:
+            pass
         return vessel
 
     @staticmethod
@@ -138,6 +158,11 @@ class MasterDataService:
         db.commit()
         db.refresh(vessel)
         event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="UPDATE", entity_id=vessel_id)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"UPDATE_VESSEL_{vessel_id}")
+        except Exception:
+            pass
         return vessel
 
     @staticmethod
@@ -151,6 +176,11 @@ class MasterDataService:
         db.delete(vessel)
         db.commit()
         event_bus.publish(EventType.DATA_CHANGED, entity_type="VESSEL", action="DELETE", entity_id=vessel_id)
+        try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"DELETE_VESSEL_{vessel_id}")
+        except Exception:
+            pass
         return True
 
     @staticmethod

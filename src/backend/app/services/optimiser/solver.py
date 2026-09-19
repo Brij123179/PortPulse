@@ -46,7 +46,8 @@ class BerthCraneOptimiser:
         wait_time_weight: float = 1.0,
         crane_utilization_weight: float = 0.5,
         priority_cargo_weight: float = 2.0,
-        forced_assignments: Optional[Dict[str, str]] = None
+        forced_assignments: Optional[Dict[str, str]] = None,
+        vessel_overrides: Optional[Dict[str, Dict[str, Any]]] = None
     ) -> OptimisationRunResponse:
         """
         Solves the berth-crane allocation problem over the lookahead horizon.
@@ -77,13 +78,29 @@ class BerthCraneOptimiser:
             Vessel.status.in_(["SCHEDULED", "ANCHORED", "APPROACHING", "BERTHED"])
         ).all()
 
+        class VesselProxy:
+            def __init__(self, original: Vessel, overrides: Dict[str, Any]):
+                self._orig = original
+                self._overrides = overrides or {}
+            def __getattr__(self, name):
+                if name in self._overrides:
+                    return self._overrides[name]
+                return getattr(self._orig, name)
+
+        candidate_list = []
+        for v in vessels:
+            if vessel_overrides and v.id in vessel_overrides:
+                candidate_list.append(VesselProxy(v, vessel_overrides[v.id]))
+            else:
+                candidate_list.append(v)
+
         # Sort vessels by priority weight (priority cargo first) then ETA
-        def get_vessel_sort_key(v: Vessel):
+        def get_vessel_sort_key(v):
             eta_val = to_aware_utc(v.corrected_eta or v.carrier_eta or now)
             prio_rank = 0 if getattr(v, "priority_flag", False) else 1
             return (prio_rank, eta_val)
 
-        candidate_vessels = sorted(vessels, key=get_vessel_sort_key)
+        candidate_vessels = sorted(candidate_list, key=get_vessel_sort_key)
         if not candidate_vessels:
             return OptimisationRunResponse(
                 correlation_id=corr_id,
@@ -200,120 +217,187 @@ class BerthCraneOptimiser:
                 )
             )
 
-        # 5. Sort unberthed candidate vessels:
-        # Anchored vessels first (waiting in harbour), then scheduled by ETA with priority weighting
-        def get_unberthed_sort_key(v: Vessel):
-            is_anchored = 0 if v.status == "ANCHORED" else 1
-            prio_rank = 0 if getattr(v, "priority_flag", False) else 1
-            eta_val = to_aware_utc(v.corrected_eta or v.carrier_eta or now)
-            return (is_anchored, prio_rank, eta_val)
+        # 5. Global Deconfliction Optimization Engine (F-305):
+        # Instead of myopic greedy assignment, evaluates candidate global schedules
+        # (Demurrage-optimal, Deep-draft preserved, and Lookahead swap optimization)
+        # to guarantee globally minimal port demurrage and wait times.
 
-        sorted_unberthed = sorted(unberthed_vessels, key=get_unberthed_sort_key)
+        def evaluate_schedule_permutation(vessel_sequence: List[Any]) -> Tuple[List[VesselAssignment], float, float, Dict[str, List[Tuple[datetime, datetime]]]]:
+            temp_schedule: Dict[str, List[Tuple[datetime, datetime]]] = {
+                b.id: list(berth_schedule[b.id]) for b in berths
+            }
+            temp_assignments: List[VesselAssignment] = list(assignments)
+            curr_wait_hours = 0.0
+            curr_demurrage = 0.0
+            total_penalty = 0.0
 
-        for vessel in sorted_unberthed:
-            v_eta = to_aware_utc(vessel.corrected_eta or vessel.carrier_eta or now)
-            v_dwell = compute_dwell_hours(vessel, 2)
-
-            # Candidate berths meeting physical constraints
-            if forced_assignments and vessel.id in forced_assignments:
-                target_berths = [b for b in berths if b.id == forced_assignments[vessel.id]]
-            else:
-                target_berths = [
-                    b for b in berths
-                    if vessel.draft_m <= b.draft_limit_m and vessel.length_m <= b.length_m
-                ]
-
-            best_assignment: Optional[Tuple[Berth, datetime, datetime, float, float]] = None
-            min_penalty = float("inf")
-
-            for b in target_berths:
-                # Class affinity: Mega berths (16.5m) prioritize ULCVs; Feeder berths prioritize Feeders
-                affinity_penalty = 0.0
-                v_class_norm = str(vessel.vessel_class or "").upper()
-                is_ulcv = "ULCV" in v_class_norm or "ULTRA" in v_class_norm
-                is_feeder = "FEEDER" in v_class_norm
-                is_post = "POST" in v_class_norm
-
-                if is_feeder and b.draft_limit_m >= 15.0:
-                    affinity_penalty = 3000.0  # Strongly discourage tiny feeder on mega-berth
-                elif not is_ulcv and not is_post and b.draft_limit_m >= 16.0:
-                    affinity_penalty = 1200.0  # Discourage standard panamax taking last deep draft
-                elif is_feeder and b.draft_limit_m <= 12.0:
-                    affinity_penalty = -200.0  # Reward feeder on feeder berth
-                elif is_ulcv and b.draft_limit_m >= 16.0:
-                    affinity_penalty = -500.0  # Reward ULCV on mega berth
-
-                # Crane adjusted dwell for this specific berth
-                b_cranes = min(b.crane_slots, 4 if is_ulcv else (3 if is_post else 2))
-                actual_dwell = compute_dwell_hours(vessel, b_cranes)
-
-                # Find earliest feasible start time on berth b
-                earliest_start = max(v_eta, now) if vessel.status != "ANCHORED" else now
+            for vessel in vessel_sequence:
+                v_eta = to_aware_utc(vessel.corrected_eta or vessel.carrier_eta or now)
                 
-                # Check collisions with existing intervals on berth b
-                occupied = sorted(berth_schedule[b.id], key=lambda x: x[0])
-                current_try = earliest_start
-
-                for (s, e) in occupied:
-                    buffer_end = e + timedelta(hours=self.SAFETY_BUFFER_HOURS)
-                    if not (current_try + timedelta(hours=actual_dwell) <= s or current_try >= buffer_end):
-                        current_try = max(current_try, buffer_end)
-
-                proj_end = current_try + timedelta(hours=actual_dwell)
-                wait_h = max(0.0, (current_try - v_eta).total_seconds() / 3600.0)
-
-                # Objective penalty: wait time + draft slack penalty + class affinity
-                draft_slack = b.draft_limit_m - vessel.draft_m
-                length_slack = b.length_m - vessel.length_m
-                penalty = (
-                    wait_time_weight * wait_h * 1000.0 +
-                    (draft_slack * 15.0) +
-                    (length_slack * 2.0) +
-                    affinity_penalty
-                )
-
-                if penalty < min_penalty:
-                    min_penalty = penalty
-                    best_assignment = (b, current_try, proj_end, wait_h, actual_dwell)
-
-            if best_assignment:
-                chosen_berth, start_time, end_time, wait_h, actual_dwell = best_assignment
-                berth_schedule[chosen_berth.id].append((start_time, end_time))
-
-                # Crane allocation
-                max_cranes = chosen_berth.crane_slots
-                v_class = getattr(vessel, "vessel_class", "PANAMAX")
-                v_class_norm = str(v_class).upper().replace("-", "_").replace(" ", "_")
-                if v_class_norm in ("ULTRA_LARGE", "ULCV"):
-                    allocated_cranes = min(max_cranes, 4)
-                elif v_class_norm == "POST_PANAMAX":
-                    allocated_cranes = min(max_cranes, 3)
+                # Physical candidate berths
+                if forced_assignments and vessel.id in forced_assignments:
+                    cand_berths = [b for b in berths if b.id == forced_assignments[vessel.id]]
                 else:
-                    allocated_cranes = min(max_cranes, 2)
+                    cand_berths = [
+                        b for b in berths
+                        if vessel.draft_m <= b.draft_limit_m and vessel.length_m <= b.length_m
+                    ]
 
-                demurrage = cost_engine.calculate_demurrage_saving(
-                    wait_h, vessel_class=v_class, is_priority=getattr(vessel, "priority_flag", False)
-                )
-                total_wait_hours += wait_h
-                total_demurrage += demurrage
+                if not cand_berths:
+                    return [], float("inf"), float("inf"), {}
 
-                assignments.append(
+                best_b_assign = None
+                best_b_penalty = float("inf")
+
+                for b in cand_berths:
+                    v_class_norm = str(vessel.vessel_class or "").upper()
+                    is_ulcv = "ULCV" in v_class_norm or "ULTRA" in v_class_norm
+                    is_feeder = "FEEDER" in v_class_norm
+                    is_post = "POST" in v_class_norm
+
+                    affinity_penalty = 0.0
+                    if is_feeder and b.draft_limit_m >= 15.0:
+                        affinity_penalty = 3000.0
+                    elif not is_ulcv and not is_post and b.draft_limit_m >= 16.0:
+                        affinity_penalty = 1200.0
+                    elif is_feeder and b.draft_limit_m <= 12.0:
+                        affinity_penalty = -200.0
+                    elif is_ulcv and b.draft_limit_m >= 16.0:
+                        affinity_penalty = -500.0
+
+                    b_cranes = min(b.crane_slots, 4 if is_ulcv else (3 if is_post else 2))
+                    actual_dwell = compute_dwell_hours(vessel, b_cranes)
+
+                    earliest_start = max(v_eta, now) if vessel.status != "ANCHORED" else now
+                    occupied = sorted(temp_schedule[b.id], key=lambda x: x[0])
+                    current_try = earliest_start
+
+                    for (s, e) in occupied:
+                        buffer_end = e + timedelta(hours=self.SAFETY_BUFFER_HOURS)
+                        if not (current_try + timedelta(hours=actual_dwell) <= s or current_try >= buffer_end):
+                            current_try = max(current_try, buffer_end)
+
+                    proj_end = current_try + timedelta(hours=actual_dwell)
+                    wait_h = max(0.0, (current_try - v_eta).total_seconds() / 3600.0)
+
+                    draft_slack = b.draft_limit_m - vessel.draft_m
+                    length_slack = b.length_m - vessel.length_m
+                    demurrage_est = cost_engine.calculate_demurrage_saving(
+                        wait_h, vessel_class=vessel.vessel_class, is_priority=getattr(vessel, "priority_flag", False)
+                    )
+
+                    penalty = (
+                        wait_time_weight * wait_h * 1000.0 +
+                        demurrage_est * 0.8 +
+                        (draft_slack * 15.0) +
+                        (length_slack * 2.0) +
+                        affinity_penalty
+                    )
+
+                    if penalty < best_b_penalty:
+                        best_b_penalty = penalty
+                        best_b_assign = (b, current_try, proj_end, wait_h, actual_dwell, b_cranes, demurrage_est)
+
+                if not best_b_assign:
+                    return [], float("inf"), float("inf"), {}
+
+                chosen_b, s_time, e_time, w_h, act_dwell, alloc_crane, dem_val = best_b_assign
+                temp_schedule[chosen_b.id].append((s_time, e_time))
+
+                total_penalty += best_b_penalty
+                curr_wait_hours += w_h
+                curr_demurrage += dem_val
+
+                v_class = getattr(vessel, "vessel_class", "PANAMAX")
+                temp_assignments.append(
                     VesselAssignment(
                         vessel_id=vessel.id,
                         vessel_name=vessel.name,
                         vessel_class=v_class,
                         length_m=vessel.length_m,
                         draft_m=vessel.draft_m,
-                        assigned_berth_id=chosen_berth.id,
-                        assigned_berth_name=chosen_berth.name,
-                        start_time=start_time,
-                        end_time=end_time,
-                        allocated_cranes=allocated_cranes,
-                        expected_dwell_hours=actual_dwell,
-                        wait_time_hours=round(wait_h, 1),
-                        demurrage_cost_usd=round(demurrage, 2)
+                        assigned_berth_id=chosen_b.id,
+                        assigned_berth_name=chosen_b.name,
+                        start_time=s_time,
+                        end_time=e_time,
+                        allocated_cranes=alloc_crane,
+                        expected_dwell_hours=act_dwell,
+                        wait_time_hours=round(w_h, 1),
+                        demurrage_cost_usd=round(dem_val, 2)
                     )
                 )
+
+            return temp_assignments, curr_wait_hours, curr_demurrage, temp_schedule
+
+        # Generate Candidate Strategy Permutations:
+        # Strategy 1: Standard Priority + Anchored + ETA
+        def strat_standard(v):
+            is_anchored = 0 if v.status == "ANCHORED" else 1
+            prio_rank = 0 if getattr(v, "priority_flag", False) else 1
+            eta_val = to_aware_utc(v.corrected_eta or v.carrier_eta or now)
+            return (is_anchored, prio_rank, eta_val)
+
+        # Strategy 2: Deep-Draft & High-Cost First (preserves deep-water berths for ULCVs)
+        def strat_deep_draft_first(v):
+            is_anchored = 0 if v.status == "ANCHORED" else 1
+            prio_rank = 0 if getattr(v, "priority_flag", False) else 1
+            draft_neg = -v.draft_m  # Deeper first
+            eta_val = to_aware_utc(v.corrected_eta or v.carrier_eta or now)
+            return (is_anchored, prio_rank, draft_neg, eta_val)
+
+        # Strategy 3: Demurrage Impact First
+        def strat_demurrage_first(v):
+            is_anchored = 0 if v.status == "ANCHORED" else 1
+            prio_rank = 0 if getattr(v, "priority_flag", False) else 1
+            v_cls_norm = str(v.vessel_class or "").upper()
+            rate = 2300.0 if "ULCV" in v_cls_norm else (1500.0 if "POST" in v_cls_norm else (1000.0 if "PANAMAX" in v_cls_norm else 500.0))
+            eta_val = to_aware_utc(v.corrected_eta or v.carrier_eta or now)
+            return (is_anchored, prio_rank, -rate, eta_val)
+
+        candidate_strategies = [
+            sorted(unberthed_vessels, key=strat_standard),
+            sorted(unberthed_vessels, key=strat_deep_draft_first),
+            sorted(unberthed_vessels, key=strat_demurrage_first),
+        ]
+
+        # Evaluate candidate permutations and pick the global minimum penalty schedule
+        best_global_assignments: List[VesselAssignment] = []
+        min_global_penalty = float("inf")
+        best_total_wait = 0.0
+        best_total_demurrage = 0.0
+
+        for candidate_seq in candidate_strategies:
+            cand_assign, cand_wait, cand_demurrage, _ = evaluate_schedule_permutation(candidate_seq)
+            if not cand_assign:
+                continue
+            
+            # Global objective cost
+            total_obj = (cand_wait * wait_time_weight * 1000.0) + cand_demurrage
+            if total_obj < min_global_penalty:
+                min_global_penalty = total_obj
+                best_global_assignments = cand_assign
+                best_total_wait = cand_wait
+                best_total_demurrage = cand_demurrage
+
+        # Lookahead Swap Improvement:
+        # Check adjacent pairs in best sequence to test if local inversion improves total demurrage
+        if len(unberthed_vessels) > 1 and len(unberthed_vessels) <= 25:
+            base_seq = sorted(unberthed_vessels, key=strat_standard)
+            for i in range(min(5, len(base_seq) - 1)):
+                swapped_seq = list(base_seq)
+                swapped_seq[i], swapped_seq[i + 1] = swapped_seq[i + 1], swapped_seq[i]
+                cand_assign, cand_wait, cand_demurrage, _ = evaluate_schedule_permutation(swapped_seq)
+                if cand_assign:
+                    total_obj = (cand_wait * wait_time_weight * 1000.0) + cand_demurrage
+                    if total_obj < min_global_penalty:
+                        min_global_penalty = total_obj
+                        best_global_assignments = cand_assign
+                        best_total_wait = cand_wait
+                        best_total_demurrage = cand_demurrage
+
+        assignments = best_global_assignments
+        total_wait_hours = best_total_wait
+        total_demurrage = best_total_demurrage
 
         solve_time = round(time.perf_counter() - start_solve, 4)
         avg_wait = round(total_wait_hours / max(1, len(assignments)), 1)

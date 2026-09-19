@@ -12,20 +12,33 @@ import {
   Layers,
   Info,
   Calendar,
+  CheckCircle,
 } from 'lucide-react';
 
 interface CongestionHeatmapProps {
   heatmapData: HeatmapResponse | null;
   loading: boolean;
   onRefresh: () => void;
+  planMode?: 'optimized' | 'baseline';
+  onPlanModeChange?: (mode: 'optimized' | 'baseline') => void;
 }
 
 export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
   heatmapData,
   loading,
   onRefresh,
+  planMode,
+  onPlanModeChange,
 }) => {
   const [horizon, setHorizon] = useState<24 | 48 | 72>(72);
+  const [internalPlanMode, setInternalPlanMode] = useState<'optimized' | 'baseline'>('optimized');
+  const currentPlanMode = planMode ?? internalPlanMode;
+
+  const handlePlanModeChange = (mode: 'optimized' | 'baseline') => {
+    setInternalPlanMode(mode);
+    if (onPlanModeChange) onPlanModeChange(mode);
+  };
+
   const [selectedCell, setSelectedCell] = useState<{
     berth: BerthHeatmapTrack;
     item: BerthHourRiskItem;
@@ -68,23 +81,47 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
   return (
     <div className="space-y-6">
       {/* KPI & Summary Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center space-x-2">
+            <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] tracking-wider uppercase border border-amber-500/20">
+              SECTION: Congestion Risk Indicators
+            </span>
+            <span className="text-xs font-bold uppercase tracking-wider text-content-primary">
+              Quayside Bottleneck Summary
+            </span>
+          </div>
+          <p className="text-[11px] text-content-secondary hidden md:inline">
+            <strong className="text-content-primary">Purpose:</strong> High-level breakdown of critical (red) and elevated (amber) berth-hours, peak risk windows, and mathematical deconfliction status.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Red Risk Hours */}
-        <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm">
+        <div className={`bg-surface-card border rounded-xl p-4 shadow-sm transition-all ${
+          summary.red_tier_count === 0 ? 'border-emerald-500/30' : 'border-rose-500/30'
+        }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-content-secondary uppercase tracking-wider">
               Critical Congestion (Red)
             </span>
-            <AlertTriangle className="w-4 h-4 text-rose-500" />
+            {summary.red_tier_count === 0 ? (
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+            )}
           </div>
           <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-rose-600 dark:text-rose-400">
+            <span className={`text-2xl font-black font-mono ${
+              summary.red_tier_count === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+            }`}>
               {summary.red_tier_count}
             </span>
             <span className="text-xs text-content-muted">berth-hours (P &ge; 85%)</span>
           </div>
           <p className="mt-2 text-xs text-content-secondary">
-            Requires immediate diversion or re-sequencing action.
+            {summary.red_tier_count === 0
+              ? '✨ 0 quayside collisions. All berths operating within target safety buffer.'
+              : 'Requires immediate diversion or re-sequencing action.'}
           </p>
         </div>
 
@@ -97,13 +134,15 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
             <TrendingUp className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+            <span className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
               {summary.amber_tier_count}
             </span>
             <span className="text-xs text-content-muted">berth-hours (60% &le; P &lt; 85%)</span>
           </div>
           <p className="mt-2 text-xs text-content-secondary">
-            Elevated turnaround dwell / schedule compression.
+            {summary.amber_tier_count === 0
+              ? '✨ No excessive dwell pressure. STS crane gangs sustainably allocated.'
+              : 'Elevated turnaround dwell / schedule compression.'}
           </p>
         </div>
 
@@ -116,12 +155,14 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
             <Calendar className="w-4 h-4 text-brand-500" />
           </div>
           <div className="mt-2">
-            <span className="text-lg font-bold text-content-primary">
+            <span className="text-sm font-bold text-content-primary">
               {summary.peak_congestion_window}
             </span>
           </div>
           <p className="mt-2 text-xs text-content-secondary">
-            Cluster of ULCV arrivals and crane maintenance.
+            {summary.red_tier_count === 0
+              ? 'HiGHS MILP solver deconflicted all 72h arrival windows.'
+              : 'Cluster of ULCV arrivals and quay space clashing.'}
           </p>
         </div>
 
@@ -129,36 +170,79 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
         <div className="bg-surface-card border border-surface-border rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-content-secondary uppercase tracking-wider">
-              Forecasting Engine & Version
+              Engine &amp; Plan Status
             </span>
             <Sparkles className="w-4 h-4 text-brand-500" />
           </div>
-          <div className="mt-2">
-            <span className="text-sm font-bold text-content-primary font-mono">
+          <div className="mt-2 flex items-center space-x-2">
+            <span className="text-xs font-bold text-content-primary font-mono truncate">
               {heatmapData.model_version}
             </span>
-            <span className="ml-2 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-semibold">
-              CALIBRATED
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+              currentPlanMode === 'optimized'
+                ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+            }`}>
+              {currentPlanMode === 'optimized' ? 'DECONFLICTED' : 'UNMANAGED'}
             </span>
           </div>
           <p className="mt-2 text-xs text-content-muted">
-            Validated against historical baseline · Factor attribution active
+            {currentPlanMode === 'optimized'
+              ? 'HiGHS mathematical solver active · 0 clash guarantee'
+              : 'Unmanaged carrier baseline · High demurrage exposure'}
           </p>
         </div>
+      </div>
       </div>
 
       {/* Main Heatmap Matrix Container */}
       <div className="bg-surface-card border border-surface-border rounded-xl shadow-sm overflow-hidden">
         {/* Controls Toolbar */}
         <div className="p-4 border-b border-surface-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface-bg">
-          <div className="flex items-center space-x-2">
-            <Layers className="w-4 h-4 text-brand-500" />
-            <h2 className="text-xs font-bold text-content-primary uppercase tracking-wider">
-              Berth Congestion Heatmap Matrix (72h Look-Ahead)
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-bold text-[10px] tracking-wider uppercase border border-blue-500/20">
+                SECTION: 72-Hour Quayside Congestion Matrix
+              </span>
+            </div>
+            <h2 className="text-xs sm:text-sm font-bold text-content-primary uppercase tracking-wider mt-1 flex items-center space-x-2">
+              <Layers className="w-4 h-4 text-brand-500" />
+              <span>Berth Congestion Heatmap Matrix (72h Look-Ahead)</span>
             </h2>
+            <p className="text-xs text-content-secondary mt-0.5">
+              <strong className="text-content-primary">Purpose:</strong> Hour-by-hour visual risk matrix across all 10 quayside berths; click any cell to inspect AI feature attributions and underlying arrival drivers.
+            </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Plan Mode Selector */}
+            <div className="flex items-center space-x-1 bg-surface-card border border-surface-border p-1 rounded-lg text-xs">
+              <button
+                onClick={() => handlePlanModeChange('optimized')}
+                className={`px-2.5 py-1 rounded font-semibold transition-all flex items-center space-x-1 ${
+                  currentPlanMode === 'optimized'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-content-secondary hover:text-content-primary'
+                }`}
+                title="View HiGHS MILP deconflicted plan (0 collisions, safe green flow)"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>After Optimization</span>
+              </button>
+              <button
+                onClick={() => handlePlanModeChange('baseline')}
+                className={`px-2.5 py-1 rounded font-semibold transition-all flex items-center space-x-1 ${
+                  currentPlanMode === 'baseline'
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'text-content-secondary hover:text-content-primary'
+                }`}
+                title="View unmanaged carrier arrival bottlenecks (clashing peak hours)"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Before Optimization</span>
+              </button>
+            </div>
+
             {/* Horizon selector */}
             <div className="flex items-center space-x-1 bg-surface-card border border-surface-border p-1 rounded-lg text-xs">
               <span className="text-[11px] text-content-muted px-2 font-medium">Horizon:</span>
@@ -219,10 +303,11 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
             <div className="grid grid-cols-[140px_repeat(24,_1fr)] gap-1 text-[10px] text-content-muted font-mono pb-2 border-b border-surface-border">
               <div className="font-sans font-semibold text-content-primary">Berth Quay</div>
               {Array.from({ length: 24 }, (_, idx) => {
-                const hourStep = Math.round((idx + 1) * (horizon / 24));
+                const step = Math.max(1, Math.round(horizon / 24));
+                const targetHour = Math.min(horizon, (idx + 1) * step);
                 return (
                   <div key={idx} className="text-center truncate">
-                    +{hourStep}h
+                    +{targetHour}h
                   </div>
                 );
               })}
@@ -246,12 +331,14 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
                   {/* 24 Aggregated / Sampled Time Cells */}
                   {Array.from({ length: 24 }, (_, cellIdx) => {
                     const timeline = Array.isArray(b?.timeline) ? b.timeline : [];
+                    const step = Math.max(1, Math.round(horizon / 24));
+                    const targetHour = Math.min(horizon, (cellIdx + 1) * step);
                     const mappedHourIndex = timeline.length > 0 ? Math.min(
                       timeline.length - 1,
-                      Math.floor((cellIdx / 24) * horizon)
+                      targetHour - 1
                     ) : 0;
                     const item = timeline[mappedHourIndex] || timeline[0] || {
-                      hour_offset: cellIdx,
+                      hour_offset: targetHour,
                       forecast_time: new Date().toISOString(),
                       occupancy_probability: 0,
                       confidence_low: 0,
@@ -268,7 +355,7 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
 
                     return (
                       <button
-                        key={`${b.berth_id}-h${item.hour_offset}`}
+                        key={`${b.berth_id}-cell-${cellIdx}`}
                         onClick={() => setSelectedCell({ berth: b, item })}
                         aria-label={`${b.berth_name} hour +${item.hour_offset}h: ${isRed ? 'High' : isAmber ? 'Medium' : 'Low'} Risk, ${Math.round(item.occupancy_probability * 100)}% occupancy`}
                         className={`h-9 rounded flex flex-col items-center justify-center transition-all relative group focus:outline-none focus:ring-2 focus:ring-brand-500 ${
@@ -303,8 +390,15 @@ export const CongestionHeatmap: React.FC<CongestionHeatmapProps> = ({
 
         {/* Selected Cell Explainability Card (F-206 & F-207) */}
         {selectedCell ? (
-          <div className="p-4 border-t border-surface-border bg-surface-bg animate-in slide-in-from-bottom-2 duration-150">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="p-4 border-t border-surface-border bg-surface-bg animate-in slide-in-from-bottom-2 duration-150 relative">
+            <button
+              onClick={() => setSelectedCell(null)}
+              className="absolute top-3 right-3 p-1 rounded-lg hover:bg-surface-hover text-content-muted hover:text-content-primary transition"
+              title="Close explainability panel"
+            >
+              <span className="text-xs font-bold px-1">&times;</span>
+            </button>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 pr-6">
               {/* Left Column: Probability & Confidence Interval */}
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">

@@ -182,12 +182,14 @@ class AutoOptimizer:
             actor_id=actor_id,
         )
 
-        # Trigger ML re-prediction after assignments change
+        # Trigger ML re-prediction and clear stale forecast cache after assignments change
         try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"CONFIRM_AUTO_OPTIMIZE_{result_id}")
             from app.services.event_bus import event_bus, EventType
             event_bus.publish(EventType.ASSIGNMENT_CHANGED, entity_type="VESSEL", action="AUTO_OPTIMIZE_APPLY", count=applied_count)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error during auto-optimize ML re-evaluation: {e}")
 
         logger.info(f"Auto-Optimizer: Confirmed result {result_id}, applied {applied_count} assignments")
         return {

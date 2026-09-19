@@ -215,6 +215,8 @@ class OverrideGuardrail:
         db.refresh(vessel)
 
         try:
+            from app.services.ml.risk_engine import risk_engine
+            risk_engine.re_evaluate_all_predictions(db, trigger=f"MANUAL_OVERRIDE_{vessel.id}_TO_{target_berth.id}")
             from app.services.event_bus import event_bus, EventType
             event_bus.publish(
                 EventType.ASSIGNMENT_CHANGED,
@@ -223,8 +225,8 @@ class OverrideGuardrail:
                 vessel_id=vessel.id,
                 berth_id=target_berth.id
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error during override re-evaluation or event publishing: {e}")
 
         logger.info(
             f"Manual override APPROVED: Vessel '{vessel.name}' reassigned to '{target_berth.name}' at {req_start.isoformat()} by '{actor_username}' (Reason: {req.override_reason})",

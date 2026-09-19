@@ -129,7 +129,7 @@ def create_vessel(
         action="CREATE_VESSEL",
         entity_type="VESSEL",
         entity_id=res.id,
-        payload_snapshot={"name": res.name, "imo": res.imo, "carrier": res.carrier, "teu": res.teu, "assigned_berth_id": res.assigned_berth_id}
+        payload_snapshot={"name": res.name, "id": res.id, "cargo_volume": res.cargo_volume, "assigned_berth_id": res.assigned_berth_id}
     )
     return res
 

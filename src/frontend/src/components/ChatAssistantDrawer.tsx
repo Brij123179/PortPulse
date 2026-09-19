@@ -15,12 +15,23 @@ interface ChatAssistantDrawerProps {
   onClose: () => void;
 }
 
+export const cleanFormatting = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/^[ \t]*#{1,6}[ \t]*/gm, '')
+    .replace(/^[ \t]*[\*\-][ \t]+/gm, '• ')
+    .replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
+    .replace(/_{1,3}(.*?)_{1,3}/g, '$1')
+    .replace(/[\*#]/g, '')
+    .trim();
+};
+
 export const ChatAssistantDrawer: React.FC<ChatAssistantDrawerProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: "👋 Welcome to **PortPulse AI Copilot**.\n\nI am grounded via RAG on your real-time database state (berth occupancies, vessel delays, crane breakdowns, and prescriptive solver recommendations).\n\nAsk any question about terminal operations or click a prompt below.",
+      text: "👋 Welcome to PortPulse AI Copilot.\n\nI am grounded via live AI and RAG on your real-time database state (berth occupancies, vessel delays, crane breakdowns, and prescriptive solver recommendations).\n\nAsk any question about terminal operations or click a prompt below.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -118,7 +129,7 @@ export const ChatAssistantDrawer: React.FC<ChatAssistantDrawerProps> = ({ isOpen
                   RAG Grounded
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">IBM watsonx.ai / Bob Foundation Model</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">OpenRouter AI Copilot • DeepSeek / Qwen</p>
             </div>
           </div>
           <button
@@ -145,7 +156,7 @@ export const ChatAssistantDrawer: React.FC<ChatAssistantDrawerProps> = ({ isOpen
                 }`}
               >
                 <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
-                  {msg.text}
+                  {cleanFormatting(msg.text)}
                 </div>
 
                 {/* Citations & Evidence */}

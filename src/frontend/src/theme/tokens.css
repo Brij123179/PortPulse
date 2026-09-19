@@ -1,58 +1,58 @@
-/* IBM Carbon Design System inspired tokens (04_frontend.md §2) */
+/* PortPulse Executive Design System Tokens */
 :root {
-  --color-bg: #f4f4f4;                 /* Carbon Gray 10 */
-  --color-card: #ffffff;               /* Carbon White */
-  --color-hover: #e8e8e8;              /* Carbon Gray 20 */
-  --color-border: #d1d5db;             /* Light Gray Border */
-  --color-border-subtle: #e5e7eb;
+  --color-bg: #f8fafc;                 /* Slate 50 - Crisp, clean executive background */
+  --color-card: #ffffff;               /* Clean white card surface */
+  --color-hover: #f1f5f9;              /* Slate 100 hover */
+  --color-border: #e2e8f0;             /* Slate 200 - Subtle, modern borders */
+  --color-border-subtle: #f1f5f9;      /* Slate 100 subtle separator */
   
-  --color-text-primary: #161616;       /* Carbon Gray 100 */
-  --color-text-secondary: #525252;     /* Carbon Gray 70 */
-  --color-text-muted: #8d8d8d;         /* Carbon Gray 50 */
+  --color-text-primary: #0f172a;       /* Slate 900 - Deep, high-contrast text */
+  --color-text-secondary: #475569;     /* Slate 600 - Secondary label text */
+  --color-text-muted: #94a3b8;         /* Slate 400 - Deemphasized metadata */
   
-  /* Operational Status Tokens (Accessible Light) */
-  --color-status-success-bg: #defbe6;
-  --color-status-success-text: #0e6027;
-  --color-status-success-border: #a7f0ba;
+  /* Operational Status Tokens (Light Theme) */
+  --color-status-success-bg: #ecfdf5;
+  --color-status-success-text: #065f46;
+  --color-status-success-border: #a7f3d0;
 
-  --color-status-warning-bg: #fdf3d8;
-  --color-status-warning-text: #8a6100;
-  --color-status-warning-border: #f1c21b;
+  --color-status-warning-bg: #fffbeb;
+  --color-status-warning-text: #92400e;
+  --color-status-warning-border: #fde68a;
 
-  --color-status-danger-bg: #ffebee;
-  --color-status-danger-text: #b81414;
-  --color-status-danger-border: #ff8389;
+  --color-status-danger-bg: #fef2f2;
+  --color-status-danger-text: #991b1b;
+  --color-status-danger-border: #fecaca;
 
-  --color-status-info-bg: #edf5ff;
-  --color-status-info-text: #0043ce;
-  --color-status-info-border: #a6c8ff;
+  --color-status-info-bg: #eff6ff;
+  --color-status-info-text: #1e40af;
+  --color-status-info-border: #bfdbfe;
 }
 
 [data-theme="dark"] {
-  --color-bg: #121619;                 /* Carbon Gray 100 deep */
-  --color-card: #1f2429;               /* Carbon Gray 90 */
-  --color-hover: #2d333b;              /* Carbon Gray 80 */
-  --color-border: #374151;             /* Dark Border */
-  --color-border-subtle: #2b313a;
+  --color-bg: #0b0f19;                 /* Deep Navy/Slate - Ultra-sleek command deck */
+  --color-card: #111827;               /* Slate 900 surface */
+  --color-hover: #1f2937;              /* Slate 800 hover */
+  --color-border: #1f2937;             /* Slate 800 border */
+  --color-border-subtle: #162032;      /* Subtle divider */
 
-  --color-text-primary: #f4f4f4;       /* Carbon Gray 10 */
-  --color-text-secondary: #c6c6c6;     /* Carbon Gray 30 */
-  --color-text-muted: #8d8d8d;         /* Carbon Gray 50 */
+  --color-text-primary: #f8fafc;       /* Slate 50 - Crisp light text */
+  --color-text-secondary: #94a3b8;     /* Slate 400 */
+  --color-text-muted: #64748b;         /* Slate 500 */
 
-  /* Operational Status Tokens (Accessible Dark) */
-  --color-status-success-bg: #0e3818;
-  --color-status-success-text: #42be65;
-  --color-status-success-border: #198038;
+  /* Operational Status Tokens (Dark Theme) */
+  --color-status-success-bg: #064e3b;
+  --color-status-success-text: #6ee7b7;
+  --color-status-success-border: #047857;
 
-  --color-status-warning-bg: #3e3000;
-  --color-status-warning-text: #f1c21b;
-  --color-status-warning-border: #8a6100;
+  --color-status-warning-bg: #78350f;
+  --color-status-warning-text: #fcd34d;
+  --color-status-warning-border: #b45309;
 
-  --color-status-danger-bg: #4a1013;
-  --color-status-danger-text: #ff8389;
-  --color-status-danger-border: #da1e28;
+  --color-status-danger-bg: #7f1d1d;
+  --color-status-danger-text: #fca5a5;
+  --color-status-danger-border: #b91c1c;
 
-  --color-status-info-bg: #001d6c;
-  --color-status-info-text: #78a9ff;
-  --color-status-info-border: #0f62fe;
+  --color-status-info-bg: #1e3a8a;
+  --color-status-info-text: #93c5fd;
+  --color-status-info-border: #2563eb;
 }

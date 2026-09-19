@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.auth import CurrentUser, get_current_user
+from app.core.auth import CurrentUser, get_current_user, require_roles, UserRole
 from app.services.ml.risk_engine import risk_engine
 from app.services.ml.cascade_simulator import CascadingDelaySimulator
 from app.schemas.forecast import (
@@ -9,6 +9,7 @@ from app.schemas.forecast import (
     CascadeSimulationResponse, MLMetricsResponse
 )
 from app.core.logging import correlation_id_ctx
+from app.services.audit import AuditService
 
 router = APIRouter(prefix="/api/v1", tags=["Prediction Core & Forecasting"])
 
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/api/v1", tags=["Prediction Core & Forecasting"])
 @router.get("/risk/heatmap", response_model=HeatmapResponse)
 def get_congestion_heatmap(
     horizon: int = Query(72, ge=12, le=168, description="Forecast horizon in hours"),
+    optimized: bool = Query(True, description="Whether to evaluate AI-optimized schedule or unmanaged baseline"),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user)
 ):
@@ -24,7 +26,7 @@ def get_congestion_heatmap(
     Returns the hour-by-hour congestion risk heatmap across all berths for the next 72 hours,
     with SHAP explainability factors and 10th-90th percentile confidence bounds.
     """
-    return risk_engine.generate_heatmap(db, horizon_hours=horizon)
+    return risk_engine.generate_heatmap(db, horizon_hours=horizon, optimized=optimized)
 
 
 @router.get("/forecast/berths", response_model=HeatmapResponse)
@@ -61,12 +63,28 @@ def simulate_cascading_delay(
     F-205: Simulates how an operational delay on one vessel cascades into downstream berth assignments.
     """
     corr_id = correlation_id_ctx.get() or "cascade-sim"
-    return CascadingDelaySimulator.simulate_delay_ripple(
+    res = CascadingDelaySimulator.simulate_delay_ripple(
         db,
         target_vessel_id=request.vessel_id,
         delay_hours=request.delay_hours,
         correlation_id=corr_id
     )
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        actor_id=user.id,
+        action="CASCADE_DELAY_SIMULATION",
+        entity_type="VESSEL",
+        entity_id=request.vessel_id,
+        payload_snapshot={
+            "vessel_id": request.vessel_id,
+            "delay_hours": request.delay_hours,
+            "impacted_count": getattr(res, "impacted_vessels_count", len(getattr(res, "impacted_vessels", []))),
+            "total_ripple_delay_hours": getattr(res, "total_ripple_delay_hours", 0.0)
+        }
+    )
+    return res
 
 
 @router.get("/forecast/metrics", response_model=MLMetricsResponse)
@@ -84,12 +102,26 @@ def get_ml_metrics(
 @router.post("/forecast/retrain", response_model=MLMetricsResponse)
 def retrain_ml_models(
     db: Session = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user)
+    user: CurrentUser = Depends(require_roles([UserRole.ADMIN, UserRole.TERMINAL_MANAGER]))
 ):
     """
     Forces immediate retraining of ML models against current historical turnaround records,
     evaluates test accuracy, and refreshes the in-memory cache and serialized checkpoints.
+    Restricted to Administrator and Terminal Manager.
     """
     risk_engine.retrain_and_predict(db)
-    return risk_engine.get_evaluation_metrics(db)
+    metrics = risk_engine.get_evaluation_metrics(db)
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        actor_id=user.id,
+        action="ML_MODELS_RETRAIN",
+        entity_type="MODEL",
+        entity_id="ETA_CONGESTION_MODELS",
+        payload_snapshot={
+            "models_evaluated": len(getattr(metrics, "models", []))
+        }
+    )
+    return metrics
 

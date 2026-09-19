@@ -28,6 +28,7 @@ from app.core.auth import (
 from app.models.entities import User, Berth, Vessel
 from app.services.optimiser.solver import berth_optimiser
 from app.services.optimiser.recommender import prescriptive_recommender
+from app.services.audit import AuditService
 
 router = APIRouter(prefix="/api", tags=["Standard REST API (BACKEND.md)"])
 
@@ -67,6 +68,18 @@ def api_login(req: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(data={"sub": user.username, "role": user.role, "user_id": user.id})
     display_name = user.username.replace('_', ' ').title()
+
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role,
+        actor_id=user.id,
+        action="LOGIN_SUCCESS",
+        entity_type="AUTH",
+        entity_id=user.username,
+        payload_snapshot={"channel": "REST_COMPAT", "role": user.role}
+    )
+
     return {
         "token": token,
         "user": {
@@ -79,8 +92,18 @@ def api_login(req: LoginRequest, db: Session = Depends(get_db)):
 
 # --- /api/logout ---
 @router.post("/logout")
-def api_logout(user: CurrentUser = Depends(get_current_user)):
+def api_logout(db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Invalidates session on the client as specified in BACKEND.md."""
+    AuditService.record_event(
+        db=db,
+        actor=user.username,
+        actor_role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        actor_id=user.id,
+        action="LOGOUT",
+        entity_type="AUTH",
+        entity_id=user.username,
+        payload_snapshot={"channel": "REST_COMPAT"}
+    )
     return {"status": "ok", "message": "logged_out"}
 
 

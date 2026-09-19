@@ -7,6 +7,8 @@ from typing import Optional
 
 # Context variable to hold correlation_id per async request
 correlation_id_ctx: ContextVar[Optional[str]] = ContextVar("correlation_id_ctx", default=None)
+# Context variable to hold client IP per async request
+client_ip_ctx: ContextVar[Optional[str]] = ContextVar("client_ip_ctx", default=None)
 
 
 class JSONFormatter(logging.Formatter):

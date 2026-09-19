@@ -203,12 +203,44 @@ export function triggerBrowserDownload(filename: string, content: string | Blob)
   }
 }
 
+export interface LoginResponse {
+  access_token?: string;
+  token_type?: string;
+  expires_in_minutes?: number;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+    is_active?: boolean;
+  };
+  mfa_required?: boolean;
+  mfa_token?: string;
+  mfa_method?: string;
+  message?: string;
+  demo_code?: string;
+}
+
+export interface MfaVerifyResponse {
+  access_token: string;
+  token_type: string;
+  expires_in_minutes: number;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+  };
+  mfa_required: boolean;
+}
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const currentRole = localStorage.getItem('portpulse-role') || 'shift_supervisor';
   let token = localStorage.getItem('portpulse-token');
+  const isExplicitlyLoggedOut = localStorage.getItem('portpulse-logged-out') === 'true';
 
-  // Ensure every API call has a valid cryptographic JWT Bearer token
-  if (!token && endpoint !== '/auth/login') {
+  // In non-logged-out demo mode, retrieve token if missing and not calling auth endpoints
+  if (!token && !isExplicitlyLoggedOut && endpoint !== '/auth/login' && endpoint !== '/auth/mfa/verify') {
     try {
       const rolePasswords: Record<string, string> = {
         admin: 'admin123',
@@ -222,8 +254,8 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
         vessel_planner: 'planner',
         terminal_manager: 'manager',
       };
-      const authUser = roleUsernames[currentRole] || 'admin';
-      const authPass = rolePasswords[currentRole] || 'admin123';
+      const authUser = roleUsernames[currentRole] || 'supervisor';
+      const authPass = rolePasswords[currentRole] || 'super123';
       const authRes = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -247,6 +279,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     'Content-Type': 'application/json',
     'X-Correlation-ID': correlationId,
     'X-User-Role': currentRole,
+    'X-Requested-With': 'XMLHttpRequest',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...((options.headers as Record<string, string>) || {}),
   };
@@ -263,11 +296,34 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
         return handleFallbackRequest(endpoint, options) as T;
       }
     }
+
+    // Role-Based Access Control Rejection: Server-side RBAC enforced
+    if (response.status === 403) {
+      let errDetail = 'Access denied: your operational role does not have permission for this action.';
+      try {
+        const errJson = await response.json();
+        errDetail = errJson.message || errJson.detail || errDetail;
+      } catch {}
+      throw new Error(`[RBAC 403] ${errDetail}`);
+    }
+
+    // Authentication failure on login or mfa verification
+    if (response.status === 401 && (endpoint === '/auth/login' || endpoint === '/auth/mfa/verify')) {
+      let errDetail = 'Authentication failed. Please verify credentials.';
+      try {
+        const errJson = await response.json();
+        errDetail = errJson.message || errJson.detail || errDetail;
+      } catch {}
+      throw new Error(errDetail);
+    }
     
     // Non-200 responses (e.g. 404, 500, HTML errors from unconfigured server)
     console.warn(`[PortPulse API] Live endpoint ${endpoint} returned ${response.status}. Using standalone provider.`);
     return handleFallbackRequest(endpoint, options) as T;
   } catch (err: any) {
+    if (err.message && (err.message.includes('[RBAC 403]') || endpoint.startsWith('/auth/'))) {
+      throw err;
+    }
     // Network / connection / CORS errors
     console.warn(`[PortPulse API] Live endpoint ${endpoint} unreachable (${err?.message}). Using standalone provider.`);
     return handleFallbackRequest(endpoint, options) as T;
@@ -286,9 +342,15 @@ export interface UserItem {
 export const api = {
   // Authentication & Session
   login: (credentials: { username: string; password: string }) =>
-    apiFetch<{ access_token: string; token_type: string; user: { id: number; username: string; email: string; role: string } }>('/auth/login', {
+    apiFetch<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    }),
+
+  verifyMfa: (data: { mfa_token: string; code: string }) =>
+    apiFetch<MfaVerifyResponse>('/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
 
   listUsers: () => apiFetch<UserItem[]>('/auth/users'),
@@ -310,6 +372,13 @@ export const api = {
   injectShockEvent: (eventType: 'crane_outage' | 'mega_ship_surge' | 'tidal_restriction') =>
     apiFetch<{ status: string; message: string; data: any }>(`/ingestion/shock-event?event_type=${eventType}`, {
       method: 'POST',
+    }),
+
+  // Operational Shock Lab: Custom Vessel Delay Shock & Cascade Predictor
+  simulateVesselDelayShock: (req: VesselDelayShockRequest) =>
+    apiFetch<VesselDelayShockResponse>('/optimiser/shock-simulation/vessel-delay', {
+      method: 'POST',
+      body: JSON.stringify(req),
     }),
 
   // Synthetic Data Regeneration (F-101 / F-102)
@@ -494,8 +563,8 @@ export const api = {
     }),
 
   // Increment 2: Prediction Core & Heatmap (F-201 to F-207)
-  getHeatmap: (horizon = 72) =>
-    apiFetch<HeatmapResponse>(`/risk/heatmap?horizon=${horizon}`),
+  getHeatmap: (horizon = 72, optimized = true) =>
+    apiFetch<HeatmapResponse>(`/risk/heatmap?horizon=${horizon}&optimized=${optimized}`),
 
   getAnchorageQueue: (horizon = 72) =>
     apiFetch<AnchorageForecastResponse>(`/forecast/anchorage?horizon=${horizon}`),
@@ -616,6 +685,27 @@ export const api = {
       decoded_claims: any;
       token_snippet: string;
     }>('/auth/token/inspect'),
+
+  // Cryptographic Audit Hash-Chain Integrity & Anomaly Monitoring
+  verifyAuditIntegrity: () =>
+    apiFetch<AuditIntegrityResponse>('/audit/verify-integrity'),
+
+  getAuditAnomalies: () =>
+    apiFetch<AuditAnomalyListResponse>('/audit/anomalies'),
+
+  // Dual-Control Administrative Approvals
+  getAdminApprovals: () =>
+    apiFetch<AdminApprovalItem[]>('/auth/approvals'),
+
+  approveAdminRequest: (approvalId: number) =>
+    apiFetch<AdminApprovalItem>(`/auth/approvals/${approvalId}/approve`, {
+      method: 'POST',
+    }),
+
+  rejectAdminRequest: (approvalId: number) =>
+    apiFetch<AdminApprovalItem>(`/auth/approvals/${approvalId}/reject`, {
+      method: 'POST',
+    }),
 };
 
 export const apiClient = api;
@@ -624,16 +714,58 @@ export interface AuditLogEntryItem {
   id: number;
   correlation_id: string;
   actor: string;
+  actor_role?: string;
+  actor_id?: number;
   action: string;
   entity_type: string;
   entity_id: string;
   payload_snapshot: string | null;
+  client_ip?: string;
+  prev_hash?: string;
+  entry_hash?: string;
   timestamp: string;
 }
 
 export interface AuditLogListResponse {
   total: number;
   items: AuditLogEntryItem[];
+}
+
+export interface AuditIntegrityResponse {
+  is_valid: boolean;
+  total_verified: number;
+  chain_head?: string;
+  compromised_entry_id?: number;
+  error?: string;
+  verified_at: string;
+}
+
+export interface AuditAnomaly {
+  type: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  description: string;
+  actor?: string;
+  client_ip?: string;
+  timestamp: string;
+  details?: Record<string, any>;
+}
+
+export interface AuditAnomalyListResponse {
+  total: number;
+  anomalies: AuditAnomaly[];
+}
+
+export interface AdminApprovalItem {
+  id: number;
+  request_type: string;
+  requested_by: string;
+  target_username: string;
+  target_email?: string;
+  target_role: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approved_by?: string;
+  created_at: string;
+  resolved_at?: string;
 }
 
 export interface AutoOptimizeResult {
@@ -835,3 +967,96 @@ export interface FeedbackSummaryResponse {
   retraining_recommended: boolean;
   last_evaluated?: string;
 }
+
+// --- Operational Shock Lab: Vessel Delay Shock & Multi-Fleet Cascade Predictor ---
+
+export interface VesselDelayShockRequest {
+  vessel_id?: string;
+  vessel_name?: string;
+  delay_hours: number;
+  delay_cause?: string;
+  apply_to_database?: boolean;
+}
+
+export interface ShockSummaryImpact {
+  total_monetary_damages_usd: number;
+  demurrage_damages_usd: number;
+  bunker_waste_usd: number;
+  berth_disruption_cost_usd: number;
+  co2_excess_tonnes: number;
+  total_additional_wait_hours: number;
+  baseline_avg_wait_hours: number;
+  simulated_avg_wait_hours: number;
+  port_average_wait_spike_hours: number;
+  total_vessels_affected: number;
+  total_fleets_affected: number;
+  recovery_horizon_hours: number;
+  severity: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+}
+
+export interface FleetChainImpact {
+  fleet_name: string;
+  carrier: string;
+  vessels_affected_count: number;
+  total_delay_hours: number;
+  total_demurrage_usd: number;
+  affected_vessels: string[];
+  chain_risk_level: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+  operational_note: string;
+}
+
+export interface AffectedVesselDetail {
+  vessel_id: string;
+  vessel_name: string;
+  vessel_class: string;
+  carrier: string;
+  fleet: string;
+  assigned_berth_id?: string;
+  assigned_berth_name?: string;
+  original_start_time: string;
+  delayed_start_time: string;
+  wait_increase_hours: number;
+  demurrage_impact_usd: number;
+  impact_category: 'PRIMARY_SHOCK' | 'BERTH_COLLISION_CASCADE' | 'QUEUE_DISPLACEMENT' | 'ANCHORAGE_STACK';
+  impact_reason: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+}
+
+export interface MitigationAction {
+  action_type: string;
+  target_vessel_name: string;
+  description: string;
+  potential_savings_usd: number;
+  potential_hours_saved: number;
+}
+
+export interface TargetVesselMetadata {
+  id: string;
+  name: string;
+  vessel_class: string;
+  carrier: string;
+  fleet: string;
+  cargo_volume: number;
+  draft_m: number;
+  length_m: number;
+  original_eta: string;
+  delayed_eta: string;
+  delay_hours: number;
+  current_status: string;
+  assigned_berth_id?: string;
+  assigned_berth_name?: string;
+}
+
+export interface VesselDelayShockResponse {
+  status: string;
+  correlation_id: string;
+  applied_to_live: boolean;
+  delay_cause: string;
+  target_vessel: TargetVesselMetadata;
+  summary_impact: ShockSummaryImpact;
+  fleet_chain_impacts: FleetChainImpact[];
+  affected_vessels: AffectedVesselDetail[];
+  mitigation_recommendations: MitigationAction[];
+  message: string;
+}
+

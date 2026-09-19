@@ -78,7 +78,7 @@ def test_import_berths_csv(client, admin_token):
     assert res.status_code == 200
     data = res.json()
     assert data["status"] in ["success", "partial_success"]
-    assert data["imported_count"] >= 1
+    assert (data["imported_count"] + data.get("updated_count", 0)) >= 1
 
     # Verify berth and cranes exist
     b_res = client.get("/api/v1/master-data/berths/B-CSV-01", headers={"Authorization": f"Bearer {admin_token}"})

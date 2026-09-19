@@ -28,6 +28,28 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+def run_migrations():
+    """Ensures enterprise security and audit columns exist in SQLite database."""
+    try:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            if engine.dialect.name == "sqlite":
+                res = conn.execute(text("PRAGMA table_info(audit_log)")).fetchall()
+                existing_cols = {row[1] for row in res}
+                if existing_cols:
+                    if "client_ip" not in existing_cols:
+                        conn.execute(text("ALTER TABLE audit_log ADD COLUMN client_ip VARCHAR(50)"))
+                    if "prev_hash" not in existing_cols:
+                        conn.execute(text("ALTER TABLE audit_log ADD COLUMN prev_hash VARCHAR(64)"))
+                    if "entry_hash" not in existing_cols:
+                        conn.execute(text("ALTER TABLE audit_log ADD COLUMN entry_hash VARCHAR(64)"))
+    except Exception:
+        pass
+
+
+run_migrations()
+
+
 def get_db():
     """FastAPI dependency that provides a database session."""
     db = SessionLocal()
