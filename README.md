@@ -186,16 +186,6 @@ pytest -v
 # 48 passed in 6.02s — covers auth, RBAC, forecast, optimiser, audit, ingestion, CSV, E2E
 ```
 
----
-
-## ⚠️ Known Limitations
-
-- **Synthetic data only**: The platform uses a synthetic port dataset (50 vessels, 10 berths) — not connected to a live AIS/TOS feed.
-- **Local LLM credentials required for RAG copilot**: The Groq API key and Supabase credentials in `.env` are required for the AI chat and shift briefing features; all other features run fully offline on SQLite.
-- **Single-node SQLite**: Designed for hackathon evaluation on a single machine; production path uses PostgreSQL on OpenShift as documented in `docs/architecture.md`.
-
----
-
 ## 🏅 What We're Most Proud Of
 
 The **end-to-end integration** of four AI disciplines in a single coherent product: predictive ML (ETA correction + 72h occupancy), prescriptive MILP optimisation (zero hard constraint violations), generative AI (RAG copilot grounded in real maritime standards), and governance (immutable audit trail + operator feedback drift detection) — all running on a single Intel i3/8GB RAM machine with 48 passing automated tests. The quayside spatial map renders a true-to-scale physical harbor with live congestion semantics that a real shift supervisor could interpret and act on immediately.
